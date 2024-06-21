@@ -1,0 +1,517 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0A8AA28843B3A85038ABBE45 /* amplifyconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = 96148716EF24226B550FAF08 /* amplifyconfiguration.json */; };
+		6403970383B1CF60D324C0B3 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = E456E6A2933A24CC63F8C9F2 /* User.swift */; };
+		A172BC283CF80F88EB8D1693 /* AmplifyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962CA66C4FFDE282448D9527 /* AmplifyModels.swift */; };
+		B6F12E4BD05A47A67D947CB7 /* awsconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = DF46BDBF469E16BDBDE290A9 /* awsconfiguration.json */; };
+		C5688CC72C11DA4800F51648 /* UserProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5688CC62C11DA4800F51648 /* UserProfileView.swift */; };
+		C5BD1B4D2C1F2EB400A7239A /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BD1B4C2C1F2EB400A7239A /* AvatarView.swift */; };
+		C5BD1B4F2C1F2F4000A7239A /* UserState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BD1B4E2C1F2F4000A7239A /* UserState.swift */; };
+		C5BD1B512C1F2F8500A7239A /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BD1B502C1F2F8500A7239A /* SessionView.swift */; };
+		C5BD1B532C1F2FBA00A7239A /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BD1B522C1F2FBA00A7239A /* LoginView.swift */; };
+		C5DAE7DB2BFC7B220001E794 /* N3ONApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE7DA2BFC7B220001E794 /* N3ONApp.swift */; };
+		C5DAE7DD2BFC7B220001E794 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE7DC2BFC7B220001E794 /* ContentView.swift */; };
+		C5DAE7DF2BFC7B240001E794 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5DAE7DE2BFC7B240001E794 /* Assets.xcassets */; };
+		C5DAE7E22BFC7B240001E794 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5DAE7E12BFC7B240001E794 /* Preview Assets.xcassets */; };
+		C5DAE7E42BFC7B240001E794 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE7E32BFC7B240001E794 /* Persistence.swift */; };
+		C5DAE7E72BFC7B240001E794 /* N3ON.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE7E52BFC7B240001E794 /* N3ON.xcdatamodeld */; };
+		C5DAE8012BFCFF0E0001E794 /* SignupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE8002BFCFF0E0001E794 /* SignupView.swift */; };
+		C5DAE8032BFCFF700001E794 /* ConfirmationSignupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE8022BFCFF700001E794 /* ConfirmationSignupView.swift */; };
+		C5DAE80B2BFD0E800001E794 /* N3ONError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE80A2BFD0E800001E794 /* N3ONError.swift */; };
+		C5DAE81A2BFE84EF0001E794 /* AWSCognitoAuthPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C5DAE8192BFE84EF0001E794 /* AWSCognitoAuthPlugin */; };
+		C5DAE81C2BFE84EF0001E794 /* AWSDataStorePlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C5DAE81B2BFE84EF0001E794 /* AWSDataStorePlugin */; };
+		C5DAE8292C05A0610001E794 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = C5DAE8282C05A0610001E794 /* Kingfisher */; };
+		F190EF1193BE9565E1FCE506 /* User+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CEAAC170CB0C39F62D3FC3 /* User+Schema.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		54CEAAC170CB0C39F62D3FC3 /* User+Schema.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = "User+Schema.swift"; path = "amplify/generated/models/User+Schema.swift"; sourceTree = "<group>"; };
+		96148716EF24226B550FAF08 /* amplifyconfiguration.json */ = {isa = PBXFileReference; explicitFileType = text.json; path = amplifyconfiguration.json; sourceTree = "<group>"; };
+		962CA66C4FFDE282448D9527 /* AmplifyModels.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = AmplifyModels.swift; path = amplify/generated/models/AmplifyModels.swift; sourceTree = "<group>"; };
+		C5688CC62C11DA4800F51648 /* UserProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileView.swift; sourceTree = "<group>"; };
+		C5BD1B4C2C1F2EB400A7239A /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
+		C5BD1B4E2C1F2F4000A7239A /* UserState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserState.swift; sourceTree = "<group>"; };
+		C5BD1B502C1F2F8500A7239A /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
+		C5BD1B522C1F2FBA00A7239A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		C5DAE7D72BFC7B220001E794 /* N3ON.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = N3ON.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C5DAE7DA2BFC7B220001E794 /* N3ONApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = N3ONApp.swift; sourceTree = "<group>"; };
+		C5DAE7DC2BFC7B220001E794 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		C5DAE7DE2BFC7B240001E794 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C5DAE7E12BFC7B240001E794 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		C5DAE7E32BFC7B240001E794 /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
+		C5DAE7E62BFC7B240001E794 /* N3ON.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = N3ON.xcdatamodel; sourceTree = "<group>"; };
+		C5DAE8002BFCFF0E0001E794 /* SignupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignupView.swift; sourceTree = "<group>"; };
+		C5DAE8022BFCFF700001E794 /* ConfirmationSignupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmationSignupView.swift; sourceTree = "<group>"; };
+		C5DAE80A2BFD0E800001E794 /* N3ONError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = N3ONError.swift; sourceTree = "<group>"; };
+		DF46BDBF469E16BDBDE290A9 /* awsconfiguration.json */ = {isa = PBXFileReference; explicitFileType = text.json; path = awsconfiguration.json; sourceTree = "<group>"; };
+		E456E6A2933A24CC63F8C9F2 /* User.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = User.swift; path = amplify/generated/models/User.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C5DAE7D42BFC7B220001E794 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C5DAE8292C05A0610001E794 /* Kingfisher in Frameworks */,
+				C5DAE81A2BFE84EF0001E794 /* AWSCognitoAuthPlugin in Frameworks */,
+				C5DAE81C2BFE84EF0001E794 /* AWSDataStorePlugin in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0E9821FCC9D60CE43171D9FA /* AmplifyModels */ = {
+			isa = PBXGroup;
+			children = (
+				962CA66C4FFDE282448D9527 /* AmplifyModels.swift */,
+				54CEAAC170CB0C39F62D3FC3 /* User+Schema.swift */,
+				E456E6A2933A24CC63F8C9F2 /* User.swift */,
+			);
+			name = AmplifyModels;
+			sourceTree = "<group>";
+		};
+		3A58B46B177310E7F7C9C190 /* AmplifyConfig */ = {
+			isa = PBXGroup;
+			children = (
+				DF46BDBF469E16BDBDE290A9 /* awsconfiguration.json */,
+				96148716EF24226B550FAF08 /* amplifyconfiguration.json */,
+			);
+			name = AmplifyConfig;
+			sourceTree = "<group>";
+		};
+		C5688CC32C11CACA00F51648 /* UserProfile */ = {
+			isa = PBXGroup;
+			children = (
+				C5688CC62C11DA4800F51648 /* UserProfileView.swift */,
+			);
+			path = UserProfile;
+			sourceTree = "<group>";
+		};
+		C5DAE7CE2BFC7B220001E794 = {
+			isa = PBXGroup;
+			children = (
+				C5DAE7D92BFC7B220001E794 /* N3ON */,
+				C5DAE7D82BFC7B220001E794 /* Products */,
+				3A58B46B177310E7F7C9C190 /* AmplifyConfig */,
+				0E9821FCC9D60CE43171D9FA /* AmplifyModels */,
+				C5DAE8122BFE7DF30001E794 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		C5DAE7D82BFC7B220001E794 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C5DAE7D72BFC7B220001E794 /* N3ON.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C5DAE7D92BFC7B220001E794 /* N3ON */ = {
+			isa = PBXGroup;
+			children = (
+				C5DAE7DA2BFC7B220001E794 /* N3ONApp.swift */,
+				C5BD1B4E2C1F2F4000A7239A /* UserState.swift */,
+				C5BD1B502C1F2F8500A7239A /* SessionView.swift */,
+				C5BD1B4C2C1F2EB400A7239A /* AvatarView.swift */,
+				C5DAE80A2BFD0E800001E794 /* N3ONError.swift */,
+				C5DAE7DC2BFC7B220001E794 /* ContentView.swift */,
+				C5688CC32C11CACA00F51648 /* UserProfile */,
+				C5DAE81E2C02363F0001E794 /* TabViews */,
+				C5DAE81D2C0233170001E794 /* Login */,
+				C5DAE7DE2BFC7B240001E794 /* Assets.xcassets */,
+				C5DAE7E32BFC7B240001E794 /* Persistence.swift */,
+				C5DAE7E02BFC7B240001E794 /* Preview Content */,
+				C5DAE7E52BFC7B240001E794 /* N3ON.xcdatamodeld */,
+			);
+			path = N3ON;
+			sourceTree = "<group>";
+		};
+		C5DAE7E02BFC7B240001E794 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				C5DAE7E12BFC7B240001E794 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		C5DAE8122BFE7DF30001E794 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C5DAE81D2C0233170001E794 /* Login */ = {
+			isa = PBXGroup;
+			children = (
+				C5DAE8022BFCFF700001E794 /* ConfirmationSignupView.swift */,
+				C5DAE8002BFCFF0E0001E794 /* SignupView.swift */,
+				C5BD1B522C1F2FBA00A7239A /* LoginView.swift */,
+			);
+			path = Login;
+			sourceTree = "<group>";
+		};
+		C5DAE81E2C02363F0001E794 /* TabViews */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = TabViews;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C5DAE7D62BFC7B220001E794 /* N3ON */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C5DAE7EA2BFC7B240001E794 /* Build configuration list for PBXNativeTarget "N3ON" */;
+			buildPhases = (
+				C5DAE7D32BFC7B220001E794 /* Sources */,
+				C5DAE7D42BFC7B220001E794 /* Frameworks */,
+				C5DAE7D52BFC7B220001E794 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = N3ON;
+			packageProductDependencies = (
+				C5DAE8192BFE84EF0001E794 /* AWSCognitoAuthPlugin */,
+				C5DAE81B2BFE84EF0001E794 /* AWSDataStorePlugin */,
+				C5DAE8282C05A0610001E794 /* Kingfisher */,
+			);
+			productName = N3ON;
+			productReference = C5DAE7D72BFC7B220001E794 /* N3ON.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C5DAE7CF2BFC7B220001E794 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1430;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					C5DAE7D62BFC7B220001E794 = {
+						CreatedOnToolsVersion = 14.3.1;
+					};
+				};
+			};
+			buildConfigurationList = C5DAE7D22BFC7B220001E794 /* Build configuration list for PBXProject "N3ON" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C5DAE7CE2BFC7B220001E794;
+			packageReferences = (
+				C5DAE8182BFE84EF0001E794 /* XCRemoteSwiftPackageReference "amplify-ios" */,
+				C5DAE8272C05A0610001E794 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+			);
+			productRefGroup = C5DAE7D82BFC7B220001E794 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C5DAE7D62BFC7B220001E794 /* N3ON */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C5DAE7D52BFC7B220001E794 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C5DAE7E22BFC7B240001E794 /* Preview Assets.xcassets in Resources */,
+				C5DAE7DF2BFC7B240001E794 /* Assets.xcassets in Resources */,
+				B6F12E4BD05A47A67D947CB7 /* awsconfiguration.json in Resources */,
+				0A8AA28843B3A85038ABBE45 /* amplifyconfiguration.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C5DAE7D32BFC7B220001E794 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C5DAE8012BFCFF0E0001E794 /* SignupView.swift in Sources */,
+				C5DAE80B2BFD0E800001E794 /* N3ONError.swift in Sources */,
+				C5DAE7E42BFC7B240001E794 /* Persistence.swift in Sources */,
+				C5BD1B532C1F2FBA00A7239A /* LoginView.swift in Sources */,
+				C5BD1B4D2C1F2EB400A7239A /* AvatarView.swift in Sources */,
+				C5DAE7DD2BFC7B220001E794 /* ContentView.swift in Sources */,
+				C5DAE7DB2BFC7B220001E794 /* N3ONApp.swift in Sources */,
+				C5DAE7E72BFC7B240001E794 /* N3ON.xcdatamodeld in Sources */,
+				C5BD1B512C1F2F8500A7239A /* SessionView.swift in Sources */,
+				A172BC283CF80F88EB8D1693 /* AmplifyModels.swift in Sources */,
+				F190EF1193BE9565E1FCE506 /* User+Schema.swift in Sources */,
+				C5688CC72C11DA4800F51648 /* UserProfileView.swift in Sources */,
+				6403970383B1CF60D324C0B3 /* User.swift in Sources */,
+				C5BD1B4F2C1F2F4000A7239A /* UserState.swift in Sources */,
+				C5DAE8032BFCFF700001E794 /* ConfirmationSignupView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		C5DAE7E82BFC7B240001E794 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		C5DAE7E92BFC7B240001E794 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		C5DAE7EB2BFC7B240001E794 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"N3ON/Preview Content\"";
+				DEVELOPMENT_TEAM = 8X4733B3NF;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "NEON-CO.N3ON";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C5DAE7EC2BFC7B240001E794 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"N3ON/Preview Content\"";
+				DEVELOPMENT_TEAM = 8X4733B3NF;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "NEON-CO.N3ON";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C5DAE7D22BFC7B220001E794 /* Build configuration list for PBXProject "N3ON" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C5DAE7E82BFC7B240001E794 /* Debug */,
+				C5DAE7E92BFC7B240001E794 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C5DAE7EA2BFC7B240001E794 /* Build configuration list for PBXNativeTarget "N3ON" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C5DAE7EB2BFC7B240001E794 /* Debug */,
+				C5DAE7EC2BFC7B240001E794 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C5DAE8182BFE84EF0001E794 /* XCRemoteSwiftPackageReference "amplify-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/aws-amplify/amplify-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+		C5DAE8272C05A0610001E794 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C5DAE8192BFE84EF0001E794 /* AWSCognitoAuthPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C5DAE8182BFE84EF0001E794 /* XCRemoteSwiftPackageReference "amplify-ios" */;
+			productName = AWSCognitoAuthPlugin;
+		};
+		C5DAE81B2BFE84EF0001E794 /* AWSDataStorePlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C5DAE8182BFE84EF0001E794 /* XCRemoteSwiftPackageReference "amplify-ios" */;
+			productName = AWSDataStorePlugin;
+		};
+		C5DAE8282C05A0610001E794 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C5DAE8272C05A0610001E794 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin XCVersionGroup section */
+		C5DAE7E52BFC7B240001E794 /* N3ON.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				C5DAE7E62BFC7B240001E794 /* N3ON.xcdatamodel */,
+			);
+			currentVersion = C5DAE7E62BFC7B240001E794 /* N3ON.xcdatamodel */;
+			path = N3ON.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
+	};
+	rootObject = C5DAE7CF2BFC7B220001E794 /* Project object */;
+}
