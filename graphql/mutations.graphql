@@ -1,0 +1,814 @@
+# this is an auto generated file. This will be overwritten
+
+mutation CreateUser(
+  $input: CreateUserInput!
+  $condition: ModelUserConditionInput
+) {
+  createUser(input: $input, condition: $condition) {
+    id
+    username
+    messages {
+      nextToken
+      startedAt
+      __typename
+    }
+    chatRoom {
+      nextToken
+      startedAt
+      __typename
+    }
+    venues {
+      nextToken
+      startedAt
+      __typename
+    }
+    review {
+      nextToken
+      startedAt
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation UpdateUser(
+  $input: UpdateUserInput!
+  $condition: ModelUserConditionInput
+) {
+  updateUser(input: $input, condition: $condition) {
+    id
+    username
+    messages {
+      nextToken
+      startedAt
+      __typename
+    }
+    chatRoom {
+      nextToken
+      startedAt
+      __typename
+    }
+    venues {
+      nextToken
+      startedAt
+      __typename
+    }
+    review {
+      nextToken
+      startedAt
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation DeleteUser(
+  $input: DeleteUserInput!
+  $condition: ModelUserConditionInput
+) {
+  deleteUser(input: $input, condition: $condition) {
+    id
+    username
+    messages {
+      nextToken
+      startedAt
+      __typename
+    }
+    chatRoom {
+      nextToken
+      startedAt
+      __typename
+    }
+    venues {
+      nextToken
+      startedAt
+      __typename
+    }
+    review {
+      nextToken
+      startedAt
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation CreateVenue(
+  $input: CreateVenueInput!
+  $condition: ModelVenueConditionInput
+) {
+  createVenue(input: $input, condition: $condition) {
+    id
+    name
+    description
+    address
+    latitude
+    longitude
+    rating
+    imageKey
+    ownerID
+    owner {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    maxCapacity
+    currentUsers
+    revenue
+    dailyUserCounts {
+      nextToken
+      startedAt
+      __typename
+    }
+    reviews {
+      nextToken
+      startedAt
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation UpdateVenue(
+  $input: UpdateVenueInput!
+  $condition: ModelVenueConditionInput
+) {
+  updateVenue(input: $input, condition: $condition) {
+    id
+    name
+    description
+    address
+    latitude
+    longitude
+    rating
+    imageKey
+    ownerID
+    owner {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    maxCapacity
+    currentUsers
+    revenue
+    dailyUserCounts {
+      nextToken
+      startedAt
+      __typename
+    }
+    reviews {
+      nextToken
+      startedAt
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation DeleteVenue(
+  $input: DeleteVenueInput!
+  $condition: ModelVenueConditionInput
+) {
+  deleteVenue(input: $input, condition: $condition) {
+    id
+    name
+    description
+    address
+    latitude
+    longitude
+    rating
+    imageKey
+    ownerID
+    owner {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    maxCapacity
+    currentUsers
+    revenue
+    dailyUserCounts {
+      nextToken
+      startedAt
+      __typename
+    }
+    reviews {
+      nextToken
+      startedAt
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation CreateDailyUserCount(
+  $input: CreateDailyUserCountInput!
+  $condition: ModelDailyUserCountConditionInput
+) {
+  createDailyUserCount(input: $input, condition: $condition) {
+    id
+    venueID
+    venue {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    date
+    userCount
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation UpdateDailyUserCount(
+  $input: UpdateDailyUserCountInput!
+  $condition: ModelDailyUserCountConditionInput
+) {
+  updateDailyUserCount(input: $input, condition: $condition) {
+    id
+    venueID
+    venue {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    date
+    userCount
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation DeleteDailyUserCount(
+  $input: DeleteDailyUserCountInput!
+  $condition: ModelDailyUserCountConditionInput
+) {
+  deleteDailyUserCount(input: $input, condition: $condition) {
+    id
+    venueID
+    venue {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    date
+    userCount
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation CreateReview(
+  $input: CreateReviewInput!
+  $condition: ModelReviewConditionInput
+) {
+  createReview(input: $input, condition: $condition) {
+    id
+    venueID
+    venue {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    userID
+    user {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    rating
+    comment
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation UpdateReview(
+  $input: UpdateReviewInput!
+  $condition: ModelReviewConditionInput
+) {
+  updateReview(input: $input, condition: $condition) {
+    id
+    venueID
+    venue {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    userID
+    user {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    rating
+    comment
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation DeleteReview(
+  $input: DeleteReviewInput!
+  $condition: ModelReviewConditionInput
+) {
+  deleteReview(input: $input, condition: $condition) {
+    id
+    venueID
+    venue {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    userID
+    user {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    rating
+    comment
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+mutation CreateChatRoom(
+  $input: CreateChatRoomInput!
+  $condition: ModelChatRoomConditionInput
+) {
+  createChatRoom(input: $input, condition: $condition) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants {
+      nextToken
+      startedAt
+      __typename
+    }
+    messages {
+      nextToken
+      startedAt
+      __typename
+    }
+    lastMessage
+    lastMessageTimestamp
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+mutation UpdateChatRoom(
+  $input: UpdateChatRoomInput!
+  $condition: ModelChatRoomConditionInput
+) {
+  updateChatRoom(input: $input, condition: $condition) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants {
+      nextToken
+      startedAt
+      __typename
+    }
+    messages {
+      nextToken
+      startedAt
+      __typename
+    }
+    lastMessage
+    lastMessageTimestamp
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+mutation DeleteChatRoom(
+  $input: DeleteChatRoomInput!
+  $condition: ModelChatRoomConditionInput
+) {
+  deleteChatRoom(input: $input, condition: $condition) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants {
+      nextToken
+      startedAt
+      __typename
+    }
+    messages {
+      nextToken
+      startedAt
+      __typename
+    }
+    lastMessage
+    lastMessageTimestamp
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+mutation CreateMessage(
+  $input: CreateMessageInput!
+  $condition: ModelMessageConditionInput
+) {
+  createMessage(input: $input, condition: $condition) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    readBy
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+mutation UpdateMessage(
+  $input: UpdateMessageInput!
+  $condition: ModelMessageConditionInput
+) {
+  updateMessage(input: $input, condition: $condition) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    readBy
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+mutation DeleteMessage(
+  $input: DeleteMessageInput!
+  $condition: ModelMessageConditionInput
+) {
+  deleteMessage(input: $input, condition: $condition) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    readBy
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+mutation CreateUserChatRooms(
+  $input: CreateUserChatRoomsInput!
+  $condition: ModelUserChatRoomsConditionInput
+) {
+  createUserChatRooms(input: $input, condition: $condition) {
+    id
+    userId
+    chatRoomId
+    user {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    chatRoom {
+      id
+      name
+      createdAt
+      updatedAt
+      lastMessage
+      lastMessageTimestamp
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+mutation UpdateUserChatRooms(
+  $input: UpdateUserChatRoomsInput!
+  $condition: ModelUserChatRoomsConditionInput
+) {
+  updateUserChatRooms(input: $input, condition: $condition) {
+    id
+    userId
+    chatRoomId
+    user {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    chatRoom {
+      id
+      name
+      createdAt
+      updatedAt
+      lastMessage
+      lastMessageTimestamp
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+mutation DeleteUserChatRooms(
+  $input: DeleteUserChatRoomsInput!
+  $condition: ModelUserChatRoomsConditionInput
+) {
+  deleteUserChatRooms(input: $input, condition: $condition) {
+    id
+    userId
+    chatRoomId
+    user {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    chatRoom {
+      id
+      name
+      createdAt
+      updatedAt
+      lastMessage
+      lastMessageTimestamp
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}

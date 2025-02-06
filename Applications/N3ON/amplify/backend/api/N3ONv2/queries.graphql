@@ -1,0 +1,147 @@
+# this is an auto generated file. This will be overwritten
+
+query GetUser($id: ID!) {
+  getUser(id: $id) {
+    id
+    username
+    messages {
+      nextToken
+      __typename
+    }
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+
+query ListUsers(
+  $filter: ModelUserFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listUsers(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      username
+      createdAt
+      updatedAt
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+
+query GetChatRoom($id: ID!) {
+  getChatRoom(id: $id) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants
+    messages {
+      nextToken
+      __typename
+    }
+    owner
+    __typename
+  }
+}
+
+query ListChatRooms(
+  $filter: ModelChatRoomFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listChatRooms(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      name
+      createdAt
+      updatedAt
+      participants
+      owner
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+
+query GetMessage($id: ID!) {
+  getMessage(id: $id) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    createdAt
+    updatedAt
+    owner
+    __typename
+  }
+}
+
+query ListMessages(
+  $filter: ModelMessageFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listMessages(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      senderID
+      chatRoomID
+      content
+      timestamp
+      isRead
+      createdAt
+      updatedAt
+      owner
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+
+query MessagesByChatRoomIDAndTimestamp(
+  $chatRoomID: ID!
+  $timestamp: ModelStringKeyConditionInput
+  $sortDirection: ModelSortDirection
+  $filter: ModelMessageFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  messagesByChatRoomIDAndTimestamp(
+    chatRoomID: $chatRoomID
+    timestamp: $timestamp
+    sortDirection: $sortDirection
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      id
+      senderID
+      chatRoomID
+      content
+      timestamp
+      isRead
+      createdAt
+      updatedAt
+      owner
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}

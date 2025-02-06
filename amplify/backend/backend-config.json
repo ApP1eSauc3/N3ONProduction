@@ -1,20 +1,23 @@
 {
   "api": {
-    "N3ONv2": {
-      "dependsOn": [],
+    "n3on": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "UserPoolId"
+          ],
+          "category": "auth",
+          "resourceName": "n3on3dbadbe4"
+        }
+      ],
       "output": {
         "authConfig": {
-          "additionalAuthenticationProviders": [
-            {
-              "authenticationType": "AWS_IAM"
-            }
-          ],
+          "additionalAuthenticationProviders": [],
           "defaultAuthentication": {
-            "apiKeyConfig": {
-              "apiKeyExpirationDays": 30,
-              "description": "api key description"
-            },
-            "authenticationType": "API_KEY"
+            "authenticationType": "AMAZON_COGNITO_USER_POOLS",
+            "userPoolConfig": {
+              "userPoolId": "authn3on3dbadbe4"
+            }
           }
         }
       },
@@ -23,26 +26,45 @@
     }
   },
   "auth": {
-    "N3ONv2": {
+    "n3on3dbadbe4": {
       "customAuth": false,
-      "dependsOn": [],
+      "dependsOn": [
+        {
+          "attributes": [
+            "Arn",
+            "Name"
+          ],
+          "category": "function",
+          "resourceName": "n3on3dbadbe4CustomMessage",
+          "triggerProvider": "Cognito"
+        },
+        {
+          "attributes": [
+            "Arn",
+            "Name"
+          ],
+          "category": "function",
+          "resourceName": "n3on3dbadbe4PostConfirmation",
+          "triggerProvider": "Cognito"
+        }
+      ],
       "frontendAuthConfig": {
-        "mfaConfiguration": "OFF",
+        "mfaConfiguration": "OPTIONAL",
         "mfaTypes": [
           "SMS"
         ],
         "passwordProtectionSettings": {
-          "passwordPolicyCharacters": [
-            "REQUIRES_LOWERCASE",
-            "REQUIRES_NUMBERS",
-            "REQUIRES_SYMBOLS",
-            "REQUIRES_UPPERCASE"
-          ],
+          "passwordPolicyCharacters": [],
           "passwordPolicyMinLength": 8
         },
-        "signupAttributes": [],
+        "signupAttributes": [
+          "EMAIL",
+          "NAME"
+        ],
         "socialProviders": [],
-        "usernameAttributes": [],
+        "usernameAttributes": [
+          "EMAIL"
+        ],
         "verificationMechanisms": [
           "EMAIL"
         ]
@@ -51,34 +73,124 @@
       "service": "Cognito"
     }
   },
-  "hosting": {
-    "amplifyhosting": {
+  "function": {
+    "S3Triggerba3b2651": {
+      "build": true,
       "providerPlugin": "awscloudformation",
-      "service": "amplifyhosting",
-      "type": "manual"
+      "service": "Lambda"
+    },
+    "n3on3dbadbe4CustomMessage": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "n3on3dbadbe4PostConfirmation": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "hosting": {
+    "S3AndCloudFront": {
+      "providerPlugin": "awscloudformation",
+      "service": "S3AndCloudFront"
     }
   },
   "parameters": {
-    "AMPLIFY_hosting_amplifyhosting_appId": {
+    "AMPLIFY_function_S3Triggerba3b2651_deploymentBucketName": {
       "usedBy": [
         {
-          "category": "hosting",
-          "resourceName": "amplifyhosting"
+          "category": "function",
+          "resourceName": "S3Triggerba3b2651"
         }
       ]
     },
-    "AMPLIFY_hosting_amplifyhosting_type": {
+    "AMPLIFY_function_S3Triggerba3b2651_s3Key": {
       "usedBy": [
         {
-          "category": "hosting",
-          "resourceName": "amplifyhosting"
+          "category": "function",
+          "resourceName": "S3Triggerba3b2651"
+        }
+      ]
+    },
+    "AMPLIFY_function_n3on3dbadbe4CustomMessage_EMAILMESSAGE": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "n3on3dbadbe4CustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_n3on3dbadbe4CustomMessage_EMAILSUBJECT": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "n3on3dbadbe4CustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_n3on3dbadbe4CustomMessage_REDIRECTURL": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "n3on3dbadbe4CustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_n3on3dbadbe4CustomMessage_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "n3on3dbadbe4CustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_n3on3dbadbe4CustomMessage_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "n3on3dbadbe4CustomMessage"
+        }
+      ]
+    },
+    "AMPLIFY_function_n3on3dbadbe4PostConfirmation_GROUP": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "n3on3dbadbe4PostConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_n3on3dbadbe4PostConfirmation_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "n3on3dbadbe4PostConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_n3on3dbadbe4PostConfirmation_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "n3on3dbadbe4PostConfirmation"
         }
       ]
     }
   },
   "storage": {
-    "ProfileImages": {
-      "dependsOn": [],
+    "ProfileData": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "LambdaExecutionRole"
+          ],
+          "category": "function",
+          "resourceName": "S3Triggerba3b2651"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "S3"
     }

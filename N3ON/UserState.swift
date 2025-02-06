@@ -3,11 +3,10 @@
 //  N3ON
 //
 //  Created by liam howe on 16/6/2024.
-//
 
 import Foundation
 
 class UserState: ObservableObject {
-    var userId: String = ""
-    var username: String = ""
+    var userId: String = "" // User ID
+    var username: String = "" // Username
 }

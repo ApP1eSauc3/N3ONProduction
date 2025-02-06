@@ -1,0 +1,166 @@
+# this is an auto generated file. This will be overwritten
+
+subscription OnCreateUser($filter: ModelSubscriptionUserFilterInput) {
+  onCreateUser(filter: $filter) {
+    id
+    username
+    messages {
+      nextToken
+      __typename
+    }
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+
+subscription OnUpdateUser($filter: ModelSubscriptionUserFilterInput) {
+  onUpdateUser(filter: $filter) {
+    id
+    username
+    messages {
+      nextToken
+      __typename
+    }
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+
+subscription OnDeleteUser($filter: ModelSubscriptionUserFilterInput) {
+  onDeleteUser(filter: $filter) {
+    id
+    username
+    messages {
+      nextToken
+      __typename
+    }
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+
+subscription OnCreateChatRoom(
+  $filter: ModelSubscriptionChatRoomFilterInput
+  $owner: String
+) {
+  onCreateChatRoom(filter: $filter, owner: $owner) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants
+    messages {
+      nextToken
+      __typename
+    }
+    owner
+    __typename
+  }
+}
+
+subscription OnUpdateChatRoom(
+  $filter: ModelSubscriptionChatRoomFilterInput
+  $owner: String
+) {
+  onUpdateChatRoom(filter: $filter, owner: $owner) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants
+    messages {
+      nextToken
+      __typename
+    }
+    owner
+    __typename
+  }
+}
+
+subscription OnDeleteChatRoom(
+  $filter: ModelSubscriptionChatRoomFilterInput
+  $owner: String
+) {
+  onDeleteChatRoom(filter: $filter, owner: $owner) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants
+    messages {
+      nextToken
+      __typename
+    }
+    owner
+    __typename
+  }
+}
+
+subscription OnCreateMessage($filter: ModelSubscriptionMessageFilterInput) {
+  onCreateMessage(filter: $filter) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    createdAt
+    updatedAt
+    owner
+    __typename
+  }
+}
+
+subscription OnUpdateMessage($filter: ModelSubscriptionMessageFilterInput) {
+  onUpdateMessage(filter: $filter) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    createdAt
+    updatedAt
+    owner
+    __typename
+  }
+}
+
+subscription OnDeleteMessage($filter: ModelSubscriptionMessageFilterInput) {
+  onDeleteMessage(filter: $filter) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    createdAt
+    updatedAt
+    owner
+    __typename
+  }
+}

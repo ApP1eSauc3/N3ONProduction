@@ -7,6 +7,7 @@
 
 import Amplify
 import Foundation
+
 enum N3ONError: Error {
-    case amplify(AmplifyError)
+    case amplify(AmplifyError) // Custom error type for Amplify errors
 }

@@ -1,0 +1,184 @@
+# this is an auto generated file. This will be overwritten
+
+mutation CreateUser(
+  $input: CreateUserInput!
+  $condition: ModelUserConditionInput
+) {
+  createUser(input: $input, condition: $condition) {
+    id
+    username
+    messages {
+      nextToken
+      __typename
+    }
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+
+mutation UpdateUser(
+  $input: UpdateUserInput!
+  $condition: ModelUserConditionInput
+) {
+  updateUser(input: $input, condition: $condition) {
+    id
+    username
+    messages {
+      nextToken
+      __typename
+    }
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+
+mutation DeleteUser(
+  $input: DeleteUserInput!
+  $condition: ModelUserConditionInput
+) {
+  deleteUser(input: $input, condition: $condition) {
+    id
+    username
+    messages {
+      nextToken
+      __typename
+    }
+    createdAt
+    updatedAt
+    __typename
+  }
+}
+
+mutation CreateChatRoom(
+  $input: CreateChatRoomInput!
+  $condition: ModelChatRoomConditionInput
+) {
+  createChatRoom(input: $input, condition: $condition) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants
+    messages {
+      nextToken
+      __typename
+    }
+    owner
+    __typename
+  }
+}
+
+mutation UpdateChatRoom(
+  $input: UpdateChatRoomInput!
+  $condition: ModelChatRoomConditionInput
+) {
+  updateChatRoom(input: $input, condition: $condition) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants
+    messages {
+      nextToken
+      __typename
+    }
+    owner
+    __typename
+  }
+}
+
+mutation DeleteChatRoom(
+  $input: DeleteChatRoomInput!
+  $condition: ModelChatRoomConditionInput
+) {
+  deleteChatRoom(input: $input, condition: $condition) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants
+    messages {
+      nextToken
+      __typename
+    }
+    owner
+    __typename
+  }
+}
+
+mutation CreateMessage(
+  $input: CreateMessageInput!
+  $condition: ModelMessageConditionInput
+) {
+  createMessage(input: $input, condition: $condition) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    createdAt
+    updatedAt
+    owner
+    __typename
+  }
+}
+
+mutation UpdateMessage(
+  $input: UpdateMessageInput!
+  $condition: ModelMessageConditionInput
+) {
+  updateMessage(input: $input, condition: $condition) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    createdAt
+    updatedAt
+    owner
+    __typename
+  }
+}
+
+mutation DeleteMessage(
+  $input: DeleteMessageInput!
+  $condition: ModelMessageConditionInput
+) {
+  deleteMessage(input: $input, condition: $condition) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    createdAt
+    updatedAt
+    owner
+    __typename
+  }
+}
