@@ -7,7 +7,10 @@ extension User {
    public enum CodingKeys: String, ModelKey {
     case id
     case username
-    case email
+    case messages
+    case chatRoom
+    case venues
+    case review
     case createdAt
     case updatedAt
   }
@@ -19,7 +22,7 @@ extension User {
     let user = User.keys
     
     model.authRules = [
-      rule(allow: .public, operations: [.create, .update, .delete, .read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["venueOwnerGroup", "djGroup", "userGroup"], provider: .userPools, operations: [.create, .update, .delete, .read])
     ]
     
     model.listPluralName = "Users"
@@ -32,7 +35,10 @@ extension User {
     model.fields(
       .field(user.id, is: .required, ofType: .string),
       .field(user.username, is: .required, ofType: .string),
-      .field(user.email, is: .optional, ofType: .string),
+      .hasMany(user.messages, is: .optional, ofType: Message.self, associatedWith: Message.keys.sender),
+      .hasMany(user.chatRoom, is: .optional, ofType: UserChatRooms.self, associatedWith: UserChatRooms.keys.user),
+      .hasMany(user.venues, is: .optional, ofType: Venue.self, associatedWith: Venue.keys.owner),
+      .hasMany(user.review, is: .optional, ofType: Review.self, associatedWith: Review.keys.user),
       .field(user.createdAt, is: .optional, isReadOnly: true, ofType: .dateTime),
       .field(user.updatedAt, is: .optional, isReadOnly: true, ofType: .dateTime)
     )

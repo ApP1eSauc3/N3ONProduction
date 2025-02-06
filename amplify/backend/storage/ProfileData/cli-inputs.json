@@ -1,0 +1,14 @@
+{
+  "resourceName": "ProfileData",
+  "policyUUID": "f36febc5",
+  "bucketName": "n3onedd1960001fe442289e94c7f8ece545f",
+  "storageAccess": "authAndGuest",
+  "guestAccess": [
+    "READ"
+  ],
+  "authAccess": [
+    "CREATE_AND_UPDATE"
+  ],
+  "triggerFunction": "S3Triggerba3b2651",
+  "groupAccess": {}
+}

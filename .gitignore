@@ -90,6 +90,8 @@ fastlane/test_output
 
 iOSInjectionProject/
 =======
+>>>>>>> 2082402 (Initial commit)
+
 #amplify-do-not-edit-begin
 amplify/\#current-cloud-backend
 amplify/.config/local-*
@@ -111,4 +113,3 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
->>>>>>> 2082402 (Initial commit)

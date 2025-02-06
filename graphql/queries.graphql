@@ -1,0 +1,789 @@
+# this is an auto generated file. This will be overwritten
+
+query GetUser($id: ID!) {
+  getUser(id: $id) {
+    id
+    username
+    messages {
+      nextToken
+      startedAt
+      __typename
+    }
+    chatRoom {
+      nextToken
+      startedAt
+      __typename
+    }
+    venues {
+      nextToken
+      startedAt
+      __typename
+    }
+    review {
+      nextToken
+      startedAt
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+query ListUsers(
+  $filter: ModelUserFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listUsers(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query SyncUsers(
+  $filter: ModelUserFilterInput
+  $limit: Int
+  $nextToken: String
+  $lastSync: AWSTimestamp
+) {
+  syncUsers(
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    lastSync: $lastSync
+  ) {
+    items {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query GetVenue($id: ID!) {
+  getVenue(id: $id) {
+    id
+    name
+    description
+    address
+    latitude
+    longitude
+    rating
+    imageKey
+    ownerID
+    owner {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    maxCapacity
+    currentUsers
+    revenue
+    dailyUserCounts {
+      nextToken
+      startedAt
+      __typename
+    }
+    reviews {
+      nextToken
+      startedAt
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+query ListVenues(
+  $filter: ModelVenueFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listVenues(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query SyncVenues(
+  $filter: ModelVenueFilterInput
+  $limit: Int
+  $nextToken: String
+  $lastSync: AWSTimestamp
+) {
+  syncVenues(
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    lastSync: $lastSync
+  ) {
+    items {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query GetDailyUserCount($id: ID!) {
+  getDailyUserCount(id: $id) {
+    id
+    venueID
+    venue {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    date
+    userCount
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+query ListDailyUserCounts(
+  $filter: ModelDailyUserCountFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listDailyUserCounts(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      venueID
+      date
+      userCount
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query SyncDailyUserCounts(
+  $filter: ModelDailyUserCountFilterInput
+  $limit: Int
+  $nextToken: String
+  $lastSync: AWSTimestamp
+) {
+  syncDailyUserCounts(
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    lastSync: $lastSync
+  ) {
+    items {
+      id
+      venueID
+      date
+      userCount
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query GetReview($id: ID!) {
+  getReview(id: $id) {
+    id
+    venueID
+    venue {
+      id
+      name
+      description
+      address
+      latitude
+      longitude
+      rating
+      imageKey
+      ownerID
+      maxCapacity
+      currentUsers
+      revenue
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    userID
+    user {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    rating
+    comment
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    __typename
+  }
+}
+
+query ListReviews(
+  $filter: ModelReviewFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listReviews(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      venueID
+      userID
+      rating
+      comment
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query SyncReviews(
+  $filter: ModelReviewFilterInput
+  $limit: Int
+  $nextToken: String
+  $lastSync: AWSTimestamp
+) {
+  syncReviews(
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    lastSync: $lastSync
+  ) {
+    items {
+      id
+      venueID
+      userID
+      rating
+      comment
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query GetChatRoom($id: ID!) {
+  getChatRoom(id: $id) {
+    id
+    name
+    createdAt
+    updatedAt
+    participants {
+      nextToken
+      startedAt
+      __typename
+    }
+    messages {
+      nextToken
+      startedAt
+      __typename
+    }
+    lastMessage
+    lastMessageTimestamp
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+query ListChatRooms(
+  $filter: ModelChatRoomFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listChatRooms(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      name
+      createdAt
+      updatedAt
+      lastMessage
+      lastMessageTimestamp
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query SyncChatRooms(
+  $filter: ModelChatRoomFilterInput
+  $limit: Int
+  $nextToken: String
+  $lastSync: AWSTimestamp
+) {
+  syncChatRooms(
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    lastSync: $lastSync
+  ) {
+    items {
+      id
+      name
+      createdAt
+      updatedAt
+      lastMessage
+      lastMessageTimestamp
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query GetMessage($id: ID!) {
+  getMessage(id: $id) {
+    id
+    senderID
+    sender {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    chatRoomID
+    content
+    timestamp
+    isRead
+    readBy
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+query ListMessages(
+  $filter: ModelMessageFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listMessages(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      senderID
+      chatRoomID
+      content
+      timestamp
+      isRead
+      readBy
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query SyncMessages(
+  $filter: ModelMessageFilterInput
+  $limit: Int
+  $nextToken: String
+  $lastSync: AWSTimestamp
+) {
+  syncMessages(
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    lastSync: $lastSync
+  ) {
+    items {
+      id
+      senderID
+      chatRoomID
+      content
+      timestamp
+      isRead
+      readBy
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query GetUserChatRooms($id: ID!) {
+  getUserChatRooms(id: $id) {
+    id
+    userId
+    chatRoomId
+    user {
+      id
+      username
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    chatRoom {
+      id
+      name
+      createdAt
+      updatedAt
+      lastMessage
+      lastMessageTimestamp
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    createdAt
+    updatedAt
+    _version
+    _deleted
+    _lastChangedAt
+    owner
+    __typename
+  }
+}
+
+query ListUserChatRooms(
+  $filter: ModelUserChatRoomsFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listUserChatRooms(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      userId
+      chatRoomId
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query SyncUserChatRooms(
+  $filter: ModelUserChatRoomsFilterInput
+  $limit: Int
+  $nextToken: String
+  $lastSync: AWSTimestamp
+) {
+  syncUserChatRooms(
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    lastSync: $lastSync
+  ) {
+    items {
+      id
+      userId
+      chatRoomId
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query DailyUserCountsByVenueIDAndDate(
+  $venueID: ID!
+  $date: ModelStringKeyConditionInput
+  $sortDirection: ModelSortDirection
+  $filter: ModelDailyUserCountFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  dailyUserCountsByVenueIDAndDate(
+    venueID: $venueID
+    date: $date
+    sortDirection: $sortDirection
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      id
+      venueID
+      date
+      userCount
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query MessagesByChatRoomIDAndTimestamp(
+  $chatRoomID: ID!
+  $timestamp: ModelStringKeyConditionInput
+  $sortDirection: ModelSortDirection
+  $filter: ModelMessageFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  messagesByChatRoomIDAndTimestamp(
+    chatRoomID: $chatRoomID
+    timestamp: $timestamp
+    sortDirection: $sortDirection
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      id
+      senderID
+      chatRoomID
+      content
+      timestamp
+      isRead
+      readBy
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query UserChatRoomsByUserId(
+  $userId: ID!
+  $sortDirection: ModelSortDirection
+  $filter: ModelUserChatRoomsFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  userChatRoomsByUserId(
+    userId: $userId
+    sortDirection: $sortDirection
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      id
+      userId
+      chatRoomId
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}
+
+query UserChatRoomsByChatRoomId(
+  $chatRoomId: ID!
+  $sortDirection: ModelSortDirection
+  $filter: ModelUserChatRoomsFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  userChatRoomsByChatRoomId(
+    chatRoomId: $chatRoomId
+    sortDirection: $sortDirection
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      id
+      userId
+      chatRoomId
+      createdAt
+      updatedAt
+      _version
+      _deleted
+      _lastChangedAt
+      owner
+      __typename
+    }
+    nextToken
+    startedAt
+    __typename
+  }
+}

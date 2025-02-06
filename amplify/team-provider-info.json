@@ -1,31 +1,47 @@
 {
-  "staging": {
+  "dev": {
     "awscloudformation": {
-      "AuthRoleName": "amplify-n3onv2-staging-51704-authRole",
-      "UnauthRoleArn": "arn:aws:iam::087329903247:role/amplify-n3onv2-staging-51704-unauthRole",
-      "AuthRoleArn": "arn:aws:iam::087329903247:role/amplify-n3onv2-staging-51704-authRole",
+      "AuthRoleName": "amplify-n3on-dev-4ad86-authRole",
+      "UnauthRoleArn": "arn:aws:iam::087329903247:role/amplify-n3on-dev-4ad86-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::087329903247:role/amplify-n3on-dev-4ad86-authRole",
       "Region": "us-east-1",
-      "DeploymentBucketName": "amplify-n3onv2-staging-51704-deployment",
-      "UnauthRoleName": "amplify-n3onv2-staging-51704-unauthRole",
-      "StackName": "amplify-n3onv2-staging-51704",
-      "StackId": "arn:aws:cloudformation:us-east-1:087329903247:stack/amplify-n3onv2-staging-51704/6ad9b3a0-1741-11ef-9c68-0affcb086397",
-      "AmplifyAppId": "d2wgwud3anjdmy"
+      "DeploymentBucketName": "amplify-n3on-dev-4ad86-deployment",
+      "UnauthRoleName": "amplify-n3on-dev-4ad86-unauthRole",
+      "StackName": "amplify-n3on-dev-4ad86",
+      "StackId": "arn:aws:cloudformation:us-east-1:087329903247:stack/amplify-n3on-dev-4ad86/1025bc40-d2a5-11ef-904e-0e6f16ab4627",
+      "AmplifyAppId": "d1oif2gjomnlld",
+      "AuthTriggerTemplateURL": "https://s3.amazonaws.com/amplify-n3on-dev-4ad86-deployment/amplify-cfn-templates/auth/auth-trigger-cloudformation-template.json"
     },
     "categories": {
       "auth": {
-        "N3ONv2": {}
+        "n3on3dbadbe4": {}
+      },
+      "function": {
+        "n3on3dbadbe4CustomMessage": {
+          "REDIRECTURL": "https://n30n.org/",
+          "EMAILSUBJECT": " \"Verify Your Email for N3ON\"",
+          "EMAILMESSAGE": "Thank you for signing up for N3ON! Please confirm your email by clicking the link below.",
+          "deploymentBucketName": "amplify-n3on-dev-4ad86-deployment",
+          "s3Key": "amplify-builds/n3on3dbadbe4CustomMessage-38786b6e41554c383752-build.zip"
+        },
+        "n3on3dbadbe4PostConfirmation": {
+          "GROUP": "Users",
+          "deploymentBucketName": "amplify-n3on-dev-4ad86-deployment",
+          "s3Key": "amplify-builds/n3on3dbadbe4PostConfirmation-354e4b45467136746775-build.zip"
+        },
+        "S3Triggerba3b2651": {
+          "deploymentBucketName": "amplify-n3on-dev-4ad86-deployment",
+          "s3Key": "amplify-builds/S3Triggerba3b2651-444d4a4a77674776592f-build.zip"
+        }
       },
       "api": {
-        "N3ONv2": {}
-      },
-      "storage": {
-        "ProfileImages": {}
+        "n3on": {}
       },
       "hosting": {
-        "amplifyhosting": {
-          "appId": "d2wgwud3anjdmy",
-          "type": "manual"
-        }
+        "S3AndCloudFront": {}
+      },
+      "storage": {
+        "ProfileData": {}
       }
     }
   }

@@ -1,0 +1,89 @@
+type User 
+  @model 
+  @auth(rules: [
+    { allow: groups, groups: ["venueOwnerGroup", "djGroup", "userGroup"] }
+  ]) {
+  id: ID!
+  username: String!
+  messages: [Message] @hasMany(fields: ["id"])
+  chatRoom: [ChatRoom] @manyToMany(relationName: "UserChatRooms")
+  venues: [Venue] @hasMany(fields: ["id"])
+  review: [Review] @hasMany(fields: ["id"])
+}
+
+type Venue
+  @model
+  @auth(rules: [{ allow: groups, groups: ["venueOwnerGroup"] }] ) {
+  id: ID!
+  name: String!
+  description: String!
+  address: String!
+  latitude: Float!
+  longitude: Float!
+  rating: Float
+  imageKey: [String!]
+  ownerID: ID!
+  owner: User @belongsTo(fields: ["ownerID"])
+  maxCapacity: Int
+  currentUsers: Int
+  revenue: Float
+  dailyUserCounts: [DailyUserCount] @hasMany(fields: ["id"])
+  reviews: [Review] @hasMany(fields: ["id"])
+}
+
+type DailyUserCount
+  @model
+  @auth(rules: [{ allow: groups, groups: ["venueOwnerGroup"] }]) {
+  id: ID!
+  venueID: ID! @index(name: "byVenue", sortKeyFields: ["date"])
+  venue: Venue @belongsTo(fields: ["venueID"])
+  date: AWSDate!
+  userCount: Int
+}
+
+type Review
+  @model
+  @auth(rules: [{ allow: groups, groups: ["userGroup"] }]) {
+  id: ID!
+  venueID: ID!
+  venue: Venue @belongsTo(fields: ["venueID"])
+  userID: ID!
+  user: User @belongsTo(fields: ["userID"])
+  rating: Float!
+  comment: String!
+  createdAt: AWSDateTime!
+}
+
+type ChatRoom 
+  @model 
+  @auth(rules: [
+    { allow: owner }, 
+    { allow: groups, groups: ["Users"] }
+  ]) {
+  id: ID!
+  name: String!
+  createdAt: AWSDateTime!
+  updatedAt: AWSDateTime!
+  participants: [User] @manyToMany(relationName: "UserChatRooms")
+  messages: [Message] @hasMany(fields: ["id"])
+  lastMessage: String
+  lastMessageTimestamp: AWSDateTime
+}
+
+type Message 
+  @model 
+  @auth(rules: [
+    { allow: owner, operations: [create, update, delete] },
+    { allow: groups, groups: ["Users"], operations: [read] }
+  ]) {
+  id: ID!
+  senderID: ID!
+  sender: User @belongsTo(fields: ["senderID"])
+  chatRoomID: ID! @index(name: "byChatRoom", sortKeyFields: ["timestamp"])
+  content: String!
+  timestamp: AWSDateTime!
+  isRead: Boolean!
+  readBy: [String]
+}
+
+

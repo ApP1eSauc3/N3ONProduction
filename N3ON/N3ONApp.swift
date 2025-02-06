@@ -5,36 +5,37 @@
 //  Created by liam howe on 21/5/2024.
 //
 import SwiftUI
-import AWSDataStorePlugin
-import AWSCognitoAuthPlugin
 import Amplify
+import AWSAPIPlugin
+import AWSCognitoAuthPlugin
+import AWSDataStorePlugin
+import AWSS3StoragePlugin
 
 @main
-struct NNApp: App {
+struct N3ONApp: App {
     
     init() {
-        configureAmplify()
+        configureAmplify() // Initialize and configure Amplify when the app starts
     }
     
     var body: some Scene {
         WindowGroup {
-            SessionView()
-                
+            SessionView() // The main view of the app
         }
     }
    
     func configureAmplify() {
         do {
-            try Amplify.add(plugin: AWSCognitoAuthPlugin())
+            try Amplify.add(plugin: AWSCognitoAuthPlugin()) // Add Cognito Auth plugin
             let models = AmplifyModels()
-            try Amplify.add(plugin: AWSDataStorePlugin(modelRegistration: models))
-            try Amplify.configure()
+            try Amplify.add(plugin: AWSDataStorePlugin(modelRegistration: models)) // Add DataStore plugin with models
+            try Amplify.add(plugin: AWSS3StoragePlugin())// Add S3 Storage plugin
+            try Amplify.add(plugin: AWSAPIPlugin())
+            try Amplify.configure() // Configure Amplify
             
-            
-           print("Successfully configured Amplify")
-    
+            print("Successfully configured Amplify")
         } catch {
-            print("Failed to initialize Amplify", error)
+            print("Failed to initialize Amplify", error) // Handle configuration errors
         }
     }
 }
