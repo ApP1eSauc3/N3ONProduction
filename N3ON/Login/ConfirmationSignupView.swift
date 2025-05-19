@@ -3,7 +3,7 @@
 //  N3ON
 //
 //  Created by liam howe on 22/5/2024.
-//
+
 import Amplify
 import SwiftUI
 
@@ -26,7 +26,7 @@ struct ConfirmSignUpView: View {
             .padding()
             .background(.white)
             .foregroundColor(.gray)
-            .cornerRadius(8)
+            .cornerRadius(8.0)
             
         }
         .navigationDestination(isPresented: $shouldShowLogin) {

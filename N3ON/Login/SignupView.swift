@@ -42,7 +42,7 @@ struct SignUpView: View {
             .padding()
             .background(.white)
             .foregroundColor(.gray)
-            .cornerRadius(8)
+            .cornerRadius(8.0)
             
             Spacer()
             Button("Already have an account? Login.", action: showLogin)
@@ -54,7 +54,10 @@ struct SignUpView: View {
         }
         .padding()
         .background(Color("neonPurpleBackground"))
+        .ignoresSafeArea(.keyboard)
+        
     }
+    
 
     func signUp() async {
         // 1

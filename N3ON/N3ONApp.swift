@@ -3,7 +3,7 @@
 //  N3ON
 //
 //  Created by liam howe on 21/5/2024.
-//
+
 import SwiftUI
 import Amplify
 import AWSAPIPlugin
@@ -13,14 +13,16 @@ import AWSS3StoragePlugin
 
 @main
 struct N3ONApp: App {
+    @StateObject private var userState = UserState()
     
     init() {
-        configureAmplify() // Initialize and configure Amplify when the app starts
+        configureAmplify()
     }
     
     var body: some Scene {
         WindowGroup {
             SessionView() // The main view of the app
+                .environmentObject(userState)
         }
     }
    

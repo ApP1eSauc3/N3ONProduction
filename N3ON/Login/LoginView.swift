@@ -36,7 +36,7 @@ struct LoginView: View {
                 .padding()
                 .background(Color.gray.opacity(0.2))
                 .foregroundColor(.white)
-                .cornerRadius(8)
+                .cornerRadius(8.0)
                 
                 Spacer()
 
@@ -61,7 +61,17 @@ struct LoginView: View {
                     .navigationBarBackButtonHidden(true)
             }
         }
+        .ignoresSafeArea(.keyboard)
+        .navigationDestination(isPresented: $shouldShowSignUp) {
+            SignUpView(showLogin: { shouldShowSignUp = false })
+        }
+        .alert("Login failed", isPresented: $showAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
+        }
     }
+    
 
     func login() async {
         do {
@@ -91,4 +101,5 @@ struct LoginView: View {
             showAlert = true
         }
     }
+     
 }

@@ -5,6 +5,9 @@ type User
   ]) {
   id: ID!
   username: String!
+  avatarKey: String 
+  profileAudioKey: String
+  beatBPM:Int
   messages: [Message] @hasMany(fields: ["id"])
   chatRoom: [ChatRoom] @manyToMany(relationName: "UserChatRooms")
   venues: [Venue] @hasMany(fields: ["id"])
