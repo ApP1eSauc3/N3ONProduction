@@ -34,14 +34,14 @@
           "s3Key": "amplify-builds/S3Triggerba3b2651-444d4a4a77674776592f-build.zip"
         }
       },
-      "api": {
-        "n3on": {}
-      },
       "hosting": {
         "S3AndCloudFront": {}
       },
       "storage": {
         "ProfileData": {}
+      },
+      "api": {
+        "n3on": {}
       }
     }
   }

@@ -7,6 +7,9 @@ extension User {
    public enum CodingKeys: String, ModelKey {
     case id
     case username
+    case avatarKey
+    case profileAudioKey
+    case beatBPM
     case messages
     case chatRoom
     case venues
@@ -35,6 +38,9 @@ extension User {
     model.fields(
       .field(user.id, is: .required, ofType: .string),
       .field(user.username, is: .required, ofType: .string),
+      .field(user.avatarKey, is: .optional, ofType: .string),
+      .field(user.profileAudioKey, is: .optional, ofType: .string),
+      .field(user.beatBPM, is: .optional, ofType: .int),
       .hasMany(user.messages, is: .optional, ofType: Message.self, associatedWith: Message.keys.sender),
       .hasMany(user.chatRoom, is: .optional, ofType: UserChatRooms.self, associatedWith: UserChatRooms.keys.user),
       .hasMany(user.venues, is: .optional, ofType: Venue.self, associatedWith: Venue.keys.owner),
