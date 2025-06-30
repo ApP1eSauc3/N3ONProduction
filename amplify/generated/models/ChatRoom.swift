@@ -11,6 +11,7 @@ public struct ChatRoom: Model {
   public var messages: List<Message>?
   public var lastMessage: String?
   public var lastMessageTimestamp: Temporal.DateTime?
+  public var associatedEvent: String?
   
   public init(id: String = UUID().uuidString,
       name: String,
@@ -19,7 +20,8 @@ public struct ChatRoom: Model {
       participants: List<UserChatRooms>? = [],
       messages: List<Message>? = [],
       lastMessage: String? = nil,
-      lastMessageTimestamp: Temporal.DateTime? = nil) {
+      lastMessageTimestamp: Temporal.DateTime? = nil,
+      associatedEvent: String? = nil) {
       self.id = id
       self.name = name
       self.createdAt = createdAt
@@ -28,5 +30,6 @@ public struct ChatRoom: Model {
       self.messages = messages
       self.lastMessage = lastMessage
       self.lastMessageTimestamp = lastMessageTimestamp
+      self.associatedEvent = associatedEvent
   }
 }

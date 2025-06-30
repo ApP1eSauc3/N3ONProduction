@@ -13,6 +13,7 @@ extension ChatRoom {
     case messages
     case lastMessage
     case lastMessageTimestamp
+    case associatedEvent
   }
   
   public static let keys = CodingKeys.self
@@ -41,7 +42,8 @@ extension ChatRoom {
       .hasMany(chatRoom.participants, is: .optional, ofType: UserChatRooms.self, associatedWith: UserChatRooms.keys.chatRoom),
       .hasMany(chatRoom.messages, is: .optional, ofType: Message.self, associatedWith: Message.keys.id),
       .field(chatRoom.lastMessage, is: .optional, ofType: .string),
-      .field(chatRoom.lastMessageTimestamp, is: .optional, ofType: .dateTime)
+      .field(chatRoom.lastMessageTimestamp, is: .optional, ofType: .dateTime),
+      .field(chatRoom.associatedEvent, is: .optional, ofType: .string)
     )
     }
 }

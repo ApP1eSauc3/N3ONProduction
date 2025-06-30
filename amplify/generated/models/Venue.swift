@@ -17,6 +17,7 @@ public struct Venue: Model {
   public var revenue: Double?
   public var dailyUserCounts: List<DailyUserCount>?
   public var reviews: List<Review>?
+  public var approvalStatus: String
   public var createdAt: Temporal.DateTime?
   public var updatedAt: Temporal.DateTime?
   
@@ -33,7 +34,8 @@ public struct Venue: Model {
       currentUsers: Int? = nil,
       revenue: Double? = nil,
       dailyUserCounts: List<DailyUserCount>? = [],
-      reviews: List<Review>? = []) {
+      reviews: List<Review>? = [],
+      approvalStatus: String) {
     self.init(id: id,
       name: name,
       description: description,
@@ -48,6 +50,7 @@ public struct Venue: Model {
       revenue: revenue,
       dailyUserCounts: dailyUserCounts,
       reviews: reviews,
+      approvalStatus: approvalStatus,
       createdAt: nil,
       updatedAt: nil)
   }
@@ -65,6 +68,7 @@ public struct Venue: Model {
       revenue: Double? = nil,
       dailyUserCounts: List<DailyUserCount>? = [],
       reviews: List<Review>? = [],
+      approvalStatus: String,
       createdAt: Temporal.DateTime? = nil,
       updatedAt: Temporal.DateTime? = nil) {
       self.id = id
@@ -81,6 +85,7 @@ public struct Venue: Model {
       self.revenue = revenue
       self.dailyUserCounts = dailyUserCounts
       self.reviews = reviews
+      self.approvalStatus = approvalStatus
       self.createdAt = createdAt
       self.updatedAt = updatedAt
   }

@@ -14,6 +14,12 @@ extension User {
     case chatRoom
     case venues
     case review
+    case sentEndorsements
+    case receivedEndorsements
+    case currentLatitude
+    case currentLongitude
+    case isSharingLocation
+    case sharingForEvent
     case createdAt
     case updatedAt
   }
@@ -45,6 +51,12 @@ extension User {
       .hasMany(user.chatRoom, is: .optional, ofType: UserChatRooms.self, associatedWith: UserChatRooms.keys.user),
       .hasMany(user.venues, is: .optional, ofType: Venue.self, associatedWith: Venue.keys.owner),
       .hasMany(user.review, is: .optional, ofType: Review.self, associatedWith: Review.keys.user),
+      .hasMany(user.sentEndorsements, is: .optional, ofType: EndorsementRequest.self, associatedWith: EndorsementRequest.keys.fromUser),
+      .hasMany(user.receivedEndorsements, is: .optional, ofType: EndorsementRequest.self, associatedWith: EndorsementRequest.keys.toUser),
+      .field(user.currentLatitude, is: .optional, ofType: .double),
+      .field(user.currentLongitude, is: .optional, ofType: .double),
+      .field(user.isSharingLocation, is: .required, ofType: .bool),
+      .field(user.sharingForEvent, is: .optional, ofType: .string),
       .field(user.createdAt, is: .optional, isReadOnly: true, ofType: .dateTime),
       .field(user.updatedAt, is: .optional, isReadOnly: true, ofType: .dateTime)
     )

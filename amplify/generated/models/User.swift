@@ -12,6 +12,12 @@ public struct User: Model {
   public var chatRoom: List<UserChatRooms>?
   public var venues: List<Venue>?
   public var review: List<Review>?
+  public var sentEndorsements: List<EndorsementRequest>?
+  public var receivedEndorsements: List<EndorsementRequest>?
+  public var currentLatitude: Double?
+  public var currentLongitude: Double?
+  public var isSharingLocation: Bool
+  public var sharingForEvent: String?
   public var createdAt: Temporal.DateTime?
   public var updatedAt: Temporal.DateTime?
   
@@ -23,7 +29,13 @@ public struct User: Model {
       messages: List<Message>? = [],
       chatRoom: List<UserChatRooms>? = [],
       venues: List<Venue>? = [],
-      review: List<Review>? = []) {
+      review: List<Review>? = [],
+      sentEndorsements: List<EndorsementRequest>? = [],
+      receivedEndorsements: List<EndorsementRequest>? = [],
+      currentLatitude: Double? = nil,
+      currentLongitude: Double? = nil,
+      isSharingLocation: Bool,
+      sharingForEvent: String? = nil) {
     self.init(id: id,
       username: username,
       avatarKey: avatarKey,
@@ -33,6 +45,12 @@ public struct User: Model {
       chatRoom: chatRoom,
       venues: venues,
       review: review,
+      sentEndorsements: sentEndorsements,
+      receivedEndorsements: receivedEndorsements,
+      currentLatitude: currentLatitude,
+      currentLongitude: currentLongitude,
+      isSharingLocation: isSharingLocation,
+      sharingForEvent: sharingForEvent,
       createdAt: nil,
       updatedAt: nil)
   }
@@ -45,6 +63,12 @@ public struct User: Model {
       chatRoom: List<UserChatRooms>? = [],
       venues: List<Venue>? = [],
       review: List<Review>? = [],
+      sentEndorsements: List<EndorsementRequest>? = [],
+      receivedEndorsements: List<EndorsementRequest>? = [],
+      currentLatitude: Double? = nil,
+      currentLongitude: Double? = nil,
+      isSharingLocation: Bool,
+      sharingForEvent: String? = nil,
       createdAt: Temporal.DateTime? = nil,
       updatedAt: Temporal.DateTime? = nil) {
       self.id = id
@@ -56,6 +80,12 @@ public struct User: Model {
       self.chatRoom = chatRoom
       self.venues = venues
       self.review = review
+      self.sentEndorsements = sentEndorsements
+      self.receivedEndorsements = receivedEndorsements
+      self.currentLatitude = currentLatitude
+      self.currentLongitude = currentLongitude
+      self.isSharingLocation = isSharingLocation
+      self.sharingForEvent = sharingForEvent
       self.createdAt = createdAt
       self.updatedAt = updatedAt
   }
