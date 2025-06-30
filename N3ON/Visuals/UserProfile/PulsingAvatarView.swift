@@ -11,7 +11,7 @@ import AVFoundation
 import Combine
 
 struct PulsingAvatarView: View {
-    let state: AvatarState
+    let state: AvatarState //replace with userstate
     let audioKey: String?  // Add audio key reference
     let size: CGFloat
     let fromMemoryCache: Bool
