@@ -19,6 +19,7 @@ extension Venue {
     case revenue
     case dailyUserCounts
     case reviews
+    case approvalStatus
     case createdAt
     case updatedAt
   }
@@ -55,6 +56,7 @@ extension Venue {
       .field(venue.revenue, is: .optional, ofType: .double),
       .hasMany(venue.dailyUserCounts, is: .optional, ofType: DailyUserCount.self, associatedWith: DailyUserCount.keys.venue),
       .hasMany(venue.reviews, is: .optional, ofType: Review.self, associatedWith: Review.keys.venue),
+      .field(venue.approvalStatus, is: .required, ofType: .string),
       .field(venue.createdAt, is: .optional, isReadOnly: true, ofType: .dateTime),
       .field(venue.updatedAt, is: .optional, isReadOnly: true, ofType: .dateTime)
     )

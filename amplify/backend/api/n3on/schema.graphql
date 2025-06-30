@@ -7,11 +7,17 @@ type User
   username: String!
   avatarKey: String 
   profileAudioKey: String
-  beatBPM:Int
+  beatBPM: Int
   messages: [Message] @hasMany(fields: ["id"])
   chatRoom: [ChatRoom] @manyToMany(relationName: "UserChatRooms")
   venues: [Venue] @hasMany(fields: ["id"])
   review: [Review] @hasMany(fields: ["id"])
+  sentEndorsements: [EndorsementRequest] @hasMany(indexName: "byFromUser", fields: ["id"])
+  receivedEndorsements: [EndorsementRequest] @hasMany(indexName: "byToUser", fields: ["id"])
+  currentLatitude: Float
+  currentLongitude: Float
+  isSharingLocation: Boolean! @default(value: "false")
+  sharingForEvent: ID
 }
 
 type Venue
@@ -32,6 +38,7 @@ type Venue
   revenue: Float
   dailyUserCounts: [DailyUserCount] @hasMany(fields: ["id"])
   reviews: [Review] @hasMany(fields: ["id"])
+  approvalStatus: String! @default(value: "PENDING")
 }
 
 type DailyUserCount
@@ -71,6 +78,7 @@ type ChatRoom
   messages: [Message] @hasMany(fields: ["id"])
   lastMessage: String
   lastMessageTimestamp: AWSDateTime
+  associatedEvent: ID
 }
 
 type Message 
@@ -89,4 +97,63 @@ type Message
   readBy: [String]
 }
 
+type Post
+  @model
+  @auth(rules: [{ allow: groups, groups: ["djGroup", "userGroup", "venueOwnerGroup"] }]) {
+  id: ID!
+  urls: [String!]!
+  types: [String!]!
+  timestamp: AWSDateTime!
+  caption: String
+  ownerID: ID
+}
 
+type Ticket @model @auth(rules: [{ allow: owner }]) {
+  id: ID!
+  eventID: ID!
+  userID: ID!
+  quantity: Int!
+  purchaseTime: AWSDateTime!
+}
+
+type Event @model @auth(rules: [{ allow: owner }]) {
+  id: ID!
+  venueID: ID!
+  hostDJID: ID!
+  djUsernames: [String!]!
+  vjUsername: String
+  package: String!
+  requestNote: String
+  eventDate: AWSDateTime!
+  posterKey: String
+  eventName: String!
+  description: String!
+  attendances: [Attendance] @hasMany(fields: ["id"]) 
+  attendees: [ID]!
+  ticketPrice: Float!
+  availableTickets: Int!
+}
+
+type EndorsementRequest 
+  @model
+  @auth(rules: [
+    { allow: owner, operations: [create, read, update, delete] },
+    { allow: groups, groups: ["djGroup"], operations: [read] }
+  ]) {
+  id: ID!
+  fromUserID: ID! @index(name: "byFromUser", sortKeyFields: ["timestamp"])
+  fromUser: User @belongsTo(fields: ["fromUserID"])
+  toUserID: ID! @index(name: "byToUser", sortKeyFields: ["timestamp"])
+  toUser: User @belongsTo(fields: ["toUserID"])
+  message: String!
+  status: String! # "pending", "approved", "rejected"
+  timestamp: AWSDateTime!
+}
+
+type Attendance @model @auth(rules: [{ allow: owner }]) {
+  id: ID!
+  userID: ID! @index(name: "byUser")
+  eventID: ID! @index(name: "byEvent")
+  attendedAt: AWSDateTime!
+  event: Event @belongsTo(fields: ["eventID"])
+}
