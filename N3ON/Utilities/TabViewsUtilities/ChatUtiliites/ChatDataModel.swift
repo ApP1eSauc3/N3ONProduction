@@ -7,14 +7,6 @@
 import Foundation
 import Amplify
 
-struct ChatMessage: Identifiable {
-    let id = UUID()
-    let sender: String
-    let content: String
-    let timestamp: Date
-    let isCurrentUser: Bool
-}
-
 extension ChatMessage {
     init(from message: Message, currentUserID: String) {
         // Convert Temporal.DateTime to Foundation.Date using foundationDate
