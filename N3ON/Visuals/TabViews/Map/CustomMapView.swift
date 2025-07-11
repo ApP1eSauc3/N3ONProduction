@@ -8,7 +8,7 @@ import SwiftUI
 import MapKit
 import Combine
 
-// MARK: - OPTIMIZED CUSTOM MAP VIEW
+// MARK: - OPTIMIZED CUSTOM MAP VIEW WITH GROUP MEMBERS
 struct CustomMapView: UIViewRepresentable {
     @Binding var region: MKCoordinateRegion
     @Binding var isSearchFieldFocused: Bool
@@ -17,8 +17,8 @@ struct CustomMapView: UIViewRepresentable {
     var searchResults: [MKMapItem]
     var venues: [Venue]
     var visibleDJPins: [DJMapPin]
+    var groupLocations: [GroupMemberLocation] // ADDED BACK
     var allEvents: [Event]
-    // REMOVED: groupLocations
     
     // Event handlers
     var onDoubleTap: (CLLocationCoordinate2D) -> Void
@@ -77,12 +77,18 @@ struct CustomMapView: UIViewRepresentable {
         let djAnnotations = visibleDJPins.map { dj -> DJPinAnnotation in
             DJPinAnnotation(
                 coordinate: dj.coordinate,
-                djName: dj.djName
+                djName: dj.djName,
+                glowColor: dj.glowColor // ADDED
             )
         }
         
-        // Combine non-group annotations
-        let allAnnotations = searchAnnotations + venueAnnotations + djAnnotations
+        // ADDED: Group member annotations
+        let groupAnnotations = groupLocations.map { member -> GroupMemberAnnotation in
+            GroupMemberAnnotation(member: member)
+        }
+        
+        // Combine all annotations
+        let allAnnotations = searchAnnotations + venueAnnotations + djAnnotations + groupAnnotations
         mapView.addAnnotations(allAnnotations)
     }
 
@@ -141,7 +147,7 @@ struct CustomMapView: UIViewRepresentable {
                 parent.onVenueTap(venueAnnotation.venue)
             }
             else if let groupAnnotation = view.annotation as? GroupMemberAnnotation {
-                // NEW: Handle group member tap if needed
+                // Handle group member tap
                 print("Selected group member: \(groupAnnotation.member.name)")
             }
         }
@@ -202,7 +208,7 @@ struct CustomMapView: UIViewRepresentable {
                 view.annotation = annotation
                 view.glyphText = "🎧"
                 view.canShowCallout = true
-                view.markerTintColor = UIColor.systemTeal
+                view.markerTintColor = djAnnotation.glowColor // ADDED
                 return view
             }
             
@@ -225,17 +231,40 @@ struct CustomMapView: UIViewRepresentable {
     }
 }
 
-// MARK: - NEW SUPPORTING STRUCTURES
-class GroupMemberAnnotation: NSObject, MKAnnotation {
-    let member: GroupMemberLocation
-    var coordinate: CLLocationCoordinate2D { member.coordinate }
-    var title: String? { member.name }
 
-    init(member: GroupMemberLocation) {
-        self.member = member
+
+// MARK: - ADDED: DJ PIN WITH GLOW COLOR
+struct DJMapPin: Identifiable {
+    let id = UUID()
+    let coordinate: CLLocationCoordinate2D
+    let djName: String
+    let glowColor: UIColor
+}
+
+// MARK: - ADDED: VENUE ANNOTATION WITH GLOW
+class VenueAnnotation: NSObject, MKAnnotation {
+    var coordinate: CLLocationCoordinate2D
+    let venue: Venue
+    let glowLevel: CGFloat
+    let upcomingDates: [String]
+    
+    init(coordinate: CLLocationCoordinate2D, venue: Venue, glowLevel: CGFloat, upcomingDates: [String]) {
+        self.coordinate = coordinate
+        self.venue = venue
+        self.glowLevel = glowLevel
+        self.upcomingDates = upcomingDates
     }
 }
 
-struct GroupMemberLocation: Identifiable, Equatable {
-    let id: String
-    let 
+// MARK: - ADDED: DJ PIN ANNOTATION
+class DJPinAnnotation: NSObject, MKAnnotation {
+    var coordinate: CLLocationCoordinate2D
+    let djName: String
+    let glowColor: UIColor
+    
+    init(coordinate: CLLocationCoordinate2D, djName: String, glowColor: UIColor) {
+        self.coordinate = coordinate
+        self.djName = djName
+        self.glowColor = glowColor
+    }
+}

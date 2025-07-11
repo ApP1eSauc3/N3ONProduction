@@ -146,15 +146,6 @@ struct ChatMessage: Identifiable {
     }
 }
 
-// MARK: - View Extensions
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
-    }
-}
-
-
-
 // MARK: - Previews
 struct MessageRow_Previews: PreviewProvider {
     static var previews: some View {

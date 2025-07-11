@@ -190,17 +190,3 @@ struct VenueComplianceForm: View {
         print("Contractor: \(selectedContractor)")
     }
 }
-
-// MARK: - Preview
-struct VenueComplianceForm_Previews: PreviewProvider {
-    static var previews: some View {
-        VenueComplianceForm()
-            .preferredColorScheme(.dark)
-    }
-}
-
-// MARK: - Color Extensions (Add to your asset catalog)
-extension Color {
-    static let dullPurple = Color("dullPurple")
-    static let neonPurpleBackground = Color("neonPurpleBackground")
-}
