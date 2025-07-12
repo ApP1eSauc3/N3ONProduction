@@ -157,3 +157,11 @@ type Attendance @model @auth(rules: [{ allow: owner }]) {
   attendedAt: AWSDateTime!
   event: Event @belongsTo(fields: ["eventID"])
 }
+
+type ChatRoom @model {
+  id: ID!
+  participants: [User] @manyToMany(relationName: "ChatRoomParticipants")
+  isEventRoom: Boolean!
+  eventID: ID
+  createdAt: AWSDateTime
+}
