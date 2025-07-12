@@ -7,17 +7,6 @@
 
 import SwiftUI
 
-// Define the User model
-struct User: Model {
-    public let username: String
-    public var isSharingLocation: Bool
-    
-    public init(username: String, isSharingLocation: Bool = false) {
-        self.username = username
-        self.isSharingLocation = isSharingLocation
-    }
-}
-
 // Define the Venue model
 public struct Venue: Model {
     public let id: String
