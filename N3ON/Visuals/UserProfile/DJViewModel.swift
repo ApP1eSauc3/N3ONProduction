@@ -4,7 +4,7 @@
 //
 //  Created by liam howe on 11/7/2025.
 //
-
+import Amplify
 import Foundation
 
 class DJViewModel: ObservableObject {
