@@ -1,6 +1,8 @@
 
 
 
+// UserProfileView.swift
+
 import SwiftUI
 import Amplify
 import PhotosUI
@@ -14,45 +16,40 @@ struct UserProfileView: View {
     @State private var uploadProgress: Double = 0.0
     @State private var followers: Int = 0
     @State private var following: Int = 0
-    
+    @State private var isFollowed = false
+
     private let storageService = StorageService.shared
-    
+    @ObservedObject var djViewModel: DJViewModel
+
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
 
-                // 1. Gradient background extended below
-Color("neonPurpleBackground")
+                Color("neonPurpleBackground")
                     .edgesIgnoringSafeArea(.all)
-                    LinearGradient(
-                        colors: [
-                            Color("neonPurpleBackground").opacity(0.9),
-                            Color("dullPurple")
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 320)
-                    .edgesIgnoringSafeArea(.top)
-                    .zIndex(0)
+                LinearGradient(
+                    colors: [
+                        Color("neonPurpleBackground").opacity(0.9),
+                        Color("dullPurple")
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 320)
+                .edgesIgnoringSafeArea(.top)
+                .zIndex(0)
 
-                // 2. Black background container layered above
                 VStack {
                     Spacer()
                     Color.black
                         .frame(height: geometry.size.height * 0.6)
                         .cornerRadius(20, corners: [.topLeft, .topRight])
-                        
                 }
                 .edgesIgnoringSafeArea(.bottom)
-                
                 .zIndex(0)
 
-                // 3. Scrollable content
                 ScrollView {
                     VStack(spacing: 0) {
-
-                        // Profile Header
                         VStack(spacing: 24) {
                             ZStack(alignment: .bottomTrailing) {
                                 PulsingAvatarView(state: avatarState, fromMemoryCache: true)
@@ -89,15 +86,28 @@ Color("neonPurpleBackground")
                             }
                             .padding(.top, 15)
 
-                            Text("Username")
+                            Text(djViewModel.dj.username)
                                 .font(.system(.title2, design: .rounded))
                                 .fontWeight(.semibold)
                                 .foregroundColor(.white)
+
+                            Button(action: {
+                                djViewModel.toggleFollow { success in
+                                    isFollowed.toggle()
+                                }
+                            }) {
+                                Text(isFollowed ? "Unfollow" : "Follow")
+                                    .font(.subheadline)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color.white.opacity(0.15))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
                         }
-                        .frame(height: 280)
+                        .frame(height: 320)
                         .padding(.bottom, 20)
 
-                        // Stats & Activity Section
                         VStack(spacing: 24) {
                             HStack(spacing: 24) {
                                 StatItem(value: followers, label: "Followers")
@@ -128,7 +138,6 @@ Color("neonPurpleBackground")
                         .cornerRadius(20, corners: [.topLeft, .topRight])
                         .offset(y: -60)
                         .padding(.bottom, 80)
-                        
                     }
                 }
                 .zIndex(1)
@@ -141,6 +150,7 @@ Color("neonPurpleBackground")
         }
     }
 }
+
 extension View {
     func safeArea() -> UIEdgeInsets {
         guard let window = UIApplication.shared.windows.first else {
@@ -152,6 +162,7 @@ extension View {
 
 struct UserProfileView_Previews: PreviewProvider {
     static var previews: some View {
-        UserProfileView()
+        let dummyDJ = DJ(id: "1", username: "DJ Test", followers: [], isFollowedByCurrentUser: false)
+        UserProfileView(djViewModel: DJViewModel(dj: dummyDJ))
     }
 }

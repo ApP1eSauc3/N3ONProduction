@@ -4,20 +4,32 @@
 //
 //  Created by liam howe on 11/7/2025.
 //
+// DJViewModel.swift
+
+// DJViewModel.swift
+
 import Amplify
 import Foundation
+import Combine
 
 class DJViewModel: ObservableObject {
     @Published var dj: DJ
     @Published var upcomingEvents: [Event] = []
     @Published var isLoading = false
-    
+    @Published var avatarURL: URL?
+
+    private var cancellables = Set<AnyCancellable>()
+
     init(dj: DJ) {
         self.dj = dj
         loadUpcomingEvents()
         subscribeToUpdates()
+        
+        if let key = dj.avatarKey {
+            loadAvatarURL(for: key)
+        }
     }
-    
+
     private func loadUpcomingEvents() {
         isLoading = true
         Amplify.DataStore.query(
@@ -34,15 +46,15 @@ class DJViewModel: ObservableObject {
             }
         }
     }
-    
-    func toggleFollow() {
+
+    func toggleFollow(completion: @escaping (Bool) -> Void = { _ in }) {
         guard let userID = AuthService.currentUserId else { return }
-        
+
         if dj.isFollowedByCurrentUser {
             Amplify.DataStore.query(DJ.self, byId: dj.id) { [weak self] result in
                 if case .success(var updatedDJ) = result {
                     updatedDJ?.followers?.removeAll(where: { $0.id == userID })
-                    self?.saveDJ(updatedDJ)
+                    self?.saveDJ(updatedDJ, completion: completion)
                 }
             }
         } else {
@@ -50,21 +62,32 @@ class DJViewModel: ObservableObject {
                 if case .success(let user) = result,
                    var updatedDJ = self?.dj {
                     updatedDJ.followers?.append(user)
-                    self?.saveDJ(updatedDJ)
+                    self?.saveDJ(updatedDJ, completion: completion)
                 }
             }
         }
     }
-    
-    private func saveDJ(_ dj: DJ?) {
+
+    func openChat(with otherDJ: DJ, completion: @escaping (String) -> Void) {
+        let sortedIDs = [dj.id, otherDJ.id].sorted()
+        let chatRoomID = "dm-\(sortedIDs[0])-\(sortedIDs[1])"
+        completion(chatRoomID)
+    }
+
+    private func saveDJ(_ dj: DJ?, completion: @escaping (Bool) -> Void = { _ in }) {
         guard let dj = dj else { return }
         Amplify.DataStore.save(dj) { [weak self] result in
             if case .success = result {
-                self?.dj = dj
+                DispatchQueue.main.async {
+                    self?.dj = dj
+                    completion(true)
+                }
+            } else {
+                completion(false)
             }
         }
     }
-    
+
     private func subscribeToUpdates() {
         Amplify.DataStore.publisher(for: DJ.self)
             .sink { _ in } receiveValue: { [weak self] change in
@@ -74,5 +97,20 @@ class DJViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+
+    // ✅ New function to load the protected avatar image URL
+    func loadAvatarURL(for key: String) {
+        Amplify.Storage.getURL(key: key, options: .init(accessLevel: .protected)) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let url):
+                    self?.avatarURL = url
+                case .failure(let error):
+                    print("❌ Failed to get avatar URL: \(error)")
+                    self?.avatarURL = nil
+                }
+            }
+        }
     }
 }
