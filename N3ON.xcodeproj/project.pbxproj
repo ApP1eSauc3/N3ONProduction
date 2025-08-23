@@ -37,6 +37,7 @@
 		B6F12E4BD05A47A67D947CB7 /* awsconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = DF46BDBF469E16BDBDE290A9 /* awsconfiguration.json */; };
 		B8C71EFB919ED22AA6A8CF86 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901AAFE76B16C0B526E44835 /* Event.swift */; };
 		C480CDA0BED451B2509311B9 /* ChatRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C26F0066861CCC36B37AD0 /* ChatRoom.swift */; };
+		C57BA2AF2E574CF500E80A53 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA2AE2E574CF500E80A53 /* AuthService.swift */; };
 		C584B6D02C273AC000E4223E /* Colour.swift in Sources */ = {isa = PBXBuildFile; fileRef = C584B6CF2C273AC000E4223E /* Colour.swift */; };
 		C59FCD962D54681700DBCA1B /* AWSAPIPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD952D54681700DBCA1B /* AWSAPIPlugin */; };
 		C59FCD982D54681700DBCA1B /* AWSCognitoAuthPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD972D54681700DBCA1B /* AWSCognitoAuthPlugin */; };
@@ -106,6 +107,7 @@
 		AE2F018E27AF6FBA40412988 /* Post.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Post.swift; path = amplify/generated/models/Post.swift; sourceTree = "<group>"; };
 		AE42145BE70C360706D92336 /* Review.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Review.swift; path = amplify/generated/models/Review.swift; sourceTree = "<group>"; };
 		C55E7B0F2C50266900B142E2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C57BA2AE2E574CF500E80A53 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		C584B6CF2C273AC000E4223E /* Colour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colour.swift; sourceTree = "<group>"; };
 		C5BD1B522C1F2FBA00A7239A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C5BF9E412D83C32F0093C5A8 /* copilot source editor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "copilot source editor.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -282,6 +284,7 @@
 				C5DAE8002BFCFF0E0001E794 /* SignupView.swift */,
 				C5BD1B522C1F2FBA00A7239A /* LoginView.swift */,
 				C584B6CF2C273AC000E4223E /* Colour.swift */,
+				C57BA2AE2E574CF500E80A53 /* AuthService.swift */,
 			);
 			path = Login;
 			sourceTree = "<group>";
@@ -472,6 +475,7 @@
 				3C6F4A950D13D9F897C670EE /* User.swift in Sources */,
 				E9FAED535CE028DDF8FF2B5A /* UserChatRooms+Schema.swift in Sources */,
 				DBC1A8138AB207DBA0C5461D /* UserChatRooms.swift in Sources */,
+				C57BA2AF2E574CF500E80A53 /* AuthService.swift in Sources */,
 				E14278B30BD78F30C8663897 /* Venue+Schema.swift in Sources */,
 				8757064DD418199DBBB9B3B9 /* Venue.swift in Sources */,
 			);

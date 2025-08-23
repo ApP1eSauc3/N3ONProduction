@@ -1,19 +1,35 @@
+# ===============================
+# groups used across the schema:
+#   DJUser, VenueOwnerUser, UserGroup
+# ===============================
+
 type User 
   @model 
   @auth(rules: [
-    { allow: groups, groups: ["venueOwnerGroup", "djGroup", "userGroup"] }
+    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"] }
   ]) {
   id: ID!
   username: String!
-  avatarKey: String 
+  avatarKey: String
   profileAudioKey: String
   beatBPM: Int
-  messages: [Message] @hasMany(fields: ["id"])
+  # mirror of Cognito role so clients can see DJ status
+  isDJ: Boolean! @default(value: "false")
+
+  # Messages authored by this user (needs index on Message.senderID)
+  messages: [Message] @hasMany(indexName: "bySender", fields: ["id"])
+
+  # Chat rooms via join table
   chatRoom: [ChatRoom] @manyToMany(relationName: "UserChatRooms")
+
   venues: [Venue] @hasMany(fields: ["id"])
-  review: [Review] @hasMany(fields: ["id"])
+
+  # Reviews written by this user (needs index on Review.userID)
+  review: [Review] @hasMany(indexName: "byUser", fields: ["id"])
+
   sentEndorsements: [EndorsementRequest] @hasMany(indexName: "byFromUser", fields: ["id"])
   receivedEndorsements: [EndorsementRequest] @hasMany(indexName: "byToUser", fields: ["id"])
+
   currentLatitude: Float
   currentLongitude: Float
   isSharingLocation: Boolean! @default(value: "false")
@@ -22,7 +38,7 @@ type User
 
 type Venue
   @model
-  @auth(rules: [{ allow: groups, groups: ["venueOwnerGroup"] }] ) {
+  @auth(rules: [{ allow: groups, groups: ["VenueOwnerUser"] }] ) {
   id: ID!
   name: String!
   description: String!
@@ -36,14 +52,19 @@ type Venue
   maxCapacity: Int
   currentUsers: Int
   revenue: Float
-  dailyUserCounts: [DailyUserCount] @hasMany(fields: ["id"])
-  reviews: [Review] @hasMany(fields: ["id"])
+
+  # needs @hasMany pointing to DailyUserCount.byVenue index
+  dailyUserCounts: [DailyUserCount] @hasMany(indexName: "byVenue", fields: ["id"])
+
+  # needs @hasMany pointing to Review.byVenue index
+  reviews: [Review] @hasMany(indexName: "byVenue", fields: ["id"])
+
   approvalStatus: String! @default(value: "PENDING")
 }
 
 type DailyUserCount
   @model
-  @auth(rules: [{ allow: groups, groups: ["venueOwnerGroup"] }]) {
+  @auth(rules: [{ allow: groups, groups: ["VenueOwnerUser"] }]) {
   id: ID!
   venueID: ID! @index(name: "byVenue", sortKeyFields: ["date"])
   venue: Venue @belongsTo(fields: ["venueID"])
@@ -53,12 +74,16 @@ type DailyUserCount
 
 type Review
   @model
-  @auth(rules: [{ allow: groups, groups: ["userGroup"] }]) {
+  @auth(rules: [{ allow: groups, groups: ["UserGroup"] }]) {
   id: ID!
-  venueID: ID!
+
+  # indexes so Venue.reviews and User.review can query efficiently
+  venueID: ID! @index(name: "byVenue", sortKeyFields: ["createdAt"])
   venue: Venue @belongsTo(fields: ["venueID"])
-  userID: ID!
+
+  userID: ID! @index(name: "byUser", sortKeyFields: ["createdAt"])
   user: User @belongsTo(fields: ["userID"])
+
   rating: Float!
   comment: String!
   createdAt: AWSDateTime!
@@ -67,15 +92,21 @@ type Review
 type ChatRoom 
   @model 
   @auth(rules: [
-    { allow: owner }, 
-    { allow: groups, groups: ["Users"] }
+    # anyone in app roles can read rooms they learn about
+    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] },
+    # creator can create/update/delete
+    { allow: owner, operations: [create, update, delete] }
   ]) {
   id: ID!
   name: String!
   createdAt: AWSDateTime!
   updatedAt: AWSDateTime!
+
   participants: [User] @manyToMany(relationName: "UserChatRooms")
-  messages: [Message] @hasMany(fields: ["id"])
+
+  # link to Message.byChatRoom index
+  messages: [Message] @hasMany(indexName: "byChatRoom", fields: ["id"])
+
   lastMessage: String
   lastMessageTimestamp: AWSDateTime
   associatedEvent: ID
@@ -84,13 +115,20 @@ type ChatRoom
 type Message 
   @model 
   @auth(rules: [
+    # only the sender (owner) can create/update/delete
     { allow: owner, operations: [create, update, delete] },
-    { allow: groups, groups: ["Users"], operations: [read] }
+    # all app roles can read messages (MVP). tighten later if needed.
+    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] }
   ]) {
   id: ID!
-  senderID: ID!
+
+  # index for User.messages
+  senderID: ID! @index(name: "bySender", sortKeyFields: ["timestamp"])
   sender: User @belongsTo(fields: ["senderID"])
+
+  # index for ChatRoom.messages
   chatRoomID: ID! @index(name: "byChatRoom", sortKeyFields: ["timestamp"])
+
   content: String!
   timestamp: AWSDateTime!
   isRead: Boolean!
@@ -99,7 +137,7 @@ type Message
 
 type Post
   @model
-  @auth(rules: [{ allow: groups, groups: ["djGroup", "userGroup", "venueOwnerGroup"] }]) {
+  @auth(rules: [{ allow: groups, groups: ["DJUser","UserGroup","VenueOwnerUser"] }]) {
   id: ID!
   urls: [String!]!
   types: [String!]!
@@ -128,7 +166,10 @@ type Event @model @auth(rules: [{ allow: owner }]) {
   posterKey: String
   eventName: String!
   description: String!
-  attendances: [Attendance] @hasMany(fields: ["id"]) 
+
+  # Attendance has index byEvent — use it here
+  attendances: [Attendance] @hasMany(indexName: "byEvent", fields: ["id"])
+
   attendees: [ID]!
   ticketPrice: Float!
   availableTickets: Int!
@@ -138,7 +179,7 @@ type EndorsementRequest
   @model
   @auth(rules: [
     { allow: owner, operations: [create, read, update, delete] },
-    { allow: groups, groups: ["djGroup"], operations: [read] }
+    { allow: groups, groups: ["DJUser"], operations: [read] }
   ]) {
   id: ID!
   fromUserID: ID! @index(name: "byFromUser", sortKeyFields: ["timestamp"])

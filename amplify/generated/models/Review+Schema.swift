@@ -21,13 +21,15 @@ extension Review {
     let review = Review.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["userGroup"], provider: .userPools, operations: [.create, .update, .delete, .read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["UserGroup"], provider: .userPools, operations: [.create, .update, .delete, .read])
     ]
     
     model.listPluralName = "Reviews"
     model.syncPluralName = "Reviews"
     
     model.attributes(
+      .index(fields: ["venueID", "createdAt"], name: "byVenue"),
+      .index(fields: ["userID", "createdAt"], name: "byUser"),
       .primaryKey(fields: [review.id])
     )
     

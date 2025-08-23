@@ -20,7 +20,7 @@ extension DailyUserCount {
     let dailyUserCount = DailyUserCount.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["venueOwnerGroup"], provider: .userPools, operations: [.create, .update, .delete, .read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser"], provider: .userPools, operations: [.create, .update, .delete, .read])
     ]
     
     model.listPluralName = "DailyUserCounts"

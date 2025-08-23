@@ -23,7 +23,7 @@ extension EndorsementRequest {
     
     model.authRules = [
       rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .read, .update, .delete]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["djGroup"], provider: .userPools, operations: [.read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser"], provider: .userPools, operations: [.read])
     ]
     
     model.listPluralName = "EndorsementRequests"
