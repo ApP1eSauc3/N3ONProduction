@@ -8,6 +8,7 @@ public struct User: Model {
   public var avatarKey: String?
   public var profileAudioKey: String?
   public var beatBPM: Int?
+  public var isDJ: Bool
   public var messages: List<Message>?
   public var chatRoom: List<UserChatRooms>?
   public var venues: List<Venue>?
@@ -26,6 +27,7 @@ public struct User: Model {
       avatarKey: String? = nil,
       profileAudioKey: String? = nil,
       beatBPM: Int? = nil,
+      isDJ: Bool,
       messages: List<Message>? = [],
       chatRoom: List<UserChatRooms>? = [],
       venues: List<Venue>? = [],
@@ -41,6 +43,7 @@ public struct User: Model {
       avatarKey: avatarKey,
       profileAudioKey: profileAudioKey,
       beatBPM: beatBPM,
+      isDJ: isDJ,
       messages: messages,
       chatRoom: chatRoom,
       venues: venues,
@@ -59,6 +62,7 @@ public struct User: Model {
       avatarKey: String? = nil,
       profileAudioKey: String? = nil,
       beatBPM: Int? = nil,
+      isDJ: Bool,
       messages: List<Message>? = [],
       chatRoom: List<UserChatRooms>? = [],
       venues: List<Venue>? = [],
@@ -76,6 +80,7 @@ public struct User: Model {
       self.avatarKey = avatarKey
       self.profileAudioKey = profileAudioKey
       self.beatBPM = beatBPM
+      self.isDJ = isDJ
       self.messages = messages
       self.chatRoom = chatRoom
       self.venues = venues

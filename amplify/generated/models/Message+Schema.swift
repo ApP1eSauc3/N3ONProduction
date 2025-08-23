@@ -24,13 +24,14 @@ extension Message {
     
     model.authRules = [
       rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["Users"], provider: .userPools, operations: [.read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read])
     ]
     
     model.listPluralName = "Messages"
     model.syncPluralName = "Messages"
     
     model.attributes(
+      .index(fields: ["senderID", "timestamp"], name: "bySender"),
       .index(fields: ["chatRoomID", "timestamp"], name: "byChatRoom"),
       .primaryKey(fields: [message.id])
     )

@@ -22,7 +22,7 @@ extension Post {
     let post = Post.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["djGroup", "userGroup", "venueOwnerGroup"], provider: .userPools, operations: [.create, .update, .delete, .read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "UserGroup", "VenueOwnerUser"], provider: .userPools, operations: [.create, .update, .delete, .read])
     ]
     
     model.listPluralName = "Posts"

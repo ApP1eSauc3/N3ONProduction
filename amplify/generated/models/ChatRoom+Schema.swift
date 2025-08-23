@@ -23,8 +23,8 @@ extension ChatRoom {
     let chatRoom = ChatRoom.keys
     
     model.authRules = [
-      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete, .read]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["Users"], provider: .userPools, operations: [.create, .update, .delete, .read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read]),
+      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete])
     ]
     
     model.listPluralName = "ChatRooms"
@@ -40,7 +40,7 @@ extension ChatRoom {
       .field(chatRoom.createdAt, is: .required, ofType: .dateTime),
       .field(chatRoom.updatedAt, is: .required, ofType: .dateTime),
       .hasMany(chatRoom.participants, is: .optional, ofType: UserChatRooms.self, associatedWith: UserChatRooms.keys.chatRoom),
-      .hasMany(chatRoom.messages, is: .optional, ofType: Message.self, associatedWith: Message.keys.id),
+      .hasMany(chatRoom.messages, is: .optional, ofType: Message.self, associatedWith: Message.keys.chatRoomID),
       .field(chatRoom.lastMessage, is: .optional, ofType: .string),
       .field(chatRoom.lastMessageTimestamp, is: .optional, ofType: .dateTime),
       .field(chatRoom.associatedEvent, is: .optional, ofType: .string)
