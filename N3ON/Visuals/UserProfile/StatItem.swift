@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreImage.CIFilterBuiltins
 
 struct StatItem: View {
     let value: Int
@@ -26,6 +27,19 @@ struct StatItem: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+enum QRCodeGenerator {
+    static func generate(from text: String) -> UIImage? {
+        let ctx = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(text.utf8)
+        guard let output = filter.outputImage else { return nil }
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: 8, y: 8))
+        guard let cg = ctx.createCGImage(scaled, from: scaled.extent) else { return nil }
+        return UIImage(cgImage: cg)
+    }
+}
+
 
 struct StatItem_Previews: PreviewProvider {
     static var previews: some View {
