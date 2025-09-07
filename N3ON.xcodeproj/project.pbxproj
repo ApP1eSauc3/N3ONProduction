@@ -38,6 +38,8 @@
 		B8C71EFB919ED22AA6A8CF86 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901AAFE76B16C0B526E44835 /* Event.swift */; };
 		C480CDA0BED451B2509311B9 /* ChatRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C26F0066861CCC36B37AD0 /* ChatRoom.swift */; };
 		C57BA2AF2E574CF500E80A53 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA2AE2E574CF500E80A53 /* AuthService.swift */; };
+		C57BA43E2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */; };
+		C57BA43F2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */; };
 		C584B6D02C273AC000E4223E /* Colour.swift in Sources */ = {isa = PBXBuildFile; fileRef = C584B6CF2C273AC000E4223E /* Colour.swift */; };
 		C59FCD962D54681700DBCA1B /* AWSAPIPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD952D54681700DBCA1B /* AWSAPIPlugin */; };
 		C59FCD982D54681700DBCA1B /* AWSCognitoAuthPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD972D54681700DBCA1B /* AWSCognitoAuthPlugin */; };
@@ -108,6 +110,7 @@
 		AE42145BE70C360706D92336 /* Review.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Review.swift; path = amplify/generated/models/Review.swift; sourceTree = "<group>"; };
 		C55E7B0F2C50266900B142E2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C57BA2AE2E574CF500E80A53 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnreadCounterVM.swift; sourceTree = "<group>"; };
 		C584B6CF2C273AC000E4223E /* Colour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colour.swift; sourceTree = "<group>"; };
 		C5BD1B522C1F2FBA00A7239A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C5BF9E412D83C32F0093C5A8 /* copilot source editor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "copilot source editor.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -225,6 +228,7 @@
 		C5DAE7CE2BFC7B220001E794 = {
 			isa = PBXGroup;
 			children = (
+				C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */,
 				C5DAE7D92BFC7B220001E794 /* N3ON */,
 				C5BF9E462D83C32F0093C5A8 /* copilot source editor */,
 				C5DAE7D82BFC7B220001E794 /* Products */,
@@ -422,6 +426,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C5DD98582DCDB45F00431EC5 /* Message+Equatable.swift in Sources */,
+				C57BA43E2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -454,6 +459,7 @@
 				C5DD98592DCDB45F00431EC5 /* Message+Equatable.swift in Sources */,
 				2CAD03755C851FA1B75EE02D /* Review.swift in Sources */,
 				F6163EE2CBB6DAC6E8909745 /* Attendance+Schema.swift in Sources */,
+				C57BA43F2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */,
 				0BC771A750D0D3944CA5FA96 /* Attendance.swift in Sources */,
 				495DA8A740B980F18D66EC9A /* ChatRoom+Schema.swift in Sources */,
 				C480CDA0BED451B2509311B9 /* ChatRoom.swift in Sources */,

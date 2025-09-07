@@ -9,50 +9,64 @@ import SwiftUI
 import Amplify
 
 struct ChatRoomService {
-    
+
     static func getOrCreateDirectChatRoom(userA: User, userB: User) async throws -> ChatRoom {
         let sortedIDs = [userA.id, userB.id].sorted()
         let roomName = "dm-\(sortedIDs[0])-\(sortedIDs[1])"
-        
-        // Try to find existing room with same name
-        let existingRooms = try await Amplify.DataStore.query(ChatRoom.self, where: ChatRoom.keys.name == roomName)
-        if let existing = existingRooms.first {
+
+        if let existing = try await Amplify.DataStore
+            .query(ChatRoom.self, where: ChatRoom.keys.name == roomName).first {
             return existing
         }
-        
-        let newRoom = ChatRoom(
+
+        let now = Temporal.DateTime.now()
+
+        var room = ChatRoom(
             id: UUID().uuidString,
             name: roomName,
-            participants: [userA, userB],
-            messages: [],
+            createdAt: now,
+            updatedAt: now,
             lastMessage: "",
-            lastMessageTimestamp: .now(),
+            lastMessageTimestamp: now,
             associatedEvent: nil
         )
-        
-        try await Amplify.DataStore.save(newRoom)
-        return newRoom
+        try await Amplify.DataStore.save(room)
+        try await attachParticipants([userA, userB], to: room)
+
+        return try await Amplify.DataStore.query(ChatRoom.self, byId: room.id) ?? room
     }
 
     static func getOrCreateEventChatRoom(dj: User, venue: User, eventID: String) async throws -> ChatRoom {
         let roomName = "event-\(eventID)"
-        
-        let existing = try await Amplify.DataStore.query(ChatRoom.self, where: ChatRoom.keys.name == roomName)
-        if let room = existing.first {
-            return room
+
+        if let existing = try await Amplify.DataStore
+            .query(ChatRoom.self, where: ChatRoom.keys.name == roomName).first {
+            return existing
         }
 
-        let room = ChatRoom(
+        let now = Temporal.DateTime.now()
+
+        var room = ChatRoom(
             id: UUID().uuidString,
             name: roomName,
-            participants: [dj, venue],
-            messages: [],
+            createdAt: now,
+            updatedAt: now,
             lastMessage: "",
-            lastMessageTimestamp: .now(),
+            lastMessageTimestamp: now,
             associatedEvent: eventID
         )
-
         try await Amplify.DataStore.save(room)
-        return room
+        try await attachParticipants([dj, venue], to: room)
+
+        return try await Amplify.DataStore.query(ChatRoom.self, byId: room.id) ?? room
+    }
+
+    // MARK: - Helpers
+
+    private static func attachParticipants(_ users: [User], to room: ChatRoom) async throws {
+        for u in users {
+            let link = UserChatRooms(user: u, chatRoom: room)
+            try await Amplify.DataStore.save(link)
+        }
     }
 }
