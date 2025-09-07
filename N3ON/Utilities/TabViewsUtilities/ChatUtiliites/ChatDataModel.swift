@@ -4,19 +4,23 @@
 //
 //  Created by liam howe on 7/11/2024.
 //
+// ===============================================
+// File: Chat/ChatDataModel.swift
+// WHY: Map Message → ChatMessage using relation; stable id.
+// ===============================================
 import Foundation
 import Amplify
 
 extension ChatMessage {
     init(from message: Message, currentUserID: String) {
-        // Convert Temporal.DateTime to Foundation.Date using foundationDate
-        let timestampDate = message.timestamp.foundationDate
-        
+        let ts = message.timestamp.foundationDate
+        let sid = message.sender?.id ?? "unknown"
         self.init(
-            sender: message.sender?.id ?? "uknown",
+            id: message.id,            
+            sender: sid,
             content: message.content,
-            timestamp: timestampDate,
-            isCurrentUser: message.sender?.id == currentUserID
+            timestamp: ts,
+            isCurrentUser: sid == currentUserID
         )
     }
 }

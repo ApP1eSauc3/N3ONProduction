@@ -5,18 +5,14 @@
 //  Created by liam howe on 22/6/2024.
 //
 
-
-
-
 import SwiftUI
 import MapKit
 import CoreLocation
 
 struct MapView: View {
     @EnvironmentObject var viewModel: MapViewModel
-    @StateObject var chatVM = ChatViewModel()
+    @StateObject private var unreadVM = UnreadCounterVM()
     @State private var showChatPanel = false
-    @State private var unreadMessages = 0
     @FocusState private var isSearchFieldFocused: Bool
     @State private var isEditing = false
 
@@ -27,12 +23,10 @@ struct MapView: View {
                     region: $viewModel.mapRegion,
                     isSearchFieldFocused: $isSearchFieldFocused,
                     places: viewModel.mapItems,
-                    onDoubleTap: handleDoubleTap,
+                    onDoubleTap: handleDoubleTap
                 )
-          //      .edgesIgnoringSafeArea(.all)
-           //     .ignoresSafeArea(.container, edges: [.top, .bottom])
                 .ignoresSafeArea(.container, edges: [.top])
-                
+
                 SearchBar(
                     searchText: $viewModel.searchText,
                     isEditing: $isEditing,
@@ -47,8 +41,8 @@ struct MapView: View {
                 Button {
                     showChatPanel.toggle()
                     if showChatPanel {
-                        chatVM.markMessageAsRead()
-                        unreadMessages = 0
+                        // UI reset; actual "read" happens inside ChatView per message
+                        unreadVM.reset()
                     }
                 } label: {
                     Image(systemName: "message.badge.filled.fill")
@@ -61,8 +55,8 @@ struct MapView: View {
                                 .shadow(color: .black.opacity(0.3), radius: 5)
                         }
                         .overlay(alignment: .topTrailing) {
-                            if unreadMessages > 0 {
-                                Text("\(unreadMessages)")
+                            if unreadVM.count > 0 {
+                                Text("\(unreadVM.count)")
                                     .font(.caption)
                                     .padding(4)
                                     .background(Color.red)
@@ -73,17 +67,16 @@ struct MapView: View {
                 }
                 .padding(.top, 60)
                 .padding(.trailing, 20)
-                
+
                 Spacer()
             }
 
-            ChatPanelView(isVisible: $showChatPanel, chatVM: chatVM)
+            // panel slides in like before
+            ChatPanelView()
                 .offset(x: showChatPanel ? 0 : UIScreen.main.bounds.width)
                 .animation(.spring(), value: showChatPanel)
         }
-        .onReceive(chatVM.$messages) { messages in
-            updateUnreadCount(messages)
-        }
+        .task { await unreadVM.start() }
     }
 
     private func handleDoubleTap(_ coordinate: CLLocationCoordinate2D) {
@@ -91,20 +84,10 @@ struct MapView: View {
             latitudeDelta: viewModel.mapRegion.span.latitudeDelta * 0.5,
             longitudeDelta: viewModel.mapRegion.span.longitudeDelta * 0.5
         )
-        
         withAnimation(.easeInOut(duration: 0.3)) {
-            viewModel.mapRegion = MKCoordinateRegion(
-                center: coordinate,
-                span: newSpan
-            )
+            viewModel.mapRegion = MKCoordinateRegion(center: coordinate, span: newSpan)
         }
         viewModel.searchText = ""
         isSearchFieldFocused = true
-    }
-
-    private func updateUnreadCount(_ messages: [Message]) {
-        unreadMessages = messages.filter {
-            !$0.isRead && $0.sender?.id != chatVM.currentUserID
-        }.count
     }
 }

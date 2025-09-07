@@ -7,28 +7,27 @@
 
 import SwiftUI
 
-struct ChatView: View {    @ObservedObject var viewModel = ChatViewModel()
-    
+struct ChatView: View {
+    @ObservedObject var viewModel: ChatViewModel
+
     var body: some View {
-        VStack{
-            ScrollView{
+        VStack {
+            ScrollView {
                 VStack(spacing: 8) {
-                    ForEach(viewModel.messages.map { ChatMessage(from: $0, currentUserID: viewModel.currentUserID) }) { chatMessage in
-                        MessageRow(message: chatMessage)
+                    ForEach(viewModel.messages.map { ChatMessage(from: $0, currentUserID: viewModel.currentUserID) }) {
+                        MessageRow(message: $0)
                     }
-                                }
-                            }
+                }
+            }
             .background(Color.black)
             .padding()
-            
-            //message imput field
-            
+
             HStack {
                 TextField("Type a message...", text: $viewModel.messageText)
-                                    .padding(10)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8.0)
-                
+                    .padding(10)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8.0)
+
                 Button(action: viewModel.sendMessage) {
                     Image(systemName: "paperplane.fill")
                         .foregroundStyle(.white)
@@ -37,17 +36,10 @@ struct ChatView: View {    @ObservedObject var viewModel = ChatViewModel()
                         .cornerRadius(8.0)
                 }
             }
-           
             .padding()
             .background(Color.purple)
         }
-        .navigationTitle("Group Chat")
+        .navigationTitle("Chat")
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct ChatView_Previews: PreviewProvider {
-    static var previews: some View {
-        ChatView()
     }
 }
