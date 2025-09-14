@@ -13,33 +13,22 @@
 		0BC771A750D0D3944CA5FA96 /* Attendance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63DD270F84412E58D46658A5 /* Attendance.swift */; };
 		159EAB664563051D4D02F268 /* Post+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD5BE2B379D82C75B014C5CE /* Post+Schema.swift */; };
 		16C9F523DC8BA3B9E75D3879 /* DailyUserCount+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE67C374449B3CE85360ACF7 /* DailyUserCount+Schema.swift */; };
-		1B64E127246BB252EC7D6CC2 /* DailyUserCount+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE67C374449B3CE85360ACF7 /* DailyUserCount+Schema.swift */; };
-		1E2151F19EBABE56D8834E59 /* Review+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74A3A8E73DFB2B23B9F0067 /* Review+Schema.swift */; };
-		203C4C165A261327077E7E11 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91D4B6CD6538F810B12FEED1 /* Message.swift */; };
 		23885C44BD1583A2800B4C06 /* Review+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74A3A8E73DFB2B23B9F0067 /* Review+Schema.swift */; };
 		2CAD03755C851FA1B75EE02D /* Review.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE42145BE70C360706D92336 /* Review.swift */; };
 		3474B93EA00C21D7A3DDFBF8 /* Event+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9367310BAC19DBEC8A1E6883 /* Event+Schema.swift */; };
 		377E184A71F811ED3FC3353F /* UserChatRooms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A6404F2B5449B22C82F5B2 /* UserChatRooms.swift */; };
-		3C6F4A950D13D9F897C670EE /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = E456E6A2933A24CC63F8C9F2 /* User.swift */; };
 		42748682F9F388F3B12E0223 /* ChatRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C26F0066861CCC36B37AD0 /* ChatRoom.swift */; };
-		49438C80154B26E4FE8DAAC1 /* DailyUserCount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D501EAA60D43E92923F237E /* DailyUserCount.swift */; };
-		495DA8A740B980F18D66EC9A /* ChatRoom+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A13EA29F6489AA8A3868293 /* ChatRoom+Schema.swift */; };
 		6403970383B1CF60D324C0B3 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = E456E6A2933A24CC63F8C9F2 /* User.swift */; };
-		6BEC2A66FBDEFB47E775DC0E /* Review.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE42145BE70C360706D92336 /* Review.swift */; };
 		754F6FD9A946B3CCBDE90417 /* Ticket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64577DAC10720EADB7F0D520 /* Ticket.swift */; };
-		77A85A508E7EDF6177D6FF34 /* User+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CEAAC170CB0C39F62D3FC3 /* User+Schema.swift */; };
 		8304024E56364CF6B6FA78DB /* Message+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72811794A4A8CB6C83F9C10D /* Message+Schema.swift */; };
-		8757064DD418199DBBB9B3B9 /* Venue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24A49DF9BBF50C65CBD13F2E /* Venue.swift */; };
-		8AB98CFE988C36F2CD87FB9C /* Post.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2F018E27AF6FBA40412988 /* Post.swift */; };
 		9F9A22652344BDC328BA683D /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91D4B6CD6538F810B12FEED1 /* Message.swift */; };
-		A172BC283CF80F88EB8D1693 /* AmplifyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962CA66C4FFDE282448D9527 /* AmplifyModels.swift */; };
 		ACD735FE7536294206CAD5B6 /* ChatRoom+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A13EA29F6489AA8A3868293 /* ChatRoom+Schema.swift */; };
 		B6F12E4BD05A47A67D947CB7 /* awsconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = DF46BDBF469E16BDBDE290A9 /* awsconfiguration.json */; };
 		B8C71EFB919ED22AA6A8CF86 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901AAFE76B16C0B526E44835 /* Event.swift */; };
-		C480CDA0BED451B2509311B9 /* ChatRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C26F0066861CCC36B37AD0 /* ChatRoom.swift */; };
 		C57BA2AF2E574CF500E80A53 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA2AE2E574CF500E80A53 /* AuthService.swift */; };
 		C57BA43E2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */; };
 		C57BA43F2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */; };
+		C57BA9562E7430D700E80A53 /* AmplifyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962CA66C4FFDE282448D9527 /* AmplifyModels.swift */; };
 		C584B6D02C273AC000E4223E /* Colour.swift in Sources */ = {isa = PBXBuildFile; fileRef = C584B6CF2C273AC000E4223E /* Colour.swift */; };
 		C59FCD962D54681700DBCA1B /* AWSAPIPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD952D54681700DBCA1B /* AWSAPIPlugin */; };
 		C59FCD982D54681700DBCA1B /* AWSCognitoAuthPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD972D54681700DBCA1B /* AWSCognitoAuthPlugin */; };
@@ -61,13 +50,9 @@
 		C5DD98582DCDB45F00431EC5 /* Message+Equatable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DD98572DCDB45F00431EC5 /* Message+Equatable.swift */; };
 		C5DD98592DCDB45F00431EC5 /* Message+Equatable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DD98572DCDB45F00431EC5 /* Message+Equatable.swift */; };
 		C63B4C1D51229DA1F8D63C5A /* EndorsementRequest+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920951C96D3F28623939EF53 /* EndorsementRequest+Schema.swift */; };
-		C8412D3CB90FD4B30B60590F /* Message+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72811794A4A8CB6C83F9C10D /* Message+Schema.swift */; };
 		CA3AF85CCBC7321939FCB01B /* Ticket+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65F9AF290A229D3E21CE65A6 /* Ticket+Schema.swift */; };
 		D1032F77A569357854DDC029 /* Venue+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3748F13B443AF370BD7F2D1 /* Venue+Schema.swift */; };
 		D1F962975CDB1592D2895257 /* EndorsementRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DFCC314AFB9E4ADBDE533C /* EndorsementRequest.swift */; };
-		DBC1A8138AB207DBA0C5461D /* UserChatRooms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A6404F2B5449B22C82F5B2 /* UserChatRooms.swift */; };
-		E14278B30BD78F30C8663897 /* Venue+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3748F13B443AF370BD7F2D1 /* Venue+Schema.swift */; };
-		E9FAED535CE028DDF8FF2B5A /* UserChatRooms+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61BC4FDC4FBA16B287601E1C /* UserChatRooms+Schema.swift */; };
 		F190EF1193BE9565E1FCE506 /* User+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CEAAC170CB0C39F62D3FC3 /* User+Schema.swift */; };
 		F3D1DE6843FA3086E325D1C2 /* Venue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24A49DF9BBF50C65CBD13F2E /* Venue.swift */; };
 		F6163EE2CBB6DAC6E8909745 /* Attendance+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = E96BAE45D09C7310D74961C6 /* Attendance+Schema.swift */; };
@@ -142,6 +127,14 @@
 			);
 			target = C5BF9E402D83C32F0093C5A8 /* copilot source editor */;
 		};
+		C57BAB852E76C73E00E80A53 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Event/Event.swift,
+				UserProfile/EndorsementRequest.swift,
+			);
+			target = C5DAE7D62BFC7B220001E794 /* N3ON */;
+		};
 		C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -153,7 +146,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C5098E712DD1E2C800BA39B6 /* Utilities */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C5098E782DD1E45F00BA39B6 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Utilities; sourceTree = "<group>"; };
-		C5098E722DD1E2DF00BA39B6 /* Visuals */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Visuals; sourceTree = "<group>"; };
+		C5098E722DD1E2DF00BA39B6 /* Visuals */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C57BAB852E76C73E00E80A53 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Visuals; sourceTree = "<group>"; };
 		C5BF9E462D83C32F0093C5A8 /* copilot source editor */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "copilot source editor"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -367,7 +360,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					C5BF9E402D83C32F0093C5A8 = {
 						CreatedOnToolsVersion = 16.2;
@@ -434,13 +427,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C57BA9562E7430D700E80A53 /* AmplifyModels.swift in Sources */,
 				C5DAE8012BFCFF0E0001E794 /* SignupView.swift in Sources */,
 				C5DAE7E42BFC7B240001E794 /* Persistence.swift in Sources */,
 				C5BD1B532C1F2FBA00A7239A /* LoginView.swift in Sources */,
 				C5DAE7DD2BFC7B220001E794 /* ContentView.swift in Sources */,
 				C5DAE7DB2BFC7B220001E794 /* N3ONApp.swift in Sources */,
 				C5DAE7E72BFC7B240001E794 /* N3ON.xcdatamodeld in Sources */,
-				A172BC283CF80F88EB8D1693 /* AmplifyModels.swift in Sources */,
 				F190EF1193BE9565E1FCE506 /* User+Schema.swift in Sources */,
 				C584B6D02C273AC000E4223E /* Colour.swift in Sources */,
 				6403970383B1CF60D324C0B3 /* User.swift in Sources */,
@@ -461,29 +454,14 @@
 				F6163EE2CBB6DAC6E8909745 /* Attendance+Schema.swift in Sources */,
 				C57BA43F2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */,
 				0BC771A750D0D3944CA5FA96 /* Attendance.swift in Sources */,
-				495DA8A740B980F18D66EC9A /* ChatRoom+Schema.swift in Sources */,
-				C480CDA0BED451B2509311B9 /* ChatRoom.swift in Sources */,
-				1B64E127246BB252EC7D6CC2 /* DailyUserCount+Schema.swift in Sources */,
-				49438C80154B26E4FE8DAAC1 /* DailyUserCount.swift in Sources */,
 				C63B4C1D51229DA1F8D63C5A /* EndorsementRequest+Schema.swift in Sources */,
 				D1F962975CDB1592D2895257 /* EndorsementRequest.swift in Sources */,
 				3474B93EA00C21D7A3DDFBF8 /* Event+Schema.swift in Sources */,
 				B8C71EFB919ED22AA6A8CF86 /* Event.swift in Sources */,
-				C8412D3CB90FD4B30B60590F /* Message+Schema.swift in Sources */,
-				203C4C165A261327077E7E11 /* Message.swift in Sources */,
 				159EAB664563051D4D02F268 /* Post+Schema.swift in Sources */,
-				8AB98CFE988C36F2CD87FB9C /* Post.swift in Sources */,
-				1E2151F19EBABE56D8834E59 /* Review+Schema.swift in Sources */,
-				6BEC2A66FBDEFB47E775DC0E /* Review.swift in Sources */,
 				CA3AF85CCBC7321939FCB01B /* Ticket+Schema.swift in Sources */,
 				754F6FD9A946B3CCBDE90417 /* Ticket.swift in Sources */,
-				77A85A508E7EDF6177D6FF34 /* User+Schema.swift in Sources */,
-				3C6F4A950D13D9F897C670EE /* User.swift in Sources */,
-				E9FAED535CE028DDF8FF2B5A /* UserChatRooms+Schema.swift in Sources */,
-				DBC1A8138AB207DBA0C5461D /* UserChatRooms.swift in Sources */,
 				C57BA2AF2E574CF500E80A53 /* AuthService.swift in Sources */,
-				E14278B30BD78F30C8663897 /* Venue+Schema.swift in Sources */,
-				8757064DD418199DBBB9B3B9 /* Venue.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -494,9 +472,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "copilot source editor/copilot_source_editor.entitlements";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8X4733B3NF;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -526,9 +506,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "copilot source editor/copilot_source_editor.entitlements";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 8X4733B3NF;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -684,13 +666,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "Apple Development: liamhowe2644@gmail.com (N535Y49FXD)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"N3ON/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 8X4733B3NF;
+				DEVELOPMENT_TEAM = 8X4733B3NF;
 				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -710,7 +691,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "NEON-CO.N3ON";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = LiamsN3ONProfile;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -722,13 +702,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "Apple Development: liamhowe2644@gmail.com (N535Y49FXD)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"N3ON/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 8X4733B3NF;
+				DEVELOPMENT_TEAM = 8X4733B3NF;
 				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -748,7 +727,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "NEON-CO.N3ON";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = LiamsN3ONProfile;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
