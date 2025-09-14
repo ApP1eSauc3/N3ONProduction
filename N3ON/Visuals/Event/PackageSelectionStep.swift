@@ -4,6 +4,7 @@
 //
 //  Created by liam howe on 12/7/2025.
 //
+import SwiftUI
 
 struct PackageSelectionStep: View {
     @Binding var selectedPackage: String
@@ -29,7 +30,7 @@ struct PackageSelectionStep: View {
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
         }
     }
-}import SwiftUI
+}
 
 struct SelectPackageView: View {
     @EnvironmentObject var daft: EventDraftViewModel
