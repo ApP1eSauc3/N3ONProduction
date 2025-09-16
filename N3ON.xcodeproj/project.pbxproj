@@ -11,18 +11,28 @@
 		0A8AA28843B3A85038ABBE45 /* amplifyconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = 96148716EF24226B550FAF08 /* amplifyconfiguration.json */; };
 		0AE2AF557D5417132C04B84C /* UserChatRooms+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61BC4FDC4FBA16B287601E1C /* UserChatRooms+Schema.swift */; };
 		0BC771A750D0D3944CA5FA96 /* Attendance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63DD270F84412E58D46658A5 /* Attendance.swift */; };
+		0BFAA9B3E9A4A4CE3139B716 /* Ticket+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65F9AF290A229D3E21CE65A6 /* Ticket+Schema.swift */; };
 		159EAB664563051D4D02F268 /* Post+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD5BE2B379D82C75B014C5CE /* Post+Schema.swift */; };
 		16C9F523DC8BA3B9E75D3879 /* DailyUserCount+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE67C374449B3CE85360ACF7 /* DailyUserCount+Schema.swift */; };
+		1E2151F19EBABE56D8834E59 /* Review+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74A3A8E73DFB2B23B9F0067 /* Review+Schema.swift */; };
 		23885C44BD1583A2800B4C06 /* Review+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74A3A8E73DFB2B23B9F0067 /* Review+Schema.swift */; };
 		2CAD03755C851FA1B75EE02D /* Review.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE42145BE70C360706D92336 /* Review.swift */; };
 		3474B93EA00C21D7A3DDFBF8 /* Event+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9367310BAC19DBEC8A1E6883 /* Event+Schema.swift */; };
 		377E184A71F811ED3FC3353F /* UserChatRooms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A6404F2B5449B22C82F5B2 /* UserChatRooms.swift */; };
+		3C6F4A950D13D9F897C670EE /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = E456E6A2933A24CC63F8C9F2 /* User.swift */; };
+		3D205817EE6FC5D71D82B293 /* Ticket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64577DAC10720EADB7F0D520 /* Ticket.swift */; };
 		42748682F9F388F3B12E0223 /* ChatRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C26F0066861CCC36B37AD0 /* ChatRoom.swift */; };
 		6403970383B1CF60D324C0B3 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = E456E6A2933A24CC63F8C9F2 /* User.swift */; };
+		6BEC2A66FBDEFB47E775DC0E /* Review.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE42145BE70C360706D92336 /* Review.swift */; };
 		754F6FD9A946B3CCBDE90417 /* Ticket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64577DAC10720EADB7F0D520 /* Ticket.swift */; };
+		77A85A508E7EDF6177D6FF34 /* User+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CEAAC170CB0C39F62D3FC3 /* User+Schema.swift */; };
 		8304024E56364CF6B6FA78DB /* Message+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72811794A4A8CB6C83F9C10D /* Message+Schema.swift */; };
+		870711BC01594DFCFDF444E9 /* Ticket+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65F9AF290A229D3E21CE65A6 /* Ticket+Schema.swift */; };
+		8757064DD418199DBBB9B3B9 /* Venue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24A49DF9BBF50C65CBD13F2E /* Venue.swift */; };
+		8AB98CFE988C36F2CD87FB9C /* Post.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2F018E27AF6FBA40412988 /* Post.swift */; };
 		9F9A22652344BDC328BA683D /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91D4B6CD6538F810B12FEED1 /* Message.swift */; };
 		ACD735FE7536294206CAD5B6 /* ChatRoom+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A13EA29F6489AA8A3868293 /* ChatRoom+Schema.swift */; };
+		B1ACFAFA898F0711D80BDE2E /* Ticket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64577DAC10720EADB7F0D520 /* Ticket.swift */; };
 		B6F12E4BD05A47A67D947CB7 /* awsconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = DF46BDBF469E16BDBDE290A9 /* awsconfiguration.json */; };
 		B8C71EFB919ED22AA6A8CF86 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901AAFE76B16C0B526E44835 /* Event.swift */; };
 		C57BA2AF2E574CF500E80A53 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA2AE2E574CF500E80A53 /* AuthService.swift */; };
@@ -53,6 +63,9 @@
 		CA3AF85CCBC7321939FCB01B /* Ticket+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65F9AF290A229D3E21CE65A6 /* Ticket+Schema.swift */; };
 		D1032F77A569357854DDC029 /* Venue+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3748F13B443AF370BD7F2D1 /* Venue+Schema.swift */; };
 		D1F962975CDB1592D2895257 /* EndorsementRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DFCC314AFB9E4ADBDE533C /* EndorsementRequest.swift */; };
+		DBC1A8138AB207DBA0C5461D /* UserChatRooms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A6404F2B5449B22C82F5B2 /* UserChatRooms.swift */; };
+		E14278B30BD78F30C8663897 /* Venue+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3748F13B443AF370BD7F2D1 /* Venue+Schema.swift */; };
+		E9FAED535CE028DDF8FF2B5A /* UserChatRooms+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61BC4FDC4FBA16B287601E1C /* UserChatRooms+Schema.swift */; };
 		F190EF1193BE9565E1FCE506 /* User+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54CEAAC170CB0C39F62D3FC3 /* User+Schema.swift */; };
 		F3D1DE6843FA3086E325D1C2 /* Venue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24A49DF9BBF50C65CBD13F2E /* Venue.swift */; };
 		F6163EE2CBB6DAC6E8909745 /* Attendance+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = E96BAE45D09C7310D74961C6 /* Attendance+Schema.swift */; };
@@ -145,9 +158,42 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C5098E712DD1E2C800BA39B6 /* Utilities */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C5098E782DD1E45F00BA39B6 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Utilities; sourceTree = "<group>"; };
-		C5098E722DD1E2DF00BA39B6 /* Visuals */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C57BAB852E76C73E00E80A53 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Visuals; sourceTree = "<group>"; };
-		C5BF9E462D83C32F0093C5A8 /* copilot source editor */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "copilot source editor"; sourceTree = "<group>"; };
+		C5098E712DD1E2C800BA39B6 /* Utilities */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C5098E782DD1E45F00BA39B6 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		C5098E722DD1E2DF00BA39B6 /* Visuals */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C57BAB852E76C73E00E80A53 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Visuals;
+			sourceTree = "<group>";
+		};
+		C5BF9E462D83C32F0093C5A8 /* copilot source editor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "copilot source editor";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -462,6 +508,19 @@
 				CA3AF85CCBC7321939FCB01B /* Ticket+Schema.swift in Sources */,
 				754F6FD9A946B3CCBDE90417 /* Ticket.swift in Sources */,
 				C57BA2AF2E574CF500E80A53 /* AuthService.swift in Sources */,
+				0BFAA9B3E9A4A4CE3139B716 /* Ticket+Schema.swift in Sources */,
+				3D205817EE6FC5D71D82B293 /* Ticket.swift in Sources */,
+				8AB98CFE988C36F2CD87FB9C /* Post.swift in Sources */,
+				1E2151F19EBABE56D8834E59 /* Review+Schema.swift in Sources */,
+				6BEC2A66FBDEFB47E775DC0E /* Review.swift in Sources */,
+				870711BC01594DFCFDF444E9 /* Ticket+Schema.swift in Sources */,
+				B1ACFAFA898F0711D80BDE2E /* Ticket.swift in Sources */,
+				77A85A508E7EDF6177D6FF34 /* User+Schema.swift in Sources */,
+				3C6F4A950D13D9F897C670EE /* User.swift in Sources */,
+				E9FAED535CE028DDF8FF2B5A /* UserChatRooms+Schema.swift in Sources */,
+				DBC1A8138AB207DBA0C5461D /* UserChatRooms.swift in Sources */,
+				E14278B30BD78F30C8663897 /* Venue+Schema.swift in Sources */,
+				8757064DD418199DBBB9B3B9 /* Venue.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
