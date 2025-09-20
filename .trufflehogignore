@@ -1,0 +1,6 @@
+^\.git/lost-found/
+^build/
+^DerivedData/
+^Pods/
+^.*\.xcarchive/
+^.*\.xcbuilddata/
