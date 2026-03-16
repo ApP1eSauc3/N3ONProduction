@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import Amplify
+import Combine
 
 struct DJService {
     static func fetchFollowedDJs(userID: String) -> AnyPublisher<[DJ], Error> {

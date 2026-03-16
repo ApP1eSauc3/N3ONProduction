@@ -4,7 +4,7 @@
 //
 //  Created by liam howe on 21/8/2025.
 //
-import SwiftUI
+import Foundation
 import Amplify
 
 @MainActor
@@ -16,7 +16,7 @@ final class RoleAwareProfileViewModel: ObservableObject {
     @Published var following = 0
 
     // ✅ Use your pre-existing AvatarState
-    @Published var avatarState: AvatarState = .placeholder
+    @Published var avatarState: AvatarState = .remote(avatarKey: "default-avatar")
 
     func load() async {
         roles = await AccessControlService.currentUserRoles()
@@ -27,12 +27,12 @@ final class RoleAwareProfileViewModel: ObservableObject {
                 if let key = model.avatarKey {
                     avatarState = .remote(avatarKey: key)  // why: reuse your caching + effects
                 } else {
-                    avatarState = .placeholder
+                    avatarState = .remote(avatarKey: "default-avatar")
                 }
                 // TODO: wire followers/following to real fields when available
             }
         } catch {
-            avatarState = .placeholder
+            avatarState = .remote(avatarKey: "default-avatar")
         }
         isDJMode = roles.contains(.dj)
     }

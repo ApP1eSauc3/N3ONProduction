@@ -6,23 +6,6 @@ import SwiftUI
 import Amplify
 import CoreImage.CIFilterBuiltins
 
-enum QRCodeGenerator {
-    static func generate(from string: String) -> UIImage? {
-        let context = CIContext()
-        let filter = CIFilter.qrCodeGenerator()
-        guard let data = string.data(using: .utf8) else { return nil }
-        filter.setValue(data, forKey: "inputMessage")
-        filter.setValue("M", forKey: "inputCorrectionLevel")
-        guard
-            let outputImage = filter.outputImage,
-            let cgImage = context.createCGImage(
-                outputImage,
-                from: outputImage.extent
-            )
-        else { return nil }
-        return UIImage(cgImage: cgImage)
-    }
-}
 
 struct RegularUserSection: View {
     @State private var permanentQR: UIImage?

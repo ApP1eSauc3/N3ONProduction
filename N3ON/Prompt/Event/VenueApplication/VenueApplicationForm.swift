@@ -16,6 +16,7 @@ struct VenueApplicationForm: View {
     @State private var venueAddress: String = ""
     @State private var venueType: VenueType = .bar
     @State private var selectedImages: [UIImage] = []
+    @State private var pickedImage: UIImage? = nil
     @State private var showImagePicker = false
     @State private var submissionState: SubmissionState = .idle
     @State private var amenities: [Amenity] = []
@@ -90,6 +91,7 @@ struct VenueApplicationForm: View {
             // Section 4: Amenities
             Section(header: Text("Amenities").font(.headline)) {
                 AmenitySelectionView(selectedAmenities: $amenities)
+                    .frame(minHeight: 44)
             }
             
             // Submission
@@ -126,7 +128,9 @@ struct VenueApplicationForm: View {
         }
         .navigationTitle("Venue Application")
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(selectedImages: $selectedImages)
+            ImagePicker(image: $pickedImage) { image in
+                selectedImages.append(image)
+            }
         }
         .onChange(of: venueAddress) { _ in
             geocodeAddress()
@@ -291,11 +295,11 @@ struct PrimaryButtonStyle: ButtonStyle {
 
 // MARK: - Data Models
 
-enum VenueType: String, CaseIterable {
+enum VenueType: String, Codable, CaseIterable {
     case bar, restaurant, club, cafe, hotel, other
 }
 
-enum Amenity: String, CaseIterable {
+enum Amenity: String, Codable, CaseIterable {
     case wifi, parking, outdoor, liveMusic, danceFloor, pool, smokingArea
     
     var iconName: String {
@@ -320,6 +324,33 @@ struct VenueApplication: Codable {
     let type: VenueType
     let amenities: [Amenity]
     let imageKeys: [String]
+}
+
+private struct AmenitySelectionView: View {
+    @Binding var selectedAmenities: [Amenity]
+
+    var body: some View {
+        ForEach(Amenity.allCases, id: \.self) { amenity in
+            let isSelected = selectedAmenities.contains(amenity)
+            Button {
+                if isSelected {
+                    selectedAmenities.removeAll { $0 == amenity }
+                } else {
+                    selectedAmenities.append(amenity)
+                }
+            } label: {
+                HStack {
+                    Image(systemName: amenity.iconName)
+                    Text(amenity.rawValue.capitalized)
+                    Spacer()
+                    if isSelected {
+                        Image(systemName: "checkmark").foregroundColor(.accentColor)
+                    }
+                }
+            }
+            .foregroundColor(.primary)
+        }
+    }
 }
 
 enum SubmissionState {
