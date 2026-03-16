@@ -59,10 +59,11 @@ struct VenueAvailabilityElegantCalendarView: View {
         longitude: -122.41,
         rating: 4.8,
         imageKey: ["img1"],
-        ownerID: "owner1",
+        owner: nil,
         maxCapacity: 400,
         currentUsers: 0,
-        revenue: 0.0
+        revenue: 0.0,
+        approvalStatus: "APPROVED"
     )
 
     let sampleEvents: [Event] = [
