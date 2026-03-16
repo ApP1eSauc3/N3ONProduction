@@ -11,6 +11,7 @@ extension User {
     case profileAudioKey
     case beatBPM
     case isDJ
+    case djRank
     case messages
     case chatRoom
     case venues
@@ -21,6 +22,7 @@ extension User {
     case currentLongitude
     case isSharingLocation
     case sharingForEvent
+    case coinBalance
     case createdAt
     case updatedAt
   }
@@ -49,6 +51,7 @@ extension User {
       .field(user.profileAudioKey, is: .optional, ofType: .string),
       .field(user.beatBPM, is: .optional, ofType: .int),
       .field(user.isDJ, is: .required, ofType: .bool),
+      .field(user.djRank, is: .optional, ofType: .int),
       .hasMany(user.messages, is: .optional, ofType: Message.self, associatedWith: Message.keys.sender),
       .hasMany(user.chatRoom, is: .optional, ofType: UserChatRooms.self, associatedWith: UserChatRooms.keys.user),
       .hasMany(user.venues, is: .optional, ofType: Venue.self, associatedWith: Venue.keys.owner),
@@ -59,6 +62,7 @@ extension User {
       .field(user.currentLongitude, is: .optional, ofType: .double),
       .field(user.isSharingLocation, is: .required, ofType: .bool),
       .field(user.sharingForEvent, is: .optional, ofType: .string),
+      .field(user.coinBalance, is: .required, ofType: .int),
       .field(user.createdAt, is: .optional, isReadOnly: true, ofType: .dateTime),
       .field(user.updatedAt, is: .optional, isReadOnly: true, ofType: .dateTime)
     )
