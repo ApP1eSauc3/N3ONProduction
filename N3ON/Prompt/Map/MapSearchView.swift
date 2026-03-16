@@ -1,12 +1,12 @@
 //
-//  SearchView.swift
+//  MapSearchView.swift
 //  N3ON
 //
 //  Created by liam howe on 22/6/2024.
 //
 import SwiftUI
 
-struct SearchView: View {
+struct MapSearchView: View {
     @ObservedObject var viewModel: MapViewModel
 
     var body: some View {
