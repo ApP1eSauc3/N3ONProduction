@@ -122,6 +122,34 @@ If you add a new app-level model that shares a name with an Amplify model, add i
 
 ---
 
+## Type hygiene
+
+### Define types before referencing them
+Every type used in this project must be defined somewhere in `Data/`. If a type like `DJ` or `GroupLocationViewModel` is referenced in `Task/`, `Workflow/`, or `Prompt/` but doesn't exist in `Data/` or `Workflow/`, the build will fail with "Cannot find type X in scope". Check that the type exists before writing code that uses it.
+
+### No duplicate type definitions
+A type (`enum`, `struct`, `class`) may only be defined in one file. If a utility type like `QRCodeGenerator` is already defined in `StatItem.swift`, do not redefine it in `Sections.swift` or anywhere else. The build will fail with "Invalid redeclaration of X".
+
+### `AvatarState` cases
+`AvatarState` has two cases: `.remote(avatarKey: String)` and `.local(image: UIImage)`. There is no `.placeholder` case. Use `.remote(avatarKey: "default-avatar")` as the fallback.
+
+### Workflow layer must not import SwiftUI
+`Workflow/` files use `ObservableObject` + `@Published` from `Combine`, not `SwiftUI`. The correct import is `import Foundation` + `import Amplify` (or `import Combine` if needed). Never `import SwiftUI` in `Workflow/`.
+
+### Amplify model field names — always read the generated file
+Amplify-generated models change field names when the schema changes. `Venue` previously had `ownerID: String` — it now has `owner: User?`. Before writing any initializer or query predicate that references an Amplify model, read `amplify/generated/models/<ModelName>.swift` to get the exact field names and types. Do not guess.
+
+### Method overloads must differ in argument labels, not just parameter types
+Two methods `func transactions(for userID: String)` and `func transactions(for eventID: String)` are identical signatures to the Swift compiler. Use distinct external labels: `transactions(for userID:)` and `transactions(forEvent eventID:)`.
+
+### Enums used in `Codable` structs require explicit `Codable` conformance in Swift 6
+In Swift 6 (Xcode 26+), `enum Foo: String` does not automatically satisfy `Codable` when used inside a `Codable` struct. Always declare `enum Foo: String, Codable` explicitly.
+
+### `ImagePicker` API
+`Tools/ImagePicker.swift` binds a **single** image: `ImagePicker(image: $uiImageBinding) { image in ... }`. It does not accept `selectedImages: [UIImage]`. To accumulate multiple images, hold `@State var pickedImage: UIImage?` and append to an array in the `onImagePicked` closure.
+
+---
+
 ## Naming rules
 
 Xcode's `PBXFileSystemSynchronizedRootGroup` compiles all `.swift` files under `Prompt/` into the same target. Two files with the same name anywhere under `Prompt/` — even in different subdirectories — will collide on build output and cause:

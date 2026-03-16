@@ -38,7 +38,7 @@ enum TransactionService {
             }
     }
 
-    static func transactions(for eventID: String) async throws -> [Transaction] {
+    static func transactions(forEvent eventID: String) async throws -> [Transaction] {
         try await Amplify.DataStore.query(
             Transaction.self,
             where: Transaction.keys.eventID == eventID

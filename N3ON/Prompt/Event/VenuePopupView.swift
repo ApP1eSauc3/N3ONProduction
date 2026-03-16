@@ -68,7 +68,7 @@ struct VenuePopupView: View {
             longitude: 0.0,
             rating: 4.5,
             imageKey: ["img1", "img2"],
-            ownerID: "owner1",
+            owner: nil,
             maxCapacity: 300,
             currentUsers: 0,
             revenue: 0,
