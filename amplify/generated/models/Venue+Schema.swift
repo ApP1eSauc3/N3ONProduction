@@ -31,13 +31,15 @@ extension Venue {
     let venue = Venue.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser"], provider: .userPools, operations: [.create, .update, .delete, .read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser"], provider: .userPools, operations: [.create, .read, .update, .delete]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "UserGroup"], provider: .userPools, operations: [.read])
     ]
     
     model.listPluralName = "Venues"
     model.syncPluralName = "Venues"
     
     model.attributes(
+      .index(fields: ["ownerID", "name"], name: "byOwner"),
       .primaryKey(fields: [venue.id])
     )
     
@@ -51,7 +53,7 @@ extension Venue {
       .field(venue.rating, is: .optional, ofType: .double),
       .field(venue.imageKey, is: .optional, ofType: .embeddedCollection(of: String.self)),
       .belongsTo(venue.owner, is: .optional, ofType: User.self, targetNames: ["ownerID"]),
-      .field(venue.maxCapacity, is: .optional, ofType: .int),
+      .field(venue.maxCapacity, is: .required, ofType: .int),
       .field(venue.currentUsers, is: .optional, ofType: .int),
       .field(venue.revenue, is: .optional, ofType: .double),
       .hasMany(venue.dailyUserCounts, is: .optional, ofType: DailyUserCount.self, associatedWith: DailyUserCount.keys.venue),

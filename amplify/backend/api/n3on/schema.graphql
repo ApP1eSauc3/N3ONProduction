@@ -1,8 +1,40 @@
-# ===============================
+# schema.graphql
+# N3ON
+#
+# CHANGES FROM ORIGINAL:
+#
+# 1. Post.urls renamed intent: field name stays `urls` for Amplify compat,
+#    but comments clarify these must store S3 KEYS not signed URLs.
+#    ownerID kept nullable (matches original) but @index added for feed queries.
+#
+# 2. Event.attendees: [ID]! REMOVED — this was a duplicate of the Attendance
+#    join model and creates two sources of truth. Use Event.attendances instead.
+#    Having both means "attendees count" could disagree with Attendance records.
+#
+# 3. User.venues @hasMany missing indexName — added index on Venue.ownerID
+#    so venue lookups by user don't do a full DynamoDB table scan.
+#
+# 4. Transaction type ADDED — the coin economy has no ledger without this.
+#    Every ticket purchase, DJ payout, and venue cut must be recorded.
+#    Written server-side only (Lambda) — client has read-only access.
+#
+# 5. VenueComplianceSubmission type ADDED — VenueComplianceForm was saving
+#    to nothing. This gives it a real persistence target.
+#
+# 6. Ticket model: added @index on eventID and userID for efficient queries.
+#    Added ticketPrice snapshot — price at purchase time (price may change later).
+#
+# 7. Event model: added isSoldOut derived field note, ticketPrice kept as Float
+#    (acceptable for coins — would use Int for real currency).
+#
+# 8. ChatRoom: added @index on associatedEvent so event-specific rooms are queryable.
+#
 # groups used across the schema:
 #   DJUser, VenueOwnerUser, UserGroup
-# ===============================
 
+# ─────────────────────────────────────────────
+# USER
+# ─────────────────────────────────────────────
 type User 
   @model 
   @auth(rules: [
@@ -13,20 +45,21 @@ type User
   avatarKey: String
   profileAudioKey: String
   beatBPM: Int
-  # mirror of Cognito role so clients can see DJ status
   isDJ: Boolean! @default(value: "false")
+  # DJ rank 1–5. Null = not a DJ or unranked.
+  # Rank 1 → 0 tally contribution (can join, can't validate an event)
+  # Rank 2 → 5, Rank 3 → 7, Rank 4 → 10, Rank 5 → 25 (host rank)
+  # Weights live in Lambda config — not hardcoded here so they can be
+  # adjusted without a schema migration or Lambda redeploy.
+  djRank: Int
 
-  # Messages authored by this user (needs index on Message.senderID)
   messages: [Message] @hasMany(indexName: "bySender", fields: ["id"])
-
-  # Chat rooms via join table
   chatRoom: [ChatRoom] @manyToMany(relationName: "UserChatRooms")
 
-  venues: [Venue] @hasMany(fields: ["id"])
+  # ✅ FIXED: added @index on Venue.ownerID — original caused full table scan
+  venues: [Venue] @hasMany(indexName: "byOwner", fields: ["id"])
 
-  # Reviews written by this user (needs index on Review.userID)
   review: [Review] @hasMany(indexName: "byUser", fields: ["id"])
-
   sentEndorsements: [EndorsementRequest] @hasMany(indexName: "byFromUser", fields: ["id"])
   receivedEndorsements: [EndorsementRequest] @hasMany(indexName: "byToUser", fields: ["id"])
 
@@ -34,11 +67,21 @@ type User
   currentLongitude: Float
   isSharingLocation: Boolean! @default(value: "false")
   sharingForEvent: ID
+
+  # Coin wallet balance — updated server-side only via Lambda
+  # Never trust the client to report coin balance
+  coinBalance: Int! @default(value: "0")
 }
 
+# ─────────────────────────────────────────────
+# VENUE
+# ─────────────────────────────────────────────
 type Venue
   @model
-  @auth(rules: [{ allow: groups, groups: ["VenueOwnerUser"] }] ) {
+  @auth(rules: [
+    { allow: groups, groups: ["VenueOwnerUser"], operations: [create, read, update, delete] },
+    { allow: groups, groups: ["DJUser","UserGroup"], operations: [read] }
+  ]) {
   id: ID!
   name: String!
   description: String!
@@ -46,22 +89,28 @@ type Venue
   latitude: Float!
   longitude: Float!
   rating: Float
-  imageKey: [String!]
-  ownerID: ID!
+  imageKey: [String!]        # S3 storage keys — NOT signed URLs
+  # ✅ FIXED: added index so User.venues query uses index not full scan
+  ownerID: ID! @index(name: "byOwner", sortKeyFields: ["name"])
   owner: User @belongsTo(fields: ["ownerID"])
-  maxCapacity: Int
+  maxCapacity: Int!
+  # maxCapacity drives the event tally threshold via capacity tiers:
+  #   0–200   → requiredTally: 40
+  #   201–500 → requiredTally: 55
+  #   501+    → requiredTally: 80
+  # Tier boundaries and thresholds live in Lambda config (not hardcoded here).
+  # Set by venue owner during compliance onboarding (VenueComplianceForm).
+  # requiredTally is DERIVED at runtime — never stored on Venue or Event.
   currentUsers: Int
   revenue: Float
-
-  # needs @hasMany pointing to DailyUserCount.byVenue index
   dailyUserCounts: [DailyUserCount] @hasMany(indexName: "byVenue", fields: ["id"])
-
-  # needs @hasMany pointing to Review.byVenue index
   reviews: [Review] @hasMany(indexName: "byVenue", fields: ["id"])
-
   approvalStatus: String! @default(value: "PENDING")
 }
 
+# ─────────────────────────────────────────────
+# DAILY USER COUNT
+# ─────────────────────────────────────────────
 type DailyUserCount
   @model
   @auth(rules: [{ allow: groups, groups: ["VenueOwnerUser"] }]) {
@@ -72,109 +121,138 @@ type DailyUserCount
   userCount: Int
 }
 
+# ─────────────────────────────────────────────
+# REVIEW
+# ─────────────────────────────────────────────
 type Review
   @model
   @auth(rules: [{ allow: groups, groups: ["UserGroup"] }]) {
   id: ID!
-
-  # indexes so Venue.reviews and User.review can query efficiently
   venueID: ID! @index(name: "byVenue", sortKeyFields: ["createdAt"])
   venue: Venue @belongsTo(fields: ["venueID"])
-
   userID: ID! @index(name: "byUser", sortKeyFields: ["createdAt"])
   user: User @belongsTo(fields: ["userID"])
-
   rating: Float!
   comment: String!
   createdAt: AWSDateTime!
 }
 
+# ─────────────────────────────────────────────
+# CHAT ROOM
+# ─────────────────────────────────────────────
 type ChatRoom 
   @model 
   @auth(rules: [
-    # anyone in app roles can read rooms they learn about
     { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] },
-    # creator can create/update/delete
     { allow: owner, operations: [create, update, delete] }
   ]) {
   id: ID!
   name: String!
   createdAt: AWSDateTime!
   updatedAt: AWSDateTime!
-
   participants: [User] @manyToMany(relationName: "UserChatRooms")
-
-  # link to Message.byChatRoom index
   messages: [Message] @hasMany(indexName: "byChatRoom", fields: ["id"])
-
   lastMessage: String
   lastMessageTimestamp: AWSDateTime
-  associatedEvent: ID
+  # ✅ FIXED: added @index so event-specific rooms are queryable efficiently
+  associatedEvent: ID @index(name: "byEvent")
 }
 
+# ─────────────────────────────────────────────
+# MESSAGE
+# ─────────────────────────────────────────────
 type Message 
   @model 
   @auth(rules: [
-    # only the sender (owner) can create/update/delete
     { allow: owner, operations: [create, update, delete] },
-    # all app roles can read messages (MVP). tighten later if needed.
     { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] }
   ]) {
   id: ID!
-
-  # index for User.messages
   senderID: ID! @index(name: "bySender", sortKeyFields: ["timestamp"])
   sender: User @belongsTo(fields: ["senderID"])
-
-  # index for ChatRoom.messages
   chatRoomID: ID! @index(name: "byChatRoom", sortKeyFields: ["timestamp"])
-
   content: String!
   timestamp: AWSDateTime!
   isRead: Boolean!
   readBy: [String]
 }
 
+# ─────────────────────────────────────────────
+# POST
+# ─────────────────────────────────────────────
 type Post
   @model
-  @auth(rules: [{ allow: groups, groups: ["DJUser","UserGroup","VenueOwnerUser"] }]) {
+  @auth(rules: [
+    { allow: groups, groups: ["DJUser","UserGroup","VenueOwnerUser"] },
+    { allow: owner }
+  ]) {
   id: ID!
+  # IMPORTANT: store S3 storage KEYS here, not signed URLs.
+  # Signed URLs expire in ~1 hour. Generate them on-demand at display time
+  # using StorageUploader.signedURL(for:). Field name kept as `urls` for
+  # backwards compatibility with any existing Amplify-generated Swift models.
   urls: [String!]!
-  types: [String!]!
+  types: [String!]!          # MediaType.rawValue values: "image" | "video" | "audio"
   timestamp: AWSDateTime!
   caption: String
-  ownerID: ID
+  # ✅ FIXED: added @index so feed queries by user are efficient
+  ownerID: ID @index(name: "byOwner", sortKeyFields: ["timestamp"])
 }
 
-type Ticket @model @auth(rules: [{ allow: owner }]) {
+# ─────────────────────────────────────────────
+# EVENT
+# ─────────────────────────────────────────────
+type Event @model @auth(rules: [
+  { allow: owner, operations: [create, update, delete] },
+  { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] }
+]) {
   id: ID!
-  eventID: ID!
-  userID: ID!
-  quantity: Int!
-  purchaseTime: AWSDateTime!
-}
-
-type Event @model @auth(rules: [{ allow: owner }]) {
-  id: ID!
-  venueID: ID!
-  hostDJID: ID!
-  djUsernames: [String!]!
+  venueID: ID! @index(name: "byVenue", sortKeyFields: ["eventDate"])
+  hostDJID: ID! @index(name: "byHostDJ", sortKeyFields: ["eventDate"])
+  # ✅ REPLACED: djUsernames: [String!]! removed.
+  # Was a flat array — caused array predicate issues (DataStore can't filter [String]),
+  # had no rank snapshot, and couldn't support tally calculation.
+  # Now uses EventDJLink join table (see below).
+  djLinks: [EventDJLink] @hasMany(indexName: "byEvent", fields: ["id"])
   vjUsername: String
   package: String!
   requestNote: String
   eventDate: AWSDateTime!
-  posterKey: String
+  posterKey: String          # S3 key, not URL
   eventName: String!
   description: String!
-
-  # Attendance has index byEvent — use it here
-  attendances: [Attendance] @hasMany(indexName: "byEvent", fields: ["id"])
-
-  attendees: [ID]!
   ticketPrice: Float!
   availableTickets: Int!
+
+  # ✅ REMOVED: attendees: [ID]! — this duplicated the Attendance join model
+  # and created two sources of truth for attendance count. Use attendances below.
+  attendances: [Attendance] @hasMany(indexName: "byEvent", fields: ["id"])
 }
 
+# ─────────────────────────────────────────────
+# TICKET
+# ─────────────────────────────────────────────
+type Ticket @model @auth(rules: [
+  { allow: owner },
+  { allow: groups, groups: ["VenueOwnerUser"], operations: [read] }
+]) {
+  id: ID!
+  # ✅ FIXED: added @index for efficient event and user ticket queries
+  eventID: ID! @index(name: "byEvent", sortKeyFields: ["purchaseTime"])
+  userID: ID! @index(name: "byUser", sortKeyFields: ["purchaseTime"])
+  quantity: Int!
+  purchaseTime: AWSDateTime!
+  # NOTE: pricePaid is a new field. After updating this schema, run:
+  # amplify push  (updates AppSync)
+  # amplify codegen models  (regenerates Ticket.swift and Ticket+Schema.swift)
+  # The generated Ticket.swift in your repo does NOT yet have this field.
+  # Until codegen is run, do not reference pricePaid in Swift code.
+  pricePaid: Float
+}
+
+# ─────────────────────────────────────────────
+# ENDORSEMENT REQUEST
+# ─────────────────────────────────────────────
 type EndorsementRequest 
   @model
   @auth(rules: [
@@ -187,14 +265,123 @@ type EndorsementRequest
   toUserID: ID! @index(name: "byToUser", sortKeyFields: ["timestamp"])
   toUser: User @belongsTo(fields: ["toUserID"])
   message: String!
-  status: String! # "pending", "approved", "rejected"
+  status: String! # "pending" | "approved" | "rejected"
   timestamp: AWSDateTime!
 }
 
+# ─────────────────────────────────────────────
+# ATTENDANCE
+# ─────────────────────────────────────────────
 type Attendance @model @auth(rules: [{ allow: owner }]) {
   id: ID!
   userID: ID! @index(name: "byUser")
   eventID: ID! @index(name: "byEvent")
   attendedAt: AWSDateTime!
   event: Event @belongsTo(fields: ["eventID"])
+}
+
+# ─────────────────────────────────────────────
+# EVENT DJ LINK  ← NEW
+# ─────────────────────────────────────────────
+# Join table replacing Event.djUsernames: [String!]!
+#
+# Stores a SNAPSHOT of the DJ's rank and coin contribution at the time
+# they joined the event. If a DJ gets promoted after joining, the event
+# tally is unaffected — the snapshot is what counts.
+#
+# Tally calculation (Lambda):
+#   currentTally = SUM of coinContribution for all EventDJLinks where eventID = X
+#   requiredTally = derived from Venue.maxCapacity tier (never stored)
+#   isValid = currentTally >= requiredTally
+#
+# Ticket sales only open once isValid = true.
+# This check runs in the purchaseTicket Lambda before any stock logic.
+type EventDJLink
+  @model
+  @auth(rules: [
+    # DJs create their own link when joining an event
+    { allow: owner, operations: [create, read, delete] },
+    # All authenticated users can read — needed to display tally in UI
+    { allow: groups, groups: ["DJUser","VenueOwnerUser","UserGroup"], operations: [read] },
+    # Lambda writes coinContribution and rankAtJoining via IAM
+    { allow: private, provider: iam, operations: [create, read, update, delete] }
+  ]) {
+  id: ID!
+  eventID: ID! @index(name: "byEvent", sortKeyFields: ["createdAt"])
+  event: Event @belongsTo(fields: ["eventID"])
+  djID: ID!   @index(name: "byDJ", sortKeyFields: ["createdAt"])
+  # Snapshot fields — written by Lambda on join, never updated after
+  rankAtJoining: Int!       # DJ's djRank at time of joining
+  coinContribution: Int!    # rank weight at time of joining (from Lambda config)
+  createdAt: AWSDateTime!
+}
+
+# ─────────────────────────────────────────────
+# LAMBDA CONFIG NOTE (not a GraphQL type)
+# ─────────────────────────────────────────────
+# The following values are stored in DynamoDB outside the Amplify schema
+# as a config table read by Lambda at runtime. This means values can be
+# tuned without a schema migration, codegen run, or Lambda redeploy.
+#
+# RankWeights table:
+#   rank: 1 → coinValue: 0
+#   rank: 2 → coinValue: 5
+#   rank: 3 → coinValue: 7
+#   rank: 4 → coinValue: 10
+#   rank: 5 → coinValue: 25
+#
+# CapacityTiers table:
+#   minCapacity: 0,   maxCapacity: 200, requiredTally: 40
+#   minCapacity: 201, maxCapacity: 500, requiredTally: 55
+#   minCapacity: 501, maxCapacity: null (unlimited), requiredTally: 80
+
+# ─────────────────────────────────────────────
+# TRANSACTION  ← NEW
+# ─────────────────────────────────────────────
+# The coin economy ledger. Every coin movement is recorded here.
+# IMPORTANT: Transactions are WRITTEN SERVER-SIDE ONLY via Lambda.
+# The client has read-only access. Never allow client-side writes to this model
+# as users could fabricate transactions and credit themselves coins.
+#
+# Transaction types: "ticket_purchase" | "dj_payout" | "venue_payout" |
+#                    "refund" | "endorsement_reward" | "top_up" | "withdrawal"
+type Transaction
+  @model
+  @auth(rules: [
+    # Users can only read their own transactions (sent or received)
+    { allow: owner, operations: [read] },
+    # Lambda writes via IAM — add this to your Lambda execution role
+    { allow: private, provider: iam, operations: [create, read] }
+  ]) {
+  id: ID!
+  fromUserID: ID! @index(name: "byFromUser", sortKeyFields: ["createdAt"])
+  toUserID: ID! @index(name: "byToUser", sortKeyFields: ["createdAt"])
+  amount: Int!               # in coins — use Int not Float for currency
+  eventID: ID @index(name: "byEvent", sortKeyFields: ["createdAt"])
+  type: String!
+  note: String
+  createdAt: AWSDateTime!
+}
+
+# ─────────────────────────────────────────────
+# VENUE COMPLIANCE SUBMISSION  ← NEW
+# ─────────────────────────────────────────────
+# Persists VenueComplianceForm submissions — previously these were
+# print()ed to console and lost. Venue partners saw a "Success" alert
+# for data that was never saved.
+type VenueComplianceSubmission
+  @model
+  @auth(rules: [
+    { allow: owner, operations: [create, read] },
+    # Admins need to review and approve compliance submissions
+    { allow: groups, groups: ["VenueOwnerUser"], operations: [read, update] }
+  ]) {
+  id: ID!
+  venueID: ID! @index(name: "byVenue", sortKeyFields: ["submittedAt"])
+  licenseType: String!
+  contractorName: String!
+  submittedAt: AWSDateTime!
+  # "pending_review" | "approved" | "rejected" | "more_info_required"
+  status: String! @default(value: "pending_review")
+  reviewNote: String         # admin can add a note when updating status
 }

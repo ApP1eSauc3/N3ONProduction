@@ -8,6 +8,7 @@ public struct Ticket: Model {
   public var userID: String
   public var quantity: Int
   public var purchaseTime: Temporal.DateTime
+  public var pricePaid: Double?
   public var createdAt: Temporal.DateTime?
   public var updatedAt: Temporal.DateTime?
   
@@ -15,12 +16,14 @@ public struct Ticket: Model {
       eventID: String,
       userID: String,
       quantity: Int,
-      purchaseTime: Temporal.DateTime) {
+      purchaseTime: Temporal.DateTime,
+      pricePaid: Double? = nil) {
     self.init(id: id,
       eventID: eventID,
       userID: userID,
       quantity: quantity,
       purchaseTime: purchaseTime,
+      pricePaid: pricePaid,
       createdAt: nil,
       updatedAt: nil)
   }
@@ -29,6 +32,7 @@ public struct Ticket: Model {
       userID: String,
       quantity: Int,
       purchaseTime: Temporal.DateTime,
+      pricePaid: Double? = nil,
       createdAt: Temporal.DateTime? = nil,
       updatedAt: Temporal.DateTime? = nil) {
       self.id = id
@@ -36,6 +40,7 @@ public struct Ticket: Model {
       self.userID = userID
       self.quantity = quantity
       self.purchaseTime = purchaseTime
+      self.pricePaid = pricePaid
       self.createdAt = createdAt
       self.updatedAt = updatedAt
   }
