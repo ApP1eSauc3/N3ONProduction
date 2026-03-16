@@ -5,7 +5,7 @@ import Foundation
 // Contains the set of classes that conforms to the `Model` protocol. 
 
 final public class AmplifyModels: AmplifyModelRegistration {
-  public let version: String = "0347220de3d9cdd5df5c235c8bb22c51"
+  public let version: String = "e00aeaab2b578993b198def63e2fb392"
   
   public func registerModels(registry: ModelRegistry.Type) {
     ModelRegistry.register(modelType: User.self)
@@ -15,10 +15,13 @@ final public class AmplifyModels: AmplifyModelRegistration {
     ModelRegistry.register(modelType: ChatRoom.self)
     ModelRegistry.register(modelType: Message.self)
     ModelRegistry.register(modelType: Post.self)
-    ModelRegistry.register(modelType: Ticket.self)
     ModelRegistry.register(modelType: Event.self)
+    ModelRegistry.register(modelType: Ticket.self)
     ModelRegistry.register(modelType: EndorsementRequest.self)
     ModelRegistry.register(modelType: Attendance.self)
+    ModelRegistry.register(modelType: EventDJLink.self)
+    ModelRegistry.register(modelType: Transaction.self)
+    ModelRegistry.register(modelType: VenueComplianceSubmission.self)
     ModelRegistry.register(modelType: UserChatRooms.self)
   }
 }

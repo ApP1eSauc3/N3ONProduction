@@ -22,13 +22,15 @@ extension Post {
     let post = Post.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "UserGroup", "VenueOwnerUser"], provider: .userPools, operations: [.create, .update, .delete, .read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "UserGroup", "VenueOwnerUser"], provider: .userPools, operations: [.create, .update, .delete, .read]),
+      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete, .read])
     ]
     
     model.listPluralName = "Posts"
     model.syncPluralName = "Posts"
     
     model.attributes(
+      .index(fields: ["ownerID", "timestamp"], name: "byOwner"),
       .primaryKey(fields: [post.id])
     )
     
