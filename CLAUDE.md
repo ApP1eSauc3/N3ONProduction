@@ -122,6 +122,28 @@ If you add a new app-level model that shares a name with an Amplify model, add i
 
 ---
 
+## Naming rules
+
+Xcode's `PBXFileSystemSynchronizedRootGroup` compiles all `.swift` files under `Prompt/` into the same target. Two files with the same name anywhere under `Prompt/` — even in different subdirectories — will collide on build output and cause:
+
+```
+Multiple commands produce '...SearchView.stringsdata'
+duplicate output file on task: SwiftDriver Compilation
+```
+
+**Rule: every Swift file in this project must have a unique filename across all layer directories.**
+
+Prefix feature-specific views with their context to avoid clashes:
+
+| Instead of | Use |
+|---|---|
+| `Prompt/Map/SearchView.swift` | `Prompt/Map/MapSearchView.swift` |
+| `Prompt/Event/DetailView.swift` | `Prompt/Event/EventDetailView.swift` |
+
+This applies to all layers, not just `Prompt/`.
+
+---
+
 ## What to avoid
 
 - `@Observable` — iOS 17+ only
