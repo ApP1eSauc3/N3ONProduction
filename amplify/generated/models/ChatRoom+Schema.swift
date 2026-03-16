@@ -31,6 +31,7 @@ extension ChatRoom {
     model.syncPluralName = "ChatRooms"
     
     model.attributes(
+      .index(fields: ["associatedEvent"], name: "byEvent"),
       .primaryKey(fields: [chatRoom.id])
     )
     

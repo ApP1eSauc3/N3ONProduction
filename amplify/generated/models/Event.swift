@@ -6,7 +6,7 @@ public struct Event: Model {
   public let id: String
   public var venueID: String
   public var hostDJID: String
-  public var djUsernames: [String]
+  public var djLinks: List<EventDJLink>?
   public var vjUsername: String?
   public var package: String
   public var requestNote: String?
@@ -14,17 +14,16 @@ public struct Event: Model {
   public var posterKey: String?
   public var eventName: String
   public var description: String
-  public var attendances: List<Attendance>?
-  public var attendees: [String?]
   public var ticketPrice: Double
   public var availableTickets: Int
+  public var attendances: List<Attendance>?
   public var createdAt: Temporal.DateTime?
   public var updatedAt: Temporal.DateTime?
   
   public init(id: String = UUID().uuidString,
       venueID: String,
       hostDJID: String,
-      djUsernames: [String] = [],
+      djLinks: List<EventDJLink>? = [],
       vjUsername: String? = nil,
       package: String,
       requestNote: String? = nil,
@@ -32,14 +31,13 @@ public struct Event: Model {
       posterKey: String? = nil,
       eventName: String,
       description: String,
-      attendances: List<Attendance>? = [],
-      attendees: [String?] = [],
       ticketPrice: Double,
-      availableTickets: Int) {
+      availableTickets: Int,
+      attendances: List<Attendance>? = []) {
     self.init(id: id,
       venueID: venueID,
       hostDJID: hostDJID,
-      djUsernames: djUsernames,
+      djLinks: djLinks,
       vjUsername: vjUsername,
       package: package,
       requestNote: requestNote,
@@ -47,17 +45,16 @@ public struct Event: Model {
       posterKey: posterKey,
       eventName: eventName,
       description: description,
-      attendances: attendances,
-      attendees: attendees,
       ticketPrice: ticketPrice,
       availableTickets: availableTickets,
+      attendances: attendances,
       createdAt: nil,
       updatedAt: nil)
   }
   internal init(id: String = UUID().uuidString,
       venueID: String,
       hostDJID: String,
-      djUsernames: [String] = [],
+      djLinks: List<EventDJLink>? = [],
       vjUsername: String? = nil,
       package: String,
       requestNote: String? = nil,
@@ -65,16 +62,15 @@ public struct Event: Model {
       posterKey: String? = nil,
       eventName: String,
       description: String,
-      attendances: List<Attendance>? = [],
-      attendees: [String?] = [],
       ticketPrice: Double,
       availableTickets: Int,
+      attendances: List<Attendance>? = [],
       createdAt: Temporal.DateTime? = nil,
       updatedAt: Temporal.DateTime? = nil) {
       self.id = id
       self.venueID = venueID
       self.hostDJID = hostDJID
-      self.djUsernames = djUsernames
+      self.djLinks = djLinks
       self.vjUsername = vjUsername
       self.package = package
       self.requestNote = requestNote
@@ -82,10 +78,9 @@ public struct Event: Model {
       self.posterKey = posterKey
       self.eventName = eventName
       self.description = description
-      self.attendances = attendances
-      self.attendees = attendees
       self.ticketPrice = ticketPrice
       self.availableTickets = availableTickets
+      self.attendances = attendances
       self.createdAt = createdAt
       self.updatedAt = updatedAt
   }

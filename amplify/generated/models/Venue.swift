@@ -12,7 +12,7 @@ public struct Venue: Model {
   public var rating: Double?
   public var imageKey: [String]?
   public var owner: User?
-  public var maxCapacity: Int?
+  public var maxCapacity: Int
   public var currentUsers: Int?
   public var revenue: Double?
   public var dailyUserCounts: List<DailyUserCount>?
@@ -30,7 +30,7 @@ public struct Venue: Model {
       rating: Double? = nil,
       imageKey: [String]? = nil,
       owner: User? = nil,
-      maxCapacity: Int? = nil,
+      maxCapacity: Int,
       currentUsers: Int? = nil,
       revenue: Double? = nil,
       dailyUserCounts: List<DailyUserCount>? = [],
@@ -63,7 +63,7 @@ public struct Venue: Model {
       rating: Double? = nil,
       imageKey: [String]? = nil,
       owner: User? = nil,
-      maxCapacity: Int? = nil,
+      maxCapacity: Int,
       currentUsers: Int? = nil,
       revenue: Double? = nil,
       dailyUserCounts: List<DailyUserCount>? = [],

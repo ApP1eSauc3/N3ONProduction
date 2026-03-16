@@ -8,7 +8,7 @@ extension Event {
     case id
     case venueID
     case hostDJID
-    case djUsernames
+    case djLinks
     case vjUsername
     case package
     case requestNote
@@ -16,10 +16,9 @@ extension Event {
     case posterKey
     case eventName
     case description
-    case attendances
-    case attendees
     case ticketPrice
     case availableTickets
+    case attendances
     case createdAt
     case updatedAt
   }
@@ -31,13 +30,16 @@ extension Event {
     let event = Event.keys
     
     model.authRules = [
-      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete, .read])
+      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read])
     ]
     
     model.listPluralName = "Events"
     model.syncPluralName = "Events"
     
     model.attributes(
+      .index(fields: ["venueID", "eventDate"], name: "byVenue"),
+      .index(fields: ["hostDJID", "eventDate"], name: "byHostDJ"),
       .primaryKey(fields: [event.id])
     )
     
@@ -45,7 +47,7 @@ extension Event {
       .field(event.id, is: .required, ofType: .string),
       .field(event.venueID, is: .required, ofType: .string),
       .field(event.hostDJID, is: .required, ofType: .string),
-      .field(event.djUsernames, is: .required, ofType: .embeddedCollection(of: String.self)),
+      .hasMany(event.djLinks, is: .optional, ofType: EventDJLink.self, associatedWith: EventDJLink.keys.event),
       .field(event.vjUsername, is: .optional, ofType: .string),
       .field(event.package, is: .required, ofType: .string),
       .field(event.requestNote, is: .optional, ofType: .string),
@@ -53,10 +55,9 @@ extension Event {
       .field(event.posterKey, is: .optional, ofType: .string),
       .field(event.eventName, is: .required, ofType: .string),
       .field(event.description, is: .required, ofType: .string),
-      .hasMany(event.attendances, is: .optional, ofType: Attendance.self, associatedWith: Attendance.keys.event),
-      .field(event.attendees, is: .required, ofType: .embeddedCollection(of: String.self)),
       .field(event.ticketPrice, is: .required, ofType: .double),
       .field(event.availableTickets, is: .required, ofType: .int),
+      .hasMany(event.attendances, is: .optional, ofType: Attendance.self, associatedWith: Attendance.keys.event),
       .field(event.createdAt, is: .optional, isReadOnly: true, ofType: .dateTime),
       .field(event.updatedAt, is: .optional, isReadOnly: true, ofType: .dateTime)
     )
