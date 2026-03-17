@@ -213,6 +213,46 @@ This applies to all layers, not just `Prompt/`.
 
 ---
 
+## `User.djRank` not `endorsementLevel` — and it is `Int?`
+
+`User` has `djRank: Int?` (nullable). There is no `endorsementLevel` field. Always use `user.djRank ?? 0` when an `Int` is needed. Write back with `user.djRank = newValue`.
+
+## `EventDJLink.event` is a `belongsTo` association — access ID via `.event?.id`
+
+`EventDJLink` has no `eventID: String` property. The event is accessed as `event: Event?`. To get the ID: `link.event?.id`. Use `compactMap` since the association is optional.
+
+```swift
+// ✅
+let eventIDs = Set(links.compactMap { $0.event?.id })
+
+// ❌
+let eventIDs = Set(links.map { $0.eventID })
+```
+
+## `EndorsementRequest` uses `.toUser` / `.fromUser` keys, not `.toUserID` / `.fromUserID`
+
+`EndorsementRequest.keys` has `.toUser` and `.fromUser` (the association names). The underlying DB fields are `toUserID`/`fromUserID` but the Swift `CodingKeys` enum uses the association names. Similarly access the associated user via `.fromUser` not `.fromUserID`.
+
+## `DailyUserCount.keys.venue` not `.venueID`
+
+Same pattern — the `belongsTo` association key is `.venue`, not `.venueID`.
+
+## `Temporal.DateTime?` is not `Date?` — use `.foundationDate`
+
+`User.createdAt` is `Temporal.DateTime?`. It cannot be passed to APIs expecting `Date?`. Use `.foundationDate` to convert: `user.createdAt?.foundationDate ?? fallbackDate`.
+
+## Amplify `Model` does not automatically conform to `Identifiable`
+
+Amplify-generated models conform to `Model`, not `Identifiable`. `ForEach` and `sheet(item:)` require `Identifiable`. Since the model already has `id: String`, add a one-line extension in the file that needs it:
+
+```swift
+extension Post: Identifiable {}
+```
+
+Do not add this to the generated model file — add it at the top of the view file that needs it.
+
+---
+
 ## `AuthCognitoTokens` existential — use `Result.get()`, never pattern match
 
 Neither `guard case .success(let tokens) =` nor `switch` reliably extracts the associated value from `Result<any AuthCognitoTokens, AuthError>` due to Swift's existential binding rules. Use `Result.get()` which returns `Success` directly:

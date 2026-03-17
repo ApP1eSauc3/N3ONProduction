@@ -36,4 +36,12 @@ final class RoleAwareProfileViewModel: ObservableObject {
         }
         isDJMode = roles.contains(.dj)
     }
+
+    func uploadAvatar(image: UIImage) async {
+        do {
+            avatarState = try await AvatarUploadService.uploadUIImage(image)
+        } catch {
+            // keep existing avatarState on failure
+        }
+    }
 }
