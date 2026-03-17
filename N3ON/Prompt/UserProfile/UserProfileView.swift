@@ -77,14 +77,11 @@ struct UserProfileView: View {
                 selection: $pickerItem,
                 matching: .images
             )
-            .onChange(of: pickerItem) { item in
+            .onChangeCompat(of: pickerItem) { _, item in
                 guard let item else { return }
                 Task {
                     if let data = try? await item.loadTransferable(type: Data.self),
                        let image = UIImage(data: data) {
-                        // TODO: confirm uploadAvatar(image:) exists on RoleAwareProfileViewModel.
-                        // If it doesn't, add it — it should call StorageUploader and
-                        // update vm.avatarState so PulsingAvatarView refreshes.
                         await vm.uploadAvatar(image: image)
                     }
                 }
@@ -95,7 +92,7 @@ struct UserProfileView: View {
     private var header: some View {
         VStack(spacing: 18) {
             ZStack(alignment: .bottomTrailing) {
-                PulsingAvatarView(state: vm.avatarState, fromMemoryCache: true)
+                PulsingAvatarView(state: vm.avatarState, audioKey: nil, size: 120, fromMemoryCache: true)
                     .frame(width: 120, height: 120)
                     .overlay(
                         Circle()

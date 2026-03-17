@@ -5,6 +5,9 @@
 
 import SwiftUI
 
+// Post is an Amplify Model — Model doesn't inherit Identifiable, but Post has id: String
+extension Post: Identifiable {}
+
 struct PostFeedView: View {
     let posts: [Post]
     @State private var selectedPost: Post?
