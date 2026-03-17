@@ -89,9 +89,8 @@ struct TicketPricingStepView: View {
 
                 Button("Submit Event") {
                     Task {
-                        let eligible = await draft.verifyEligibility()
-                        if eligible {
-                            await draft.uploadPosterAndSaveEvent()
+                        if draft.meetsRankRequirements() {
+                            await draft.submitEvent()
                         } else {
                             showRankAlert = true
                         }
