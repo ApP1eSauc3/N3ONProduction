@@ -67,8 +67,8 @@ struct MediaPostComposer: View {
         isUploading = true
         defer { isUploading = false }
 
-        var urlList: [URL] = []
-        var typeList: [MediaType] = []
+        var keyList: [String] = []
+        var typeList: [String] = []
 
         do {
             let auth = try await Amplify.Auth.getCurrentUser()
@@ -78,9 +78,7 @@ struct MediaPostComposer: View {
                     guard let jpeg = ImagePipeline.makeJPEGData(from: img, config: .feed) else { continue }
                     let key = MediaKind.feedImage(userID: auth.userId).makeKey(extension: "jpg")
                     _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .protected)
-                    if let url = await StorageUploader.signedURL(for: key, access: .protected) {
-                        urlList.append(url); typeList.append(.image)
-                    }
+                    keyList.append(key); typeList.append(MediaType.image.rawValue)
                 }
             }
             // videos
@@ -88,9 +86,7 @@ struct MediaPostComposer: View {
                 for videoURL in selectedVideos {
                     let key = MediaKind.feedVideo(userID: auth.userId).makeKey(extension: "mov")
                     _ = try await StorageUploader.uploadFile(url: videoURL, key: key, contentType: "video/quicktime", access: .protected)
-                    if let url = await StorageUploader.signedURL(for: key, access: .protected) {
-                        urlList.append(url); typeList.append(.video)
-                    }
+                    keyList.append(key); typeList.append(MediaType.video.rawValue)
                 }
             }
             // audios
@@ -98,14 +94,18 @@ struct MediaPostComposer: View {
                 for audioURL in selectedAudios {
                     let key = MediaKind.feedAudio(userID: auth.userId).makeKey(extension: "m4a")
                     _ = try await StorageUploader.uploadFile(url: audioURL, key: key, contentType: "audio/m4a", access: .protected)
-                    if let url = await StorageUploader.signedURL(for: key, access: .protected) {
-                        urlList.append(url); typeList.append(.audio)
-                    }
+                    keyList.append(key); typeList.append(MediaType.audio.rawValue)
                 }
             }
 
-            if !urlList.isEmpty {
-                let newPost = Post(id: UUID(), urls: urlList, types: typeList, timestamp: Date(), caption: caption)
+            if !keyList.isEmpty {
+                let newPost = Post(
+                    id: UUID().uuidString,
+                    urls: keyList,
+                    types: typeList,
+                    timestamp: Temporal.DateTime(Date()),
+                    caption: caption
+                )
                 posts.insert(newPost, at: 0)
             }
 

@@ -147,7 +147,7 @@ struct UserProfileView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color("darkGray").opacity(0.9))
+                .fill(Color.customDarkGray.opacity(0.9))
                 .frame(minHeight: 300)
                 .overlay(
                     Text("Content Placeholder").foregroundStyle(.white.opacity(0.5))

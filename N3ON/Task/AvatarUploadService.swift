@@ -27,7 +27,7 @@ enum AvatarUploadService {
         guard let jpeg = ImagePipeline.makeJPEGData(from: image, config: .avatar)
         else { throw UploadError.encodingFailed }
 
-        let key = MediaKind.avatar(userId: auth.userId).makeKey(extension: "jpg")
+        let key = MediaKind.avatar(userID: auth.userId).makeKey(extension: "jpg")
         _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .protected)
         me.avatarKey = key
         try await Amplify.DataStore.save(me)

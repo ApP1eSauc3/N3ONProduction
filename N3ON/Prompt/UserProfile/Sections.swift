@@ -15,7 +15,7 @@ struct RegularUserSection: View {
             Text("My Tickets").font(.headline).foregroundColor(.white)
 
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color("darkGray"))
+                .fill(Color.customDarkGray)
                 .frame(height: 120)
                 .overlay(
                     Text("Purchased tickets & QR codes")
@@ -79,7 +79,7 @@ struct DJSection: View {
             }
             .frame(maxWidth: .infinity)
             .padding(12)
-            .background(Color("darkGray"))
+            .background(Color.customDarkGray)
             .foregroundColor(.white)
             .cornerRadius(10)
         }
@@ -109,7 +109,7 @@ struct VenueSection: View {
                     .foregroundColor(.white.opacity(0.6))
             }
             .padding(12)
-            .background(Color("darkGray"))
+            .background(Color.customDarkGray)
             .foregroundColor(.white)
             .cornerRadius(10)
         }

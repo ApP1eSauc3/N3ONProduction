@@ -27,7 +27,7 @@ struct MainView: View {
                     }
                     .tag(1)
             }
-        .toolbarBackground(Color("darkGray"), for: .tabBar)
+        .toolbarBackground(Color.customDarkGray, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .tint(.white)
           

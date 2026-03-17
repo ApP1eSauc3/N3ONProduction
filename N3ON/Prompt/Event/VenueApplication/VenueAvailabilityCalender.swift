@@ -82,6 +82,6 @@ struct VenueAvailabilityElegantCalendarView: View {
         )
     ]
 
-    VenueAvailabilityElegantCalendarView(venueEvents: sampleEvents)
+    return VenueAvailabilityElegantCalendarView(venueEvents: sampleEvents)
         .environmentObject(draft)
 }

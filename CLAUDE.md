@@ -73,6 +73,15 @@ If a change would violate a layer rule, flag it before writing any code.
 - Generated model files are in `amplify/generated/models/`. Read them to get field names — do not guess.
 - `Data/Event.swift` and `Data/EndorsementRequest.swift` are excluded from the N3ON build target (they conflict with same-named Amplify models). The Amplify versions are the source of truth.
 - Query pattern: `try await Amplify.DataStore.query(ModelType.self, where: predicate)`
+- `Temporal.DateTime` requires the **two-parameter form** — `Temporal.DateTime(date, timeZone: .current)`. The single-parameter form `Temporal.DateTime(date)` does not compile. Never use `Temporal.DateTime(iso8601String:)` for dates constructed in code.
+
+```swift
+// ✅
+eventDate: Temporal.DateTime(Date().addingTimeInterval(86400), timeZone: .current)
+
+// ❌ — does not compile
+eventDate: Temporal.DateTime(Date().addingTimeInterval(86400))
+```
 
 ### Auth
 - Call `AuthService.currentUserId()` (async throws) to get the current user ID. Never use the synchronous form — the session may not be ready on launch.
@@ -117,8 +126,40 @@ final class FooViewModel: ObservableObject {
 |------|-----------|
 | `Data/Event.swift` | Excluded from N3ON target — `amplify/generated/models/Event.swift` is used |
 | `Data/EndorsementRequest.swift` | Excluded from N3ON target — `amplify/generated/models/EndorsementRequest.swift` is used |
+| `API.swift` (root) | Not in the build target — do not add it. It's a 27,000-line auto-generated GraphQL file that defines `struct Venue` and every other model as nested `GraphQLSelectionSet` types. Including it causes "ambiguous type" errors across the entire codebase. |
 
 If you add a new app-level model that shares a name with an Amplify model, add it to the `PBXFileSystemSynchronizedBuildFileExceptionSet` for the Data group in `project.pbxproj` (UUID `AA000001000000000000006A`).
+
+## Schema change workflow
+
+When `schema.graphql` changes, always run both commands before starting a Claude Code session:
+
+```bash
+amplify push            # deploys schema to AppSync
+amplify codegen models  # regenerates Swift model files
+```
+
+Never start a session that references new or changed model types before codegen has run. The Swift files won't exist yet and Claude will hallucinate field names to fill the gap.
+
+---
+
+## Tally system and EventDJLink
+
+The event tally determines whether ticket sales unlock. All logic is server-side — the client is display-only.
+
+- **`EventDJLink` snapshot fields are Lambda-written only.** `rankAtJoining` and `coinContribution` are set via IAM when a DJ joins. Never write them from a View or ViewModel.
+- **`djRank` is read-only from the client.** Rank promotion is not yet built. Never write `User.djRank` from app code.
+- **`djLinks` not `djUsernames` on Event.** `Event.djUsernames: [String!]!` was removed — DJ roster is via `EventDJLink @hasMany`. Any reference to `djUsernames` is a compile error.
+- **Lambda gates ticket sales before stock check.** `purchaseTicket` Lambda calls `calculateTally` first and rejects with `EVENT_NOT_VALID` if tally not met. Never enforce this client-side only.
+- **Tally weights and capacity tiers live in DynamoDB config, not in app code.** `RankWeights` and `CapacityTiers` tables are read by Lambda at runtime. Do not hardcode rank weights or tally thresholds anywhere in Swift.
+
+| Rank | Coin weight | Notes |
+|------|-------------|-------|
+| 1 | 0 | Can join, contributes nothing |
+| 2 | 5 | |
+| 3 | 7 | |
+| 4 | 10 | |
+| 5 | 25 | Host rank — only Rank 5 can create events |
 
 ---
 
@@ -169,6 +210,78 @@ Prefix feature-specific views with their context to avoid clashes:
 | `Prompt/Event/DetailView.swift` | `Prompt/Event/EventDetailView.swift` |
 
 This applies to all layers, not just `Prompt/`.
+
+---
+
+## Cognito tokens API
+
+`AuthCognitoTokensProvider.getCognitoTokens()` is **synchronous and non-throwing** — it returns `Result<any AuthCognitoTokens, AuthError>`. Never wrap it in `try await`. `AuthCognitoTokens.idToken` is a raw JWT `String`, not a structured object — decode the payload manually via base64 + `JSONSerialization`. The canonical implementation lives in `Data/AppRole.swift` (`decodeJWT(_:)`).
+
+```swift
+// ✅
+guard case .success(let tokens) = provider.getCognitoTokens(),
+      let payload = Self.decodeJWT(tokens.idToken),
+      let groups = payload["cognito:groups"] as? [String]
+else { return [] }
+
+// ❌ — getCognitoTokens() is not async/throws; tokens.idToken has no .payload property
+let tokens = try await provider.getCognitoTokens()
+tokens.idToken.payload["cognito:groups"]
+```
+
+## Color asset naming
+
+Never name a color asset the same as a `UIColor` class property (`darkGray`, `lightGray`, `red`, `blue`, etc.). Xcode auto-generates `Color` extension symbols from asset names; a clash with `UIColor` produces a `#warning` in `GeneratedAssetSymbols.swift` on every build.
+
+- The app dark-gray asset is named **`appDarkGray`** (not `darkGray`).
+- Always reference it via `Color.customDarkGray` (defined in `Tools/Colour.swift`), never via `Color("appDarkGray")` string literals in individual views.
+
+## `MediaKind` argument label
+
+`MediaKind.avatar` takes `userID:` (capital I), matching all other `userID` parameters in the project. Never use `userId:`.
+
+---
+
+## Common async/await mistakes
+
+### `Result.init(catching:)` is synchronous — never pass an async closure to it
+`Result { try await someAsyncCall() }` does not compile — `Result.init(catching:)` accepts only a synchronous throwing closure. Use `do/catch` instead:
+
+```swift
+// ✅
+do {
+    let tokens = try await provider.getCognitoTokens()
+    // use tokens
+} catch { ... }
+
+// ❌ — "Cannot pass function of type '() async throws -> ...' to parameter expecting synchronous function type"
+case .success(let x) = await Result { try await provider.getCognitoTokens() }
+```
+
+### `StorageUploader.signedURL` returns non-optional `URL` and throws — never use `if let`
+`signedURL(for:access:)` returns `URL` (not `URL?`) and is `async throws`. Using `if let url = await StorageUploader.signedURL(...)` produces two errors: "Initializer for conditional binding must have Optional type" and "Call can throw but is not marked with 'try'". Use `try await` directly:
+
+```swift
+// ✅
+let url = try await StorageUploader.signedURL(for: key, access: .protected)
+
+// ❌
+if let url = await StorageUploader.signedURL(for: key, access: .protected) { ... }
+```
+
+### `Post.urls` and `Post.types` store S3 keys and raw type strings — not `URL` objects or `MediaType` enums
+`Post` (Amplify model) has `urls: [String]` and `types: [String]`. Store the S3 key string and `MediaType.rawValue` respectively. Never store signed `URL` objects — they expire. `Post.id` is `String` and `Post.timestamp` is `Temporal.DateTime`.
+
+```swift
+// ✅
+Post(id: UUID().uuidString, urls: keyList, types: typeList, timestamp: Temporal.DateTime(Date()), caption: caption)
+
+// ❌
+Post(id: UUID(), urls: urlList, types: mediaTypeList, timestamp: Date(), caption: caption)
+```
+
+### Missing picker types — check `Tools/` before using any picker
+Pickers live in `Tools/`. Available: `ImagePicker`, `MixedMediaPicker`, `AudioPicker`. If a picker is referenced but not present in `Tools/`, create it there as a `UIViewControllerRepresentable`. Never reference a picker that doesn't exist.
 
 ---
 

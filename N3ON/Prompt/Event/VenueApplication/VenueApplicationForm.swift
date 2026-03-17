@@ -132,7 +132,7 @@ struct VenueApplicationForm: View {
                 selectedImages.append(image)
             }
         }
-        .onChange(of: venueAddress) { _ in
+        .onChangeCompat(of: venueAddress) {
             geocodeAddress()
         }
     }

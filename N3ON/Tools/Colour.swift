@@ -8,5 +8,5 @@
 import SwiftUI
 
 extension Color {
-    static let customDarkGray = Color("darkGray")
+    static let customDarkGray = Color("appDarkGray")
 }
