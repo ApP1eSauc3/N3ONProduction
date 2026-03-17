@@ -22,13 +22,10 @@ struct AccessControlService {
         do {
             let session = try await Amplify.Auth.fetchAuthSession()
             guard let provider = session as? AuthCognitoTokensProvider else { return [] }
-            // Use switch — guard case binding stays typed as Result<...> due to existential,
-            // so extract idToken as String directly to escape the ambiguity
+            // Result.get() avoids existential pattern-match ambiguity entirely
             let idToken: String
-            switch provider.getCognitoTokens() {
-            case .success(let tokens): idToken = tokens.idToken
-            case .failure: return []
-            }
+            do { idToken = try provider.getCognitoTokens().get().idToken }
+            catch { return [] }
             guard let payload = Self.decodeJWT(idToken),
                   let groups = payload["cognito:groups"] as? [String]
             else { return [] }

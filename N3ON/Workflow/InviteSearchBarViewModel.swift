@@ -35,7 +35,7 @@ class InviteSearchBarViewModel: ObservableObject {
                 }
                 await MainActor.run {
                     self.results = filtered.map {
-                        UserSummary(id: $0.id, username: $0.username, avatarKey: $0.avatarKey)
+                        UserSummary(id: $0.id, username: $0.username, avatarKey: $0.avatarKey, isDJ: $0.isDJ)
                     }
                 }
             } catch {

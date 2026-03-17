@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Amplify
 
 struct UserSearchRow: View {
     let user: UserSummary
@@ -57,23 +56,9 @@ struct UserSearchRow: View {
             }
         }
         .padding(.vertical, 4)
-        .onAppear {
-            loadAvatarURL()
-        }
-    }
-
-    private func loadAvatarURL() {
-        guard let key = user.avatarKey else { return }
-
-        Amplify.Storage.getURL(key: key, options: .init(accessLevel: .protected)) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let url):
-                    self.avatarURL = url
-                case .failure(let error):
-                    print("❌ Failed to load avatar for \(user.username): \(error)")
-                }
-            }
+        .task {
+            guard let key = user.avatarKey else { return }
+            avatarURL = try? await StorageUploader.signedURL(for: key, access: .protected)
         }
     }
 }

@@ -5,10 +5,11 @@
 //  Created by liam howe on 12/7/2025.
 //
 
-import SwiftUI
+import Foundation
 
 struct UserSummary: Identifiable {
     let id: String
     let username: String
     let avatarKey: String?
+    let isDJ: Bool
 }

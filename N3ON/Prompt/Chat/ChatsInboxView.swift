@@ -43,12 +43,14 @@ final class ChatsInboxVM: ObservableObject {
 
             let links = try await Amplify.DataStore.query(
                 UserChatRooms.self,
-                where: UserChatRooms.keys.userId == auth.userId
+                where: UserChatRooms.keys.user == auth.userId
             )
-            let roomIds = Array(Set(links.compactMap { $0.chatRoom.id }))
+            let roomIds = Set(links.compactMap { $0.chatRoom.id })
             guard !roomIds.isEmpty else { pinned = []; others = []; return }
 
-            let rooms = try await Amplify.DataStore.query(ChatRoom.self, where: ChatRoom.keys.id.in(roomIds))
+            // Amplify DataStore has no .in() predicate — query all and filter in memory
+            let allRooms = try await Amplify.DataStore.query(ChatRoom.self)
+            let rooms = allRooms.filter { roomIds.contains($0.id) }
 
             var summaries: [ChatSummary] = []
             for room in rooms {
@@ -86,7 +88,7 @@ final class ChatsInboxVM: ObservableObject {
 
         let links = try await Amplify.DataStore.query(
             UserChatRooms.self,
-            where: UserChatRooms.keys.chatRoomId == room.id
+            where: UserChatRooms.keys.chatRoom == room.id
         )
         let users = links.compactMap { $0.user }
         let otherNames = users.filter { $0.id != me }.map { $0.username }
@@ -111,7 +113,7 @@ final class ChatsInboxVM: ObservableObject {
                 if event.hostDJID == me {
                     pinned = true
                 } else if let venue = try await Amplify.DataStore.query(Venue.self, byId: event.venueID),
-                          venue.ownerID == me {
+                          venue.owner?.id == me {
                     pinned = true
                 }
             }
@@ -181,7 +183,7 @@ struct ChatsInboxView: View {
         .sheet(isPresented: $showChat) { if let openVM { ChatView(viewModel: openVM) } }
         .navigationTitle("Chats")
         .toolbar {
-            NavigationLink(destination: InviteDJView()) { Image(systemName: "square.and.pencil") }
+            NavigationLink(destination: InviteDJSearchView()) { Image(systemName: "square.and.pencil") }
         }
     }
 

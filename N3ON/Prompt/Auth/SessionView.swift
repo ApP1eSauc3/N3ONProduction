@@ -82,7 +82,7 @@ struct SessionView: View {
                     isSignedIn = false
                     userState.userId = ""
                     userState.username = ""
-                    userState.avatarState = .placeholder
+                    userState.avatarState = .remote(avatarKey: "default-avatar")
 
                 default:
                     break
