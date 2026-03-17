@@ -1,53 +1,37 @@
-//
-//  MapView.swift
-//  N3ON
-//
-//  Created by liam howe on 22/6/2024.
-//
+// MapView.swift
+// N3ON
 
 import SwiftUI
 import MapKit
 import CoreLocation
 
+// Venue needs Identifiable for sheet(item:)
+extension Venue: Identifiable {}
+
 struct MapView: View {
     @EnvironmentObject var viewModel: MapViewModel
     @StateObject private var unreadVM = UnreadCounterVM()
     @State private var showChatPanel = false
-    @FocusState private var isSearchFieldFocused: Bool
-    @State private var isEditing = false
+    @State private var selectedVenue: Venue?
 
     var body: some View {
         ZStack(alignment: .trailing) {
-            ZStack(alignment: .top) {
-                CustomMapView(
-                    region: $viewModel.mapRegion,
-                    searchResults: viewModel.mapItems,
-                    venues: [],
-                    visibleDJPins: [],
-                    groupLocations: [],
-                    allEvents: [],
-                    onDoubleTap: handleDoubleTap,
-                    onVenueTap: { _ in }
-                )
-                .ignoresSafeArea(.container, edges: [.top])
+            CustomMapView(
+                region: $viewModel.mapRegion,
+                venues: viewModel.venues,
+                visibleDJPins: [],
+                groupLocations: [],
+                allEvents: viewModel.events,
+                onDoubleTap: handleDoubleTap,
+                onVenueTap: { venue in selectedVenue = venue }
+            )
+            .ignoresSafeArea(.container, edges: [.top])
 
-                SearchBar(
-                    searchText: $viewModel.searchText,
-                    isEditing: $isEditing,
-                    isSearchFieldFocused: $isSearchFieldFocused
-                )
-                .environmentObject(viewModel)
-                .padding(.top, 50)
-                .padding(.horizontal, 16)
-            }
-
+            // Chat button
             VStack {
                 Button {
                     showChatPanel.toggle()
-                    if showChatPanel {
-                        // UI reset; actual "read" happens inside ChatView per message
-                        unreadVM.reset()
-                    }
+                    if showChatPanel { unreadVM.reset() }
                 } label: {
                     Image(systemName: "message.badge.filled.fill")
                         .font(.system(size: 24))
@@ -61,7 +45,7 @@ struct MapView: View {
                         .overlay(alignment: .topTrailing) {
                             if unreadVM.count > 0 {
                                 Text("\(unreadVM.count)")
-                                    .font(.caption)
+                                    .font(.caption2).bold()
                                     .padding(4)
                                     .background(Color.red)
                                     .clipShape(Circle())
@@ -72,15 +56,41 @@ struct MapView: View {
                 .padding(.top, 60)
                 .padding(.trailing, 20)
 
+                // Locate me button
+                Button {
+                    viewModel.zoomToUserLocation()
+                } label: {
+                    Image(systemName: "location.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.white)
+                        .padding(12)
+                        .background {
+                            Circle()
+                                .fill(Color("neonPurpleBackground").opacity(0.85))
+                                .shadow(color: .black.opacity(0.3), radius: 5)
+                        }
+                }
+                .padding(.top, 12)
+                .padding(.trailing, 20)
+
                 Spacer()
             }
 
-            // panel slides in like before
             ChatPanelView()
                 .offset(x: showChatPanel ? 0 : UIScreen.main.bounds.width)
                 .animation(.spring(), value: showChatPanel)
         }
-        .task { await unreadVM.start() }
+        .task {
+            await unreadVM.start()
+            await viewModel.loadMapData()
+        }
+        .sheet(item: $selectedVenue) { venue in
+            VenueEventSheet(
+                venue: venue,
+                events: viewModel.events.filter { $0.venueID == venue.id }
+            )
+            .environmentObject(viewModel)
+        }
     }
 
     private func handleDoubleTap(_ coordinate: CLLocationCoordinate2D) {
@@ -91,7 +101,5 @@ struct MapView: View {
         withAnimation(.easeInOut(duration: 0.3)) {
             viewModel.mapRegion = MKCoordinateRegion(center: coordinate, span: newSpan)
         }
-        viewModel.searchText = ""
-        isSearchFieldFocused = true
     }
 }
