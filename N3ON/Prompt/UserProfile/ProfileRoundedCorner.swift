@@ -40,8 +40,8 @@ struct UnevenCornerClip: Shape {
         let bl = corners.contains(.bottomLeft) ? r : 0
         let br = corners.contains(.bottomRight) ? r : 0
         let shape = UnevenRoundedRectangle(
-            topLeadingRadius: tl, topTrailingRadius: tr,
-            bottomLeadingRadius: bl, bottomTrailingRadius: br,
+            topLeadingRadius: tl, bottomLeadingRadius: bl,
+            bottomTrailingRadius: br, topTrailingRadius: tr,
             style: .continuous
         )
         return Path(shape.path(in: rect))
