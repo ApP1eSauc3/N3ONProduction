@@ -73,7 +73,7 @@ class DJProfileStatsService {
 
             // DailyUserCount.venue is a belongsTo — key is .venue not .venueID
             let daily = try await Amplify.DataStore.query(DailyUserCount.self, where: DailyUserCount.keys.venue == venueID)
-            let totalUsers = daily.reduce(0) { $0 + $1.userCount }
+            let totalUsers = daily.reduce(0) { $0 + ($1.userCount ?? 0) }
             let ratio = Double(totalUsers) / (Double(venue.maxCapacity) * Double(daily.count))
             capacityRatios.append(ratio * 100)
         }
