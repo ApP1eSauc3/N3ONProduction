@@ -5,7 +5,6 @@
 
 import Amplify
 import Foundation
-import Combine
 
 @MainActor
 final class DJViewModel: ObservableObject {
@@ -15,7 +14,6 @@ final class DJViewModel: ObservableObject {
     @Published var avatarURL: URL?
     @Published var errorMessage: String?
 
-    private var cancellables = Set<AnyCancellable>()
 
     init(user: User) {
         self.user = user
@@ -63,18 +61,16 @@ final class DJViewModel: ObservableObject {
     }
 
     private func subscribeToUserUpdates() {
-        Amplify.DataStore.publisher(for: User.self)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { _ in },
-                receiveValue: { [weak self] change in
-                    guard let self else { return }
-                    if case .update(let updatedUser) = change,
-                       updatedUser.id == self.user.id {
-                        self.user = updatedUser
-                    }
+        // Amplify v2: DataStore.publisher removed — use observe(_:) async sequence
+        Task {
+            do {
+                for try await change in Amplify.DataStore.observe(User.self) {
+                    guard change.mutationType == MutationEvent.MutationType.update.rawValue,
+                          let updatedUser = try? change.decodeModel(as: User.self),
+                          updatedUser.id == self.user.id else { continue }
+                    self.user = updatedUser
                 }
-            )
-            .store(in: &cancellables)
+            } catch { }
+        }
     }
 }

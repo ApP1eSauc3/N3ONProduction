@@ -46,7 +46,7 @@ final class ChatViewModel: ObservableObject {
             do {
                 let msg = Message(
                     id: UUID().uuidString,
-                    senderID: sender.id,
+                    sender: sender,
                     chatRoomID: chatRoomID,
                     content: text,
                     timestamp: Temporal.DateTime.now(),
@@ -75,7 +75,7 @@ final class ChatViewModel: ObservableObject {
                 // NOTE: Amplify manyToMany codegen field naming is inconsistent.
                 // After running `amplify codegen models`, verify whether the generated
                 // field is chatRoomId or chatRoomID — check the generated UserChatRooms.swift file.
-                where: UserChatRooms.keys.chatRoomId == chatRoomID
+                where: UserChatRooms.keys.chatRoom == chatRoomID
             )
 
             messages = messageResults.sorted {
