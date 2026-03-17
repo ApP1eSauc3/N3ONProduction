@@ -18,7 +18,8 @@ struct EventReviewSubmitReview: View {
                 .font(.title2.bold())
                 .foregroundColor(.white)
             
-            Group {
+            // Group is ambiguous in Swift 6 (inferred as Table row group) — use VStack
+            VStack(spacing: 8) {
                 HStack {
                     Text("📍 Venue:")
                     Spacer()
@@ -48,7 +49,6 @@ struct EventReviewSubmitReview: View {
                         Text(vj)
                     }
                 }
-                
                 if !draft.specialRequests.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("📝 Special Requests:")

@@ -213,6 +213,71 @@ This applies to all layers, not just `Prompt/`.
 
 ---
 
+## `AuthCognitoTokens` existential — use `Result.get()`, never pattern match
+
+Neither `guard case .success(let tokens) =` nor `switch` reliably extracts the associated value from `Result<any AuthCognitoTokens, AuthError>` due to Swift's existential binding rules. Use `Result.get()` which returns `Success` directly:
+
+```swift
+// ✅
+let idToken: String
+do { idToken = try provider.getCognitoTokens().get().idToken }
+catch { return [] }
+
+// ❌ — tokens stays typed as Result<...> in all pattern-match forms
+switch provider.getCognitoTokens() {
+case .success(let tokens): idToken = tokens.idToken  // error: no member 'idToken'
+}
+```
+
+## Amplify DataStore has no `.in()` predicate
+
+`ChatRoom.keys.id.in(roomIds)` does not compile — `ModelKey` has no `in()` method. Query all records and filter in memory:
+
+```swift
+// ✅
+let all = try await Amplify.DataStore.query(ChatRoom.self)
+let rooms = all.filter { roomIds.contains($0.id) }
+
+// ❌
+try await Amplify.DataStore.query(ChatRoom.self, where: ChatRoom.keys.id.in(roomIds))
+```
+
+## `Group` is ambiguous in Swift 6 — prefer `VStack` for layout grouping
+
+In Swift 6 / Xcode 26, `Group { HStack { ... } HStack { ... } }` can be inferred as a `Table` row group instead of a `View` group, producing "Generic parameter 'R' could not be inferred" and "Cannot convert HStack to TableColumn". Use `VStack(spacing:)` for layout grouping of heterogeneous views.
+
+## Ternary with `LinearGradient` vs `Color` requires `AnyShapeStyle`
+
+`LinearGradient` and `Color` are different concrete types — a ternary `? LinearGradient(...) : Color(...)` fails with "result values have mismatching types". Wrap both in `AnyShapeStyle`:
+
+```swift
+// ✅
+.background(flag ? AnyShapeStyle(LinearGradient(...)) : AnyShapeStyle(Color(...)))
+
+// ❌
+.background(flag ? LinearGradient(...) : Color(...))
+```
+
+## `UserSummary` includes `isDJ: Bool` mapped from `User.isDJ`
+
+`UserSummary` (in `Data/UserSummary.swift`) has `isDJ: Bool`. Map it from `User.isDJ` when constructing in `InviteSearchBarViewModel`. `User.isDJ` is a required non-optional `Bool` field on the Amplify model.
+
+## Amplify Storage v1 callback `getURL` removed — use `StorageUploader.signedURL`
+
+`Amplify.Storage.getURL(key:options:) { result in }` (callback form) does not exist in Amplify v2. Use `StorageUploader.signedURL(for:access:)` in a `.task {}` modifier:
+
+```swift
+// ✅
+.task {
+    avatarURL = try? await StorageUploader.signedURL(for: key, access: .protected)
+}
+
+// ❌ — v1 callback API removed
+Amplify.Storage.getURL(key: key, options: .init(accessLevel: .protected)) { result in ... }
+```
+
+---
+
 ## `AuthCognitoTokens` existential — always use `switch`, never `guard case`
 
 Even with a standalone `guard case .success(let tokens) = provider.getCognitoTokens()`, Swift may still type `tokens` as the full `Result<any AuthCognitoTokens, AuthError>` due to existential protocol binding. Use a `switch` and extract the primitive value directly:

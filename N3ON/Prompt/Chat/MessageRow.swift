@@ -60,9 +60,9 @@ struct MessageRow: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(message.isCurrentUser
-                        ? LinearGradient(colors: [Color("neonPurpleBackground"), Color("dullPurple")],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing)
-                        : Color(.systemGray5))
+                        ? AnyShapeStyle(LinearGradient(colors: [Color("neonPurpleBackground"), Color("dullPurple")],
+                                                       startPoint: .topLeading, endPoint: .bottomTrailing))
+                        : AnyShapeStyle(Color(.systemGray5)))
             .foregroundColor(message.isCurrentUser ? .white : .primary)
             .cornerRadius(18, corners: message.isCurrentUser
                           ? [.topLeft, .topRight, .bottomLeft]
