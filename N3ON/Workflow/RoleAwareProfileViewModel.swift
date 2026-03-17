@@ -5,6 +5,7 @@
 //  Created by liam howe on 21/8/2025.
 //
 import Foundation
+import UIKit
 import Amplify
 
 @MainActor
