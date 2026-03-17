@@ -3,6 +3,7 @@
 
 import Foundation
 import Amplify
+import UIKit
 
 @MainActor
 final class EventViewModel: ObservableObject {

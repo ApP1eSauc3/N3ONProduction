@@ -213,6 +213,72 @@ This applies to all layers, not just `Prompt/`.
 
 ---
 
+## `AuthCognitoTokens` existential — always use `switch`, never `guard case`
+
+Even with a standalone `guard case .success(let tokens) = provider.getCognitoTokens()`, Swift may still type `tokens` as the full `Result<any AuthCognitoTokens, AuthError>` due to existential protocol binding. Use a `switch` and extract the primitive value directly:
+
+```swift
+// ✅ — idToken is unambiguously String
+let idToken: String
+switch provider.getCognitoTokens() {
+case .success(let tokens): idToken = tokens.idToken
+case .failure: return []
+}
+
+// ❌ — tokens stays typed as Result<...> in some Swift versions
+guard case .success(let tokens) = provider.getCognitoTokens() else { return [] }
+tokens.idToken  // error: "has no member 'idToken'"
+```
+
+## Amplify v2: `DataStore.publisher(for:)` removed — use `observe(_:)`
+
+`Amplify.DataStore.publisher(for: Model.self)` does not exist in Amplify v2. Use the async sequence API `Amplify.DataStore.observe(Model.self)` and iterate with `for try await`:
+
+```swift
+// ✅
+Task {
+    for try await change in Amplify.DataStore.observe(User.self) {
+        guard change.mutationType == MutationEvent.MutationType.update.rawValue,
+              let updated = try? change.decodeModel(as: User.self) else { continue }
+        // use updated
+    }
+}
+
+// ❌ — removed in Amplify v2
+Amplify.DataStore.publisher(for: User.self)
+    .sink { change in ... }
+```
+
+## Workflow layer may import UIKit but never SwiftUI
+
+`Workflow/` files may `import UIKit` for types like `UIActivityViewController`, `UIApplication`, and `UIWindowScene`. The layer restriction is specifically against `import SwiftUI`. If a ViewModel needs to present a share sheet or access UIKit, add `import UIKit`.
+
+## Amplify model field names: `Message.sender` is `User?`, not `senderID: String`
+
+`Message` stores the sender as an associated `User` object (`sender: User?`), not a raw ID string. Pass the full `User` model:
+
+```swift
+// ✅
+Message(sender: senderUser, chatRoomID: id, ...)
+
+// ❌
+Message(senderID: sender.id, chatRoomID: id, ...)
+```
+
+## `UserChatRooms` query key is `.chatRoom`, not `.chatRoomId`
+
+`UserChatRooms.keys` (from `CodingKeys`) has `.chatRoom`, not `.chatRoomId`. The underlying DB index uses `chatRoomId` but the Swift predicate key is the association name:
+
+```swift
+// ✅
+UserChatRooms.keys.chatRoom == chatRoomID
+
+// ❌
+UserChatRooms.keys.chatRoomId == chatRoomID
+```
+
+---
+
 ## `@Published` is only valid inside `ObservableObject` classes
 
 `@Published` on a `View` struct produces "`wrappedValue` is unavailable: @Published is only available on properties of classes". Use `@State` for local mutable state in a `View`. `@State` uses `nonmutating set` (heap storage outside the struct), so assignments compile in non-mutating methods and `Task {}` closures — unlike `@Published` which uses `mutating set`.

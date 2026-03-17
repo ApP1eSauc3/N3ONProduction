@@ -5,7 +5,8 @@
 //  Created by liam howe on 12/7/2025.
 //
 
-import SwiftUI
+import Foundation
+import Amplify
 import Combine
 
 class InviteSearchBarViewModel: ObservableObject {
@@ -32,7 +33,7 @@ class InviteSearchBarViewModel: ObservableObject {
                 let filtered = allUsers.filter {
                     $0.username.lowercased().contains(term.lowercased())
                 }
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.results = filtered.map {
                         UserSummary(id: $0.id, username: $0.username, avatarKey: $0.avatarKey)
                     }
