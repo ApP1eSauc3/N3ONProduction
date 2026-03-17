@@ -54,9 +54,7 @@ struct VenueApplicationForm: View {
             
             // Section 2: Location
             Section(header: Text("Location").font(.headline)) {
-                Map(coordinateRegion: $mapRegion, annotationItems: [MKPointAnnotation]()) { _ in
-                    MapMarker(coordinate: mapRegion.center)
-                }
+                Map(coordinateRegion: $mapRegion)
                 .frame(height: 200)
                 .cornerRadius(10)
                 .overlay(alignment: .topTrailing) {
