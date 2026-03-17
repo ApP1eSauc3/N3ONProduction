@@ -40,8 +40,8 @@ struct TicketPricingStepView: View {
                 Divider()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Estimated Total Revenue: $\(draft.estimatedEarnings.total, specifier: "%.2f")")
-                    Text("Your Estimated Earnings: $\(draft.estimatedEarnings.djCut, specifier: "%.2f")")
+                    Text("Estimated Total Revenue: $\(Double(draft.revenueBreakdown.totalCoins), specifier: "%.2f")")
+                    Text("Your Estimated Earnings: $\(Double(draft.revenueBreakdown.hostDJCoins), specifier: "%.2f")")
                         .foregroundColor(.purple)
                 }
                 .font(.subheadline)
