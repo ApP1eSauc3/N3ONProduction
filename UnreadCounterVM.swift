@@ -39,7 +39,7 @@ final class UnreadCounterVM: ObservableObject {
             // my rooms via join table
             let links = try await Amplify.DataStore.query(
                 UserChatRooms.self,
-                where: UserChatRooms.keys.userId == auth.userId
+                where: UserChatRooms.keys.user == auth.userId
             )
             let roomIDs = Array(Set(links.compactMap { $0.chatRoom.id }))
             guard !roomIDs.isEmpty else { self.count = 0; return }
