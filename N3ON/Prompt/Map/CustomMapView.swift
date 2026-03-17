@@ -6,14 +6,12 @@
 //
 import SwiftUI
 import MapKit
-import Combine
 
 // MARK: - OPTIMIZED CUSTOM MAP VIEW WITH GROUP MEMBERS
 struct CustomMapView: UIViewRepresentable {
     @Binding var region: MKCoordinateRegion
 
     // Annotation sources
-    var searchResults: [MKMapItem]
     var venues: [Venue]
     var visibleDJPins: [DJMapPin]
     var groupLocations: [GroupMemberLocation] // ADDED BACK
@@ -54,14 +52,6 @@ struct CustomMapView: UIViewRepresentable {
         }
         mapView.removeAnnotations(nonGroupAnnotations)
         
-        // Add search result annotations
-        let searchAnnotations = searchResults.map { item -> MKPointAnnotation in
-            let annotation = MKPointAnnotation()
-            annotation.coordinate = item.placemark.coordinate
-            annotation.title = item.name
-            return annotation
-        }
-        
         // Add venue annotations
         let venueAnnotations = venues.map { venue -> VenueAnnotation in
             VenueAnnotation(
@@ -90,7 +80,7 @@ struct CustomMapView: UIViewRepresentable {
         }
         
         // Combine all annotations
-        let allAnnotations: [any MKAnnotation] = searchAnnotations + venueAnnotations + djAnnotations + groupAnnotations
+        let allAnnotations: [any MKAnnotation] = venueAnnotations + djAnnotations + groupAnnotations
         mapView.addAnnotations(allAnnotations)
     }
 
