@@ -213,6 +213,44 @@ This applies to all layers, not just `Prompt/`.
 
 ---
 
+## `@Published` is only valid inside `ObservableObject` classes
+
+`@Published` on a `View` struct produces "`wrappedValue` is unavailable: @Published is only available on properties of classes". Use `@State` for local mutable state in a `View`. `@State` uses `nonmutating set` (heap storage outside the struct), so assignments compile in non-mutating methods and `Task {}` closures — unlike `@Published` which uses `mutating set`.
+
+```swift
+// ✅ — in a View struct
+@State var isLoading: Bool = false
+
+// ❌ — @Published only works inside an ObservableObject class
+@Published var isLoading: Bool = false
+```
+
+## `case .success(let x)` in multi-condition `guard` — split into its own guard
+
+Swift cannot resolve the associated value type when `case .success(let tokens) = expr` appears alongside `let` bindings in the same `guard` statement. The compiler treats `tokens` as the full `Result` type. Always give the enum pattern match its own `guard`:
+
+```swift
+// ✅
+guard let provider = session as? AuthCognitoTokensProvider else { return [] }
+guard case .success(let tokens) = provider.getCognitoTokens() else { return [] }
+
+// ❌ — tokens.idToken fails: "Value of type 'Result<...>' has no member 'idToken'"
+guard let provider = session as? AuthCognitoTokensProvider,
+      case .success(let tokens) = provider.getCognitoTokens(),
+      let payload = decodeJWT(tokens.idToken) else { return [] }
+```
+
+## `PulsingAvatarView` required parameters
+
+`PulsingAvatarView` takes four parameters: `state: AvatarState`, `audioKey: String?`, `size: CGFloat`, `fromMemoryCache: Bool`. Never omit `audioKey` or `size`.
+
+```swift
+// ✅
+PulsingAvatarView(state: avatarState, audioKey: nil, size: 100, fromMemoryCache: false)
+```
+
+---
+
 ## Cognito tokens API
 
 `AuthCognitoTokensProvider.getCognitoTokens()` is **synchronous and non-throwing** — it returns `Result<any AuthCognitoTokens, AuthError>`. Never wrap it in `try await`. `AuthCognitoTokens.idToken` is a raw JWT `String`, not a structured object — decode the payload manually via base64 + `JSONSerialization`. The canonical implementation lives in `Data/AppRole.swift` (`decodeJWT(_:)`).
