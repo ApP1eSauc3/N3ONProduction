@@ -12,20 +12,20 @@ import Amplify
 
 struct VenueProfileView: View {
     @StateObject private var locationManager = LocationManager()
-    @Published var venueName: String = ""
-    @Published var venueAddress: String = ""
-    @Published var locations = [Location]()
-    @Published var mapRegion = MKCoordinateRegion(
+    @State var venueName: String = ""
+    @State var venueAddress: String = ""
+    @State var locations = [Location]()
+    @State var mapRegion = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 50, longitude: 0),
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
-    @Published var avatarState: AvatarState = .remote(avatarKey: "default-venue-avatar")
-    @Published var showImagePicker: Bool = false
-    @Published var image: UIImage? = nil
-    @Published var additionalImages: [UIImage] = []
-    @Published var showAdditionalImagePicker: Bool = false
-    @Published var uploadProgress: Double = 0.0
-    @Published var selectedTab: Int = 0
+    @State var avatarState: AvatarState = .remote(avatarKey: "default-venue-avatar")
+    @State var showImagePicker: Bool = false
+    @State var image: UIImage? = nil
+    @State var additionalImages: [UIImage] = []
+    @State var showAdditionalImagePicker: Bool = false
+    @State var uploadProgress: Double = 0.0
+    @State var selectedTab: Int = 0
     
     var body: some View {
         VStack {
@@ -37,7 +37,7 @@ struct VenueProfileView: View {
                             .font(.title)
                             .padding(.bottom, 8)
                         
-                        PulsingAvatarView(state: avatarState, fromMemoryCache: false)
+                        PulsingAvatarView(state: avatarState, audioKey: nil, size: 100, fromMemoryCache: false)
                             .frame(width: 100, height: 100)
                             .padding()
                         
