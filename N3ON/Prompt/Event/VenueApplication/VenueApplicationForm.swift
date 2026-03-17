@@ -8,6 +8,7 @@
 import SwiftUI
 import MapKit
 import PhotosUI
+import Amplify
 
 struct VenueApplicationForm: View {
     @StateObject private var locationManager = LocationManager()
@@ -53,7 +54,7 @@ struct VenueApplicationForm: View {
             
             // Section 2: Location
             Section(header: Text("Location").font(.headline)) {
-                Map(coordinateRegion: $mapRegion, annotationItems: []) { _ in
+                Map(coordinateRegion: $mapRegion, annotationItems: [MKPointAnnotation]()) { _ in
                     MapMarker(coordinate: mapRegion.center)
                 }
                 .frame(height: 200)

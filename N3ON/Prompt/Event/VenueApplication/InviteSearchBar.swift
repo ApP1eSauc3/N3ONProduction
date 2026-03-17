@@ -24,11 +24,11 @@ struct InviteSearchBar: View {
                 ScrollView {
                     VStack(spacing: 8) {
                         ForEach(viewModel.results) { user in
-                            UserSearchRow(user: user, isAdded: entries.contains(user.username)) {
+                            UserSearchRow(user: user, isAdded: entries.contains(user.username), onAdd: {
                                 if !entries.contains(user.username) {
                                     entries.append(user.username)
                                 }
-                            }
+                            }, onMessage: {})
                         }
                     }
                 }
