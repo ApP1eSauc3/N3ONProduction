@@ -33,7 +33,7 @@ struct EventReviewSubmitReview: View {
                 HStack {
                     Text("📅 Date:")
                     Spacer()
-                    DatePicker("", selection: $draft.selectedDate, displayedComponents: .date)
+                    DatePicker("", selection: $draft.eventDate, displayedComponents: .date)
                         .labelsHidden()
                 }
                 VStack(alignment: .leading, spacing: 4) {
@@ -49,10 +49,10 @@ struct EventReviewSubmitReview: View {
                         Text(vj)
                     }
                 }
-                if !draft.specialRequests.isEmpty {
+                if !draft.specialRequest.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("📝 Special Requests:")
-                        Text(draft.specialRequests)
+                        Text(draft.specialRequest)
                             .italic()
                     }
                 }
