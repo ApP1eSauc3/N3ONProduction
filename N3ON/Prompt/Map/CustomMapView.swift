@@ -11,8 +11,7 @@ import Combine
 // MARK: - OPTIMIZED CUSTOM MAP VIEW WITH GROUP MEMBERS
 struct CustomMapView: UIViewRepresentable {
     @Binding var region: MKCoordinateRegion
-    @Binding var isSearchFieldFocused: Bool
-    
+
     // Annotation sources
     var searchResults: [MKMapItem]
     var venues: [Venue]
@@ -42,7 +41,10 @@ struct CustomMapView: UIViewRepresentable {
 
     func updateUIView(_ mapView: MKMapView, context: Context) {
         // Update region if needed
-        if mapView.region.center != region.center || mapView.region.span != region.span {
+        if mapView.region.center.latitude != region.center.latitude ||
+            mapView.region.center.longitude != region.center.longitude ||
+            mapView.region.span.latitudeDelta != region.span.latitudeDelta ||
+            mapView.region.span.longitudeDelta != region.span.longitudeDelta {
             mapView.setRegion(region, animated: true)
         }
         
@@ -88,7 +90,7 @@ struct CustomMapView: UIViewRepresentable {
         }
         
         // Combine all annotations
-        let allAnnotations = searchAnnotations + venueAnnotations + djAnnotations + groupAnnotations
+        let allAnnotations: [any MKAnnotation] = searchAnnotations + venueAnnotations + djAnnotations + groupAnnotations
         mapView.addAnnotations(allAnnotations)
     }
 
@@ -100,8 +102,8 @@ struct CustomMapView: UIViewRepresentable {
     private func glowStrength(for venueID: String) -> CGFloat {
         let venueEvents = allEvents.filter { $0.venueID == venueID }
         guard let nextEvent = venueEvents
-            .filter({ $0.eventDate > Date() })
-            .sorted(by: { $0.eventDate < $1.eventDate })
+            .filter({ $0.eventDate.foundationDate > Date() })
+            .sorted(by: { $0.eventDate.foundationDate < $1.eventDate.foundationDate })
             .first else { return 0.0 }
         
         let daysUntil = nextEvent.eventDate.timeIntervalSinceNow / 86400
@@ -120,9 +122,9 @@ struct CustomMapView: UIViewRepresentable {
         formatter.timeStyle = .short
         
         return allEvents
-            .filter { $0.venueID == venueID && $0.eventDate > Date() }
-            .sorted { $0.eventDate < $1.eventDate }
-            .map { formatter.string(from: $0.eventDate) }
+            .filter { $0.venueID == venueID && $0.eventDate.foundationDate > Date() }
+            .sorted { $0.eventDate.foundationDate < $1.eventDate.foundationDate }
+            .map { formatter.string(from: $0.eventDate.foundationDate) }
     }
     
     // MARK: - Coordinator (ENHANCED GROUP HANDLING)
@@ -139,7 +141,6 @@ struct CustomMapView: UIViewRepresentable {
             let coordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
             
             parent.onDoubleTap(coordinate)
-            parent.isSearchFieldFocused = true
         }
         
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
@@ -180,21 +181,8 @@ struct CustomMapView: UIViewRepresentable {
                 view.annotation = annotation
                 view.canShowCallout = true
                 
-                // Customize based on sharing status
-                if groupAnnotation.member.isSharingLocation {
-                    view.markerTintColor = .systemGreen
-                    view.glyphText = "📍"
-                } else {
-                    view.markerTintColor = .systemGray
-                    view.glyphText = "👤"
-                }
-                
-                // Add avatar to callout
-                if let avatarKey = groupAnnotation.member.avatarKey {
-                    let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
-                    imageView.loadImage(fromKey: avatarKey) // Your image loading method
-                    view.leftCalloutAccessoryView = imageView
-                }
+                view.markerTintColor = .systemGreen
+                view.glyphText = "📍"
                 
                 return view
             }

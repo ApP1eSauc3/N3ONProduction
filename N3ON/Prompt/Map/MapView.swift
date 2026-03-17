@@ -21,9 +21,13 @@ struct MapView: View {
             ZStack(alignment: .top) {
                 CustomMapView(
                     region: $viewModel.mapRegion,
-                    isSearchFieldFocused: $isSearchFieldFocused,
-                    places: viewModel.mapItems,
-                    onDoubleTap: handleDoubleTap
+                    searchResults: viewModel.mapItems,
+                    venues: [],
+                    visibleDJPins: [],
+                    groupLocations: [],
+                    allEvents: [],
+                    onDoubleTap: handleDoubleTap,
+                    onVenueTap: { _ in }
                 )
                 .ignoresSafeArea(.container, edges: [.top])
 
