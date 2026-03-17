@@ -2,8 +2,6 @@
 //  RoleAwareProfileViewModel.swift
 //  N3ON
 //
-//  Created by liam howe on 21/8/2025.
-//
 import Foundation
 import UIKit
 import Amplify
@@ -15,9 +13,10 @@ final class RoleAwareProfileViewModel: ObservableObject {
     @Published var username = "Username"
     @Published var followers = 0
     @Published var following = 0
-
-    // ✅ Use your pre-existing AvatarState
     @Published var avatarState: AvatarState = .remote(avatarKey: "default-avatar")
+
+    // true while a mode-switch save is in flight
+    @Published var isSwitching = false
 
     func load() async {
         roles = await AccessControlService.currentUserRoles()
@@ -25,17 +24,36 @@ final class RoleAwareProfileViewModel: ObservableObject {
             let authUser = try await Amplify.Auth.getCurrentUser()
             if let model = try await Amplify.DataStore.query(User.self, byId: authUser.userId) {
                 username = model.username
-                if let key = model.avatarKey {
-                    avatarState = .remote(avatarKey: key)  // why: reuse your caching + effects
-                } else {
-                    avatarState = .remote(avatarKey: "default-avatar")
-                }
-                // TODO: wire followers/following to real fields when available
+                avatarState = .remote(avatarKey: model.avatarKey ?? "default-avatar")
+                // isDJ in DataStore is the persisted mode preference
+                isDJMode = model.isDJ
             }
         } catch {
             avatarState = .remote(avatarKey: "default-avatar")
         }
-        isDJMode = roles.contains(.dj)
+    }
+
+    /// Toggles between DJ and fan mode, persists to DataStore.
+    /// Only callable when the user holds the DJ Cognito role.
+    func toggleDJMode() async {
+        guard !isSwitching else { return }
+        isSwitching = true
+        defer { isSwitching = false }
+
+        let newMode = !isDJMode
+        // Optimistic update
+        isDJMode = newMode
+
+        do {
+            let authUser = try await Amplify.Auth.getCurrentUser()
+            if var user = try await Amplify.DataStore.query(User.self, byId: authUser.userId) {
+                user.isDJ = newMode
+                try await Amplify.DataStore.save(user)
+            }
+        } catch {
+            // Revert on failure
+            isDJMode = !newMode
+        }
     }
 
     func uploadAvatar(image: UIImage) async {
