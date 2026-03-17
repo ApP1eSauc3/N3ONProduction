@@ -106,7 +106,7 @@ struct CustomMapView: UIViewRepresentable {
             .sorted(by: { $0.eventDate.foundationDate < $1.eventDate.foundationDate })
             .first else { return 0.0 }
         
-        let daysUntil = nextEvent.eventDate.timeIntervalSinceNow / 86400
+        let daysUntil = nextEvent.eventDate.foundationDate.timeIntervalSinceNow / 86400
         
         switch daysUntil {
         case ..<3: return 1.0

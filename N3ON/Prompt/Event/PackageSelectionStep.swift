@@ -33,7 +33,7 @@ struct PackageSelectionStep: View {
 }
 
 struct SelectPackageView: View {
-    @EnvironmentObject var daft: EventDraftViewModel
+    @EnvironmentObject var draft: EventDraftViewModel
     
     var body: some View {
         

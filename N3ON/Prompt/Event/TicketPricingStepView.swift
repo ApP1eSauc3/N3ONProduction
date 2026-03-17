@@ -31,10 +31,10 @@ struct TicketPricingStepView: View {
 
                 Text("Choose your profit share").font(.title2.bold())
 
-                Slider(value: $draft.djSharePercent, in: 10...90, step: 5) {
+                Slider(value: $draft.djSharePercentage, in: 10...90, step: 5) {
                     Text("Share")
                 }
-                Text("DJ Share: \(Int(draft.djSharePercent))%")
+                Text("DJ Share: \(Int(draft.djSharePercentage))%")
                     .font(.headline)
 
                 Divider()
@@ -117,7 +117,7 @@ struct TicketPricingStepView: View {
                    let uiImage = UIImage(data: data) {
                     await MainActor.run {
                         self.posterImage = Image(uiImage: uiImage)
-                        draft.posterData = data
+                        draft.posterImage = uiImage
                     }
                 }
             }
