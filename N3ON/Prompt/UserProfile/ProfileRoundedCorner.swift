@@ -44,7 +44,7 @@ struct UnevenCornerClip: Shape {
             bottomTrailingRadius: br, topTrailingRadius: tr,
             style: .continuous
         )
-        return Path(shape.path(in: rect))
+        return shape.path(in: rect)
     }
 }
 
