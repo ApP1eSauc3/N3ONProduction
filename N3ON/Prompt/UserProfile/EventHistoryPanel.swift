@@ -27,7 +27,7 @@ struct EventHistoryPanel: View {
                         errorMessage: historyVM.errorMessage
                     )
                 }
-                .background(Color("darkGray"))
+                .background(Color.customDarkGray)
                 .cornerRadius(20)
                 .shadow(color: .black.opacity(0.2), radius: 20)
                 
