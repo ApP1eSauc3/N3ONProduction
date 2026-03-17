@@ -19,7 +19,8 @@ struct EventCreationFlowView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            EventPosterUploadView(selectedPoster: $draft.posterImage)
+            EventPosterUploadView()
+                .environmentObject(draft)
 
             if let image = draft.posterImage {
                 Text("Preview")
