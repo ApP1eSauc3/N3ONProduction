@@ -494,6 +494,122 @@ Pickers live in `Tools/`. Available: `ImagePicker`, `MixedMediaPicker`, `AudioPi
 
 ---
 
+## SwiftUI type-check timeouts — break up `body`
+
+When the compiler reports "unable to type-check this expression in reasonable time", the `body` is too large for type inference. Extract sections into `@ViewBuilder` computed properties on the same struct:
+
+```swift
+// ✅
+var body: some View {
+    VStack { headerSection; pricingSection; actionButtons }
+}
+
+@ViewBuilder private var pricingSection: some View { ... }
+@ViewBuilder private var actionButtons: some View { ... }
+
+// ❌ — everything inlined into body
+var body: some View {
+    VStack { /* 100+ lines */ }
+}
+```
+
+Inline `let` bindings inside a view body also contribute to timeouts. If you have multiple `let` constants computed from `@EnvironmentObject` values, move them into a dedicated `@ViewBuilder` property or a helper method.
+
+---
+
+## `MKCoordinateSpan` is not `Equatable`
+
+`MKCoordinateSpan` does not conform to `Equatable`, so `span1 != span2` fails with "requires that 'MKCoordinateSpan' conform to 'BinaryInteger'". Compare component fields directly:
+
+```swift
+// ✅
+if mapView.region.span.latitudeDelta != region.span.latitudeDelta ||
+   mapView.region.span.longitudeDelta != region.span.longitudeDelta { ... }
+
+// ❌
+if mapView.region.span != region.span { ... }
+```
+
+## Heterogeneous `MKAnnotation` arrays need explicit `[any MKAnnotation]`
+
+Concatenating arrays of different `MKAnnotation` subclasses produces `[NSObject]`, which `MKMapView.addAnnotations(_:)` does not accept. Declare the type explicitly:
+
+```swift
+// ✅
+let all: [any MKAnnotation] = searchAnnotations + venueAnnotations + djAnnotations
+mapView.addAnnotations(all)
+
+// ❌ — inferred as [NSObject]
+let all = searchAnnotations + venueAnnotations + djAnnotations
+```
+
+## `UnevenRoundedRectangle` parameter order
+
+The correct order for `UnevenRoundedRectangle` is `topLeading, bottomLeading, bottomTrailing, topTrailing` — not the clockwise order you might expect:
+
+```swift
+// ✅
+UnevenRoundedRectangle(
+    topLeadingRadius: tl, bottomLeadingRadius: bl,
+    bottomTrailingRadius: br, topTrailingRadius: tr,
+    style: .continuous
+)
+```
+
+## `Shape.path(in:)` returns `Path` — don't wrap it
+
+`shape.path(in: rect)` already returns a `Path`. `Path(shape.path(in: rect))` fails because there is no `Path.init(Path)`. Return directly:
+
+```swift
+// ✅
+return shape.path(in: rect)
+
+// ❌
+return Path(shape.path(in: rect))
+```
+
+## `Map` with empty `annotationItems` — type it or drop it
+
+`Map(coordinateRegion:annotationItems:[])` infers `[Any]` for the empty array, which doesn't conform to `Identifiable`. Either type the array explicitly or use `Map(coordinateRegion:)` with no annotations:
+
+```swift
+// ✅ — no annotations needed
+Map(coordinateRegion: $mapRegion)
+
+// ✅ — typed empty array
+Map(coordinateRegion: $mapRegion, annotationItems: [MyAnnotation]()) { _ in ... }
+
+// ❌ — [Any] does not conform to Identifiable
+Map(coordinateRegion: $mapRegion, annotationItems: []) { _ in ... }
+```
+
+## `EventDraftViewModel` field names
+
+| Wrong | Correct |
+|---|---|
+| `selectedDate` | `eventDate` |
+| `specialRequests` | `specialRequest` |
+| `djSharePercent` | `djSharePercentage` |
+| `posterData` | `posterImage: UIImage?` |
+| `verifyEligibility()` | `meetsRankRequirements()` (sync) |
+| `uploadPosterAndSaveEvent()` | `submitEvent()` (async) |
+| `estimatedEarnings.total` | `Double(revenueBreakdown.totalCoins)` |
+| `estimatedEarnings.djCut` | `Double(revenueBreakdown.hostDJCoins)` |
+
+## `DJPayout` is a struct, not a tuple
+
+`EventDraftViewModel.computePayouts(from:)` returns `[DJPayout]`. `DJPayout` has `.username: String` and `.coins: Int`. Never access it with tuple syntax (`$0.0`, `$0.1`):
+
+```swift
+// ✅
+djPayouts.first(where: { $0.username == dj.username })?.coins
+
+// ❌
+djPayouts.first(where: { $0.0 == dj.username })?.1
+```
+
+---
+
 ## What to avoid
 
 - `@Observable` — iOS 17+ only
