@@ -1,8 +1,5 @@
-
-
 // UserProfileView.swift
 // N3ON
-//
 
 import SwiftUI
 import Amplify
@@ -13,6 +10,8 @@ struct UserProfileView: View {
 
     @State private var showImagePicker = false
     @State private var pickerItem: PhotosPickerItem?
+    @State private var showBecomeDJSheet = false
+    @State private var modeSwitchScale: CGFloat = 1.0
 
     var body: some View {
         NavigationStack {
@@ -40,17 +39,10 @@ struct UserProfileView: View {
                     ScrollView {
                         VStack(spacing: 0) {
                             header
-                                .frame(height: 280)
+                                .frame(height: 300)
                                 .padding(.bottom, 20)
 
                             VStack(spacing: 20) {
-                                if vm.roles.contains(.dj) {
-                                    Toggle("DJ Mode", isOn: $vm.isDJMode)
-                                        .toggleStyle(SwitchToggleStyle(tint: Color("neonPurpleBackground")))
-                                        .foregroundStyle(.white)
-                                        .padding(.horizontal)
-                                }
-
                                 RoleContainer(roles: vm.roles, isDJMode: vm.isDJMode) {
                                     RegularUserSection()
                                 } dj: {
@@ -86,40 +78,53 @@ struct UserProfileView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showBecomeDJSheet) {
+                BecomeDJSheet()
+            }
         }
     }
 
+    // MARK: - Header
+
     private var header: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 14) {
             ZStack(alignment: .bottomTrailing) {
+                // Avatar — tap to change photo, long-press to switch role
                 PulsingAvatarView(state: vm.avatarState, audioKey: nil, size: 120, fromMemoryCache: true)
                     .frame(width: 120, height: 120)
                     .overlay(
                         Circle()
                             .stroke(
                                 LinearGradient(
-                                    colors: [.white, Color("neonPurpleBackground")],
+                                    colors: vm.isDJMode
+                                        ? [Color("neonPurpleBackground"), .cyan]
+                                        : [.white, Color("neonPurpleBackground")],
                                     startPoint: .topLeading, endPoint: .bottomTrailing
                                 ),
-                                lineWidth: 1.5
+                                lineWidth: 2
                             )
                             .padding(2)
-                            .shadow(color: Color("neonPurpleBackground"), radius: 8)
+                            .shadow(color: Color("neonPurpleBackground"), radius: vm.isDJMode ? 12 : 6)
                     )
+                    .scaleEffect(modeSwitchScale)
+                    .onTapGesture { showImagePicker.toggle() }
+                    .onLongPressGesture(minimumDuration: 0.5) {
+                        handleRoleSwitch()
+                    }
 
-                Button { showImagePicker.toggle() } label: {
-                    Image(systemName: "camera")
-                        .symbolVariant(.circle.fill)
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(8)
-                        .background(
-                            Circle()
-                                .fill(Color("neonPurpleBackground"))
-                                .shadow(color: Color("neonPurpleBackground").opacity(0.8), radius: 8)
-                        )
-                }
-                .offset(x: -8, y: -8)
+                // Camera badge (tap)
+                Image(systemName: "camera")
+                    .symbolVariant(.circle.fill)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(.white)
+                    .padding(8)
+                    .background(
+                        Circle()
+                            .fill(Color("neonPurpleBackground"))
+                            .shadow(color: Color("neonPurpleBackground").opacity(0.8), radius: 8)
+                    )
+                    .offset(x: -8, y: -8)
+                    .allowsHitTesting(false) // tap handled by parent
             }
             .padding(.top, 15)
 
@@ -128,6 +133,9 @@ struct UserProfileView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.white)
 
+            // Mode pill — shows current mode, hints at long-press
+            modeIndicator
+
             HStack(spacing: 24) {
                 StatItem(value: vm.followers, label: "Followers")
                 Divider().frame(height: 40).overlay(Color.white.opacity(0.5))
@@ -135,6 +143,38 @@ struct UserProfileView: View {
             }
         }
     }
+
+    @ViewBuilder
+    private var modeIndicator: some View {
+        if vm.isSwitching {
+            ProgressView()
+                .tint(.white)
+                .scaleEffect(0.8)
+        } else {
+            let isDJ = vm.isDJMode
+            HStack(spacing: 6) {
+                Image(systemName: isDJ ? "headphones" : "person.fill")
+                    .font(.caption2)
+                Text(isDJ ? "DJ Mode" : "Fan Mode")
+                    .font(.caption.bold())
+            }
+            .foregroundStyle(isDJ ? Color.cyan : Color.white.opacity(0.7))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .background(
+                Capsule()
+                    .fill(isDJ
+                          ? Color.cyan.opacity(0.15)
+                          : Color.white.opacity(0.08))
+                    .overlay(Capsule().stroke(
+                        isDJ ? Color.cyan.opacity(0.4) : Color.white.opacity(0.15),
+                        lineWidth: 1))
+            )
+            .animation(.easeInOut(duration: 0.25), value: isDJ)
+        }
+    }
+
+    // MARK: - Activity
 
     private var activity: some View {
         VStack(spacing: 16) {
@@ -152,5 +192,96 @@ struct UserProfileView: View {
                 .padding(.horizontal)
         }
         .padding(.bottom, 10)
+    }
+
+    // MARK: - Role switch logic
+
+    private func handleRoleSwitch() {
+        if vm.roles.contains(.dj) {
+            // User has DJ role — toggle mode with haptic
+            let impact = UIImpactFeedbackGenerator(style: .medium)
+            impact.impactOccurred()
+
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                modeSwitchScale = 1.12
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    modeSwitchScale = 1.0
+                }
+            }
+            Task { await vm.toggleDJMode() }
+        } else {
+            // Not a DJ yet — show upgrade path
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
+            showBecomeDJSheet = true
+        }
+    }
+}
+
+// MARK: - BecomeDJSheet
+
+struct BecomeDJSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Image(systemName: "headphones")
+                    .font(.system(size: 56))
+                    .foregroundStyle(Color("neonPurpleBackground"))
+                    .padding(.top, 32)
+
+                Text("Become a DJ")
+                    .font(.title.bold())
+                    .foregroundStyle(.white)
+
+                Text("To unlock DJ mode, you need to be verified as a DJ. Start at rank 1 — attend events, build your profile, and climb the ranks.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+
+                VStack(spacing: 12) {
+                    rankRow(1, "Attend events as a fan")
+                    rankRow(2, "6 months active + 26 events")
+                    rankRow(3, "12 months + 50 events")
+                    rankRow(4, "Headline your first event")
+                    rankRow(5, "4 headlined events + endorsements")
+                }
+                .padding(.horizontal, 24)
+
+                Spacer()
+
+                Button("Got It") { dismiss() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color("neonPurpleBackground"))
+                    .padding(.bottom, 32)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                        .foregroundStyle(Color("neonPurpleBackground"))
+                }
+            }
+        }
+    }
+
+    private func rankRow(_ rank: Int, _ description: String) -> some View {
+        HStack(spacing: 14) {
+            Text("\(rank)")
+                .font(.headline.bold())
+                .foregroundStyle(Color("neonPurpleBackground"))
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(Color("neonPurpleBackground").opacity(0.15)))
+            Text(description)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.8))
+            Spacer()
+        }
     }
 }
