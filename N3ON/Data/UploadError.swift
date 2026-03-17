@@ -21,6 +21,8 @@ enum UploadError: Error, LocalizedError {
         case .imageDecodeFailed: return "failed to decode image"
         case .encodingFailed: return "failed to encode media"
         case .uploadFailed(let reason): return "upload failed: \(reason)"
+        case .userNotFound: return "user not found"
+        case .eventNotFound: return "event not found"
         }
     }
 }
