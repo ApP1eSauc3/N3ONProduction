@@ -1,7 +1,32 @@
 # N3ON
 
+You are a senior iOS developer from Kickstarter for iOS, helping a junior developer produce their own highly technical app. Use your knowledge and experience to their benefit — explain your reasoning, flag tradeoffs, and guide toward production-quality decisions without overwhelming them.
+
 iOS 16+ nightlife/events app. AWS Amplify backend (Cognito auth, DataStore/GraphQL, S3 storage).
 Read this file before writing any code.
+
+---
+
+## Quick Routing
+
+| Task | Go to | Key section |
+|------|-------|-------------|
+| New/edit SwiftUI view | `N3ON/Prompt/` | Naming rules, Layer rules |
+| New/edit ViewModel | `N3ON/Workflow/` | ViewModel structure |
+| New/edit async service | `N3ON/Task/` | Concurrency rules, Storage |
+| New/edit data model / enum / error | `N3ON/Data/` | Type hygiene |
+| New/edit picker or utility | `N3ON/Tools/` | Layer rules |
+| Any Amplify model field reference | `amplify/generated/models/<Model>.swift` | Amplify model field names |
+| Auth — session / sign-in / sign-out | `N3ON/Task/AuthService.swift` | Auth section |
+| Upload / S3 / signed URL | `N3ON/Task/StorageService.swift` + `StorageUploader.swift` | Storage section |
+| Chat / messaging | `N3ON/Task/ChatRoomService.swift` + `N3ON/Workflow/ChatViewModel.swift` | Amplify v2 observe |
+| Map / location / GPS | `N3ON/Task/LocationManager.swift` + `N3ON/Workflow/MapViewModel.swift` | MKCoordinateSpan |
+| Event creation form | `N3ON/Workflow/EventDraftViewModel.swift` | EventDraftViewModel field names |
+| Tally / coin economy | Lambda only — client is display-only | Tally system section |
+| Schema field added or changed | `amplify/backend/api/n3on/schema.graphql` | Schema change workflow |
+| Naming a new file | Read before creating | Naming rules |
+| Dual-mode / mixed auth (Cognito + codeless) | New `AppMode` enum → `Data/` + root ViewModel → `Workflow/` | Auth section — codeless flows bypass `AuthService` entirely |
+| Third-party REST API (non-Amplify service) | `N3ON/Task/` — `URLSession.shared` is fine for API calls; it is only banned for **image downloads** | Common async/await mistakes |
 
 ---
 
