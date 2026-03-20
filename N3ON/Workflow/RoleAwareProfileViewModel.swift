@@ -17,6 +17,7 @@ final class RoleAwareProfileViewModel: ObservableObject {
 
     // true while a mode-switch save is in flight
     @Published var isSwitching = false
+    @Published var currentUser: User?
 
     func load() async {
         roles = await AccessControlService.currentUserRoles()
@@ -27,6 +28,7 @@ final class RoleAwareProfileViewModel: ObservableObject {
                 avatarState = .remote(avatarKey: model.avatarKey ?? "default-avatar")
                 // isDJ in DataStore is the persisted mode preference
                 isDJMode = model.isDJ
+                currentUser = model
             }
         } catch {
             avatarState = .remote(avatarKey: "default-avatar")
