@@ -21,7 +21,7 @@ struct ChatRoomService {
 
         let now = Temporal.DateTime.now()
 
-        var room = ChatRoom(
+        let room = ChatRoom(
             id: UUID().uuidString,
             name: roomName,
             createdAt: now,
@@ -46,7 +46,7 @@ struct ChatRoomService {
 
         let now = Temporal.DateTime.now()
 
-        var room = ChatRoom(
+        let room = ChatRoom(
             id: UUID().uuidString,
             name: roomName,
             createdAt: now,
