@@ -5,7 +5,6 @@
 //  Created by liam howe on 13/7/2025.
 //
 
-import SwiftUI
 import Amplify
 
 struct ChatRoomService {

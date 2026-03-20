@@ -9,7 +9,8 @@ import Foundation
 import Amplify
 import Combine
 
-class InviteSearchBarViewModel: ObservableObject {
+@MainActor
+final class InviteSearchBarViewModel: ObservableObject {
     @Published var searchText: String = "" {
         didSet { debounceSearch() }
     }

@@ -3,7 +3,7 @@
 //
 
 import Foundation
-import SwiftUI
+import UIKit
 import Combine
 import MapKit
 import Amplify
@@ -21,7 +21,7 @@ struct DJPayout {
 }
 
 @MainActor
-class EventDraftViewModel: ObservableObject {
+final class EventDraftViewModel: ObservableObject {
     enum Package: String, CaseIterable, Identifiable {
         case basic, medium, extreme
         var id: String { rawValue }
@@ -126,6 +126,21 @@ class EventDraftViewModel: ObservableObject {
                 availableTickets: availableTickets
             )
             try await Amplify.DataStore.save(event)
+
+            // Create the event's chat room so attendees can message once tickets open.
+            // Non-fatal — a failed chat room creation should not block event submission.
+            let now = Temporal.DateTime.now()
+            let chatRoom = ChatRoom(
+                id: UUID().uuidString,
+                name: "event-\(event.id)",
+                createdAt: now,
+                updatedAt: now,
+                lastMessage: "",
+                lastMessageTimestamp: now,
+                associatedEvent: event.id
+            )
+            try? await Amplify.DataStore.save(chatRoom)
+
             didSubmitSuccessfully = true
         } catch {
             submissionError = "Event submission failed: \(error.localizedDescription)"
