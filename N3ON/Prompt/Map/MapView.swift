@@ -23,7 +23,7 @@ struct MapView: View {
             CustomMapView(
                 region: $viewModel.mapRegion,
                 venues: viewModel.venues,
-                visibleDJPins: viewModel.djPins,
+                visibleDJPins: [],
                 groupLocations: [],
                 allEvents: viewModel.events,
                 onDoubleTap: handleDoubleTap,
