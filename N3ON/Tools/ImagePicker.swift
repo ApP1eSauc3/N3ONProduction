@@ -48,7 +48,7 @@ struct ImagePicker: UIViewControllerRepresentable {
                         
                         guard let selectedImage = image as? UIImage else { return }
                         
-                        DispatchQueue.main.async {
+                        Task { @MainActor [weak self] in
                             self?.parent.image = selectedImage
                             self?.parent.onImagePicked(selectedImage)
                         }

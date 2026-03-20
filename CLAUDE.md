@@ -7,6 +7,10 @@ Read this file before writing any code.
 
 ---
 
+## Design
+
+Read `N3ON/Prompt/CLAUDE.md` before writing any SwiftUI. It contains the full design persona, colour system, component rules, and motion principles. Claude Code loads it automatically for any file under `Prompt/`.
+
 ## Quick Routing
 
 | Task | Go to | Key section |
@@ -27,6 +31,123 @@ Read this file before writing any code.
 | Naming a new file | Read before creating | Naming rules |
 | Dual-mode / mixed auth (Cognito + codeless) | New `AppMode` enum → `Data/` + root ViewModel → `Workflow/` | Auth section — codeless flows bypass `AuthService` entirely |
 | Third-party REST API (non-Amplify service) | `N3ON/Task/` — `URLSession.shared` is fine for API calls; it is only banned for **image downloads** | Common async/await mistakes |
+
+---
+
+## Feature file map
+
+Before editing any feature, read every file listed for that keyword. These are the exact files that contain the UI, state, and service logic for each area.
+
+### Profile
+`N3ON/Prompt/UserProfile/UserProfileView.swift`
+`N3ON/Prompt/UserProfile/Sections.swift`
+`N3ON/Prompt/UserProfile/RoleContainer.swift`
+`N3ON/Prompt/UserProfile/StatItem.swift`
+`N3ON/Prompt/UserProfile/PulsingAvatarView.swift`
+`N3ON/Workflow/RoleAwareProfileViewModel.swift`
+
+### DJ Profile
+`N3ON/Prompt/UserProfile/UserProfileView.swift`
+`N3ON/Prompt/UserProfile/DJProfileStat.swift`
+`N3ON/Prompt/UserProfile/DJValidationChecklist.swift`
+`N3ON/Prompt/UserProfile/EventHistoryPanel.swift`
+`N3ON/Prompt/UserProfile/UserEventTimelineView.swift`
+`N3ON/Workflow/DJViewModel.swift`
+
+### Venue Profile
+`N3ON/Prompt/VenueProfile/VenueProfileView.swift`
+`N3ON/Prompt/VenueProfile/VenueComplianceForm.swift`
+`N3ON/Prompt/VenueProfile/VenueSummaryStep.swift`
+`N3ON/Prompt/VenueProfile/VenueTabView.swift`
+
+### Colour / Colors / Theme
+`N3ON/Tools/Colour.swift`
+`N3ON/Prompt/UserProfile/UserProfileView.swift`
+`N3ON/Prompt/UserProfile/PulsingAvatarView.swift`
+*(Color assets live in `N3ON/Assets.xcassets`. Asset names must not clash with UIColor class properties — see Color asset naming rule.)*
+
+### Avatar / Profile Photo
+`N3ON/Prompt/UserProfile/PulsingAvatarView.swift`
+`N3ON/Prompt/Shared/AsyncStorageImage.swift`
+`N3ON/Task/AvatarUploadService.swift`
+`N3ON/Data/AvatarState.swift`
+
+### Map
+`N3ON/Prompt/Map/MapView.swift`
+`N3ON/Prompt/Map/CustomMapView.swift`
+`N3ON/Prompt/Map/DJPinView.swift`
+`N3ON/Prompt/Map/GroupLocationOverlay.swift`
+`N3ON/Prompt/Map/VenueEventSheet.swift`
+`N3ON/Workflow/MapViewModel.swift`
+`N3ON/Workflow/GroupLocationViewModel.swift`
+`N3ON/Task/LocationManager.swift`
+`N3ON/Tools/MapExtensions.swift`
+`N3ON/Tools/MapViewCoordinator.swift`
+
+### Event
+`N3ON/Prompt/Event/EventDetailView.swift`
+`N3ON/Prompt/Event/EventCreationFlow.swift`
+`N3ON/Prompt/Event/TicketSelectionView.swift`
+`N3ON/Prompt/Event/EventPopupPreview.swift`
+`N3ON/Prompt/Event/PackageSelectionStep.swift`
+`N3ON/Prompt/Event/TicketPricingStepView.swift`
+`N3ON/Workflow/EventViewModel.swift`
+`N3ON/Workflow/EventDraftViewModel.swift`
+`N3ON/Task/EventService.swift`
+`N3ON/Task/TicketService.swift`
+`amplify/generated/models/Event.swift`
+`amplify/generated/models/Ticket.swift`
+
+### Chat / Messaging
+`N3ON/Prompt/Chat/ChatView.swift`
+`N3ON/Prompt/Chat/ChatPanelView.swift`
+`N3ON/Prompt/Chat/ChatsInboxView.swift`
+`N3ON/Prompt/Chat/MessageRow.swift`
+`N3ON/Prompt/Chat/InviteDJSearchView.swift`
+`N3ON/Workflow/ChatViewModel.swift`
+`N3ON/Task/ChatRoomService.swift`
+`amplify/generated/models/ChatRoom.swift`
+`amplify/generated/models/Message.swift`
+
+### Auth / Login / Signup
+`N3ON/Prompt/Auth/LoginView.swift`
+`N3ON/Prompt/Auth/SignupView.swift`
+`N3ON/Prompt/Auth/SessionView.swift`
+`N3ON/Prompt/Auth/ConfirmationSignupView.swift`
+`N3ON/Task/AuthService.swift`
+`N3ON/Data/AppRole.swift`
+`N3ON/Data/UserState.swift`
+
+### Posts / Feed
+`N3ON/Prompt/UserProfile/PostFeedView.swift`
+`N3ON/Prompt/UserProfile/PostView.swift`
+`N3ON/Task/MediaPostComposer.swift`
+`N3ON/Task/StorageUploader.swift`
+`amplify/generated/models/Post.swift`
+
+### Navigation / Tabs
+`N3ON/Prompt/TabViews/MainView.swift`
+`N3ON/Prompt/TabViews/SearchView.swift`
+`N3ON/ContentView.swift`
+
+### Tickets / Purchases / Transactions
+`N3ON/Prompt/Event/TicketSelectionView.swift`
+`N3ON/Prompt/Event/TicketRow.swift`
+`N3ON/Task/TicketService.swift`
+`N3ON/Task/TransactionService.swift`
+`N3ON/Data/TicketType.swift`
+`amplify/generated/models/Ticket.swift`
+`amplify/generated/models/Transaction.swift`
+
+### Follow / Followers
+`N3ON/Task/FollowService.swift`
+`N3ON/Workflow/DJViewModel.swift`
+`N3ON/Prompt/Event/EventDetailView.swift`
+`amplify/generated/models/UserFollows.swift`
+
+### Schema / Backend / GraphQL
+`amplify/backend/api/n3on/schema.graphql`
+`amplify/generated/models/` *(entire directory — run `amplify codegen models` after any schema change)*
 
 ---
 
@@ -164,6 +285,16 @@ amplify push            # deploys schema to AppSync
 amplify codegen models  # regenerates Swift model files
 ```
 
+### Error: `Type 'X' has no member 'keys'` in a generated `*+Schema.swift` file
+
+This means the generated models are out of sync with each other — one `*+Schema.swift` file references `.keys` on a type whose own `+Schema.swift` was not regenerated at the same time. **Never hand-edit generated files.** The fix is always:
+
+```bash
+amplify codegen models
+```
+
+Run this even if the schema itself hasn't changed. It re-emits all `*+Schema.swift` files as a consistent set and clears the error.
+
 Never start a session that references new or changed model types before codegen has run. The Swift files won't exist yet and Claude will hallucinate field names to fill the gap.
 
 ---
@@ -204,6 +335,16 @@ A type (`enum`, `struct`, `class`) may only be defined in one file. If a utility
 
 ### Amplify model field names — always read the generated file
 Amplify-generated models change field names when the schema changes. `Venue` previously had `ownerID: String` — it now has `owner: User?`. Before writing any initializer or query predicate that references an Amplify model, read `amplify/generated/models/<ModelName>.swift` to get the exact field names and types. Do not guess.
+
+`Venue.keys.ownerID` does not exist — the predicate key is `Venue.keys.owner`. The underlying DynamoDB field is `ownerID` but the Swift `CodingKeys` enum uses the association name `.owner`:
+
+```swift
+// ✅
+Amplify.DataStore.query(Venue.self, where: Venue.keys.owner == currentUserID)
+
+// ❌ — 'Venue.CodingKeys' has no member 'ownerID'
+Amplify.DataStore.query(Venue.self, where: Venue.keys.ownerID == currentUserID)
+```
 
 ### Method overloads must differ in argument labels, not just parameter types
 Two methods `func transactions(for userID: String)` and `func transactions(for eventID: String)` are identical signatures to the Swift compiler. Use distinct external labels: `transactions(for userID:)` and `transactions(forEvent eventID:)`.

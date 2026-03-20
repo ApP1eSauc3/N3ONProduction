@@ -44,13 +44,13 @@ struct MixedMediaPicker: UIViewControllerRepresentable {
                     if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
                         result.itemProvider.loadObject(ofClass: UIImage.self) { image, _ in
                             if let ui = image as? UIImage {
-                                DispatchQueue.main.async { self.parent.selectedImages.append(ui) }
+                                Task { @MainActor in self.parent.selectedImages.append(ui) }
                             }
                         }
                     }
                 case .video:
                     result.itemProvider.loadFileRepresentation(forTypeIdentifier: "public.movie") { url, _ in
-                        if let url { DispatchQueue.main.async { self.parent.selectedVideos.append(url) } }
+                        if let url { Task { @MainActor in self.parent.selectedVideos.append(url) } }
                     }
                 case .audio:
                     break
