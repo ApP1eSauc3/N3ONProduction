@@ -30,7 +30,7 @@ struct DJValidationChecklist: View {
         .onAppear {
             glowPulse = satisfiesAll
         }
-        .onChange(of: satisfiesAll) { isValid in
+        .onChangeCompat(of: satisfiesAll) { _, isValid in
             glowPulse = isValid
         }
     }
@@ -63,7 +63,3 @@ struct DJValidationChecklist: View {
     }
 }
 
-extension Color {
-    static let neonGreen = Color(red: 0.0, green: 1.0, blue: 0.5)
-    static let neonRed = Color(red: 1.0, green: 0.2, blue: 0.3)
-}

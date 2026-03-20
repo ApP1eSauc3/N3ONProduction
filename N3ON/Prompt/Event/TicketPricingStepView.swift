@@ -109,15 +109,13 @@ struct TicketPricingStepView: View {
             }
             .padding()
         }
-        .onChange(of: posterItem) { newItem in
+        .onChangeCompat(of: posterItem) { _, newItem in
             guard let item = newItem else { return }
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
-                    await MainActor.run {
-                        self.posterImage = Image(uiImage: uiImage)
-                        draft.posterImage = uiImage
-                    }
+                    self.posterImage = Image(uiImage: uiImage)
+                    draft.posterImage = uiImage
                 }
             }
         }
