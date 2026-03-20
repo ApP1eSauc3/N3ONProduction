@@ -5,6 +5,7 @@
 //  Created by liam howe on 13/7/2025.
 //
 
+import Foundation
 import Amplify
 
 struct ChatRoomService {
