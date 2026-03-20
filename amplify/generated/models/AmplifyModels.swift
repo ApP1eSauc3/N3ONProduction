@@ -23,5 +23,6 @@ final public class AmplifyModels: AmplifyModelRegistration {
     ModelRegistry.register(modelType: Transaction.self)
     ModelRegistry.register(modelType: VenueComplianceSubmission.self)
     ModelRegistry.register(modelType: UserChatRooms.self)
+    ModelRegistry.register(modelType: UserFollows.self)
   }
 }

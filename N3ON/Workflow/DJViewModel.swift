@@ -1,7 +1,5 @@
 // DJViewModel.swift
 // N3ON
-//    TODO: Add UserFollows join type to schema for production-safe follow tracking.
-//
 
 import Amplify
 import Foundation
@@ -13,23 +11,25 @@ final class DJViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var avatarURL: URL?
     @Published var errorMessage: String?
-
+    @Published var isFollowing = false
+    @Published var followerCount = 0
+    @Published var isTogglingFollow = false
 
     init(user: User) {
         self.user = user
         Task {
             await loadUpcomingEvents()
             await loadAvatarURL()
+            await loadFollowState()
         }
         subscribeToUserUpdates()
     }
 
-    
-    // TODO: For scale, add a EventDJLink join table to schema for indexed queries.
+    // MARK: - Events
+
     func loadUpcomingEvents() async {
         isLoading = true
         defer { isLoading = false }
-
         do {
             let allEvents = try await Amplify.DataStore.query(Event.self)
             upcomingEvents = allEvents
@@ -40,16 +40,49 @@ final class DJViewModel: ObservableObject {
         }
     }
 
-    
+    // MARK: - Follow
+
+    /// Toggles follow state. Only valid when user.isDJ is true — regular users
+    /// and venues cannot be followed.
     func toggleFollow() async {
-        // TODO: implement once UserFollows type is added to schema and codegen run
-        errorMessage = "Follow feature coming soon."
+        guard user.isDJ else { return }
+        guard !isTogglingFollow else { return }
+        isTogglingFollow = true
+        defer { isTogglingFollow = false }
+
+        let wasFollowing = isFollowing
+        // Optimistic update
+        isFollowing = !wasFollowing
+        followerCount += wasFollowing ? -1 : 1
+
+        do {
+            if wasFollowing {
+                try await FollowService.unfollow(djID: user.id)
+            } else {
+                try await FollowService.follow(djID: user.id)
+            }
+        } catch {
+            // Revert on failure
+            isFollowing = wasFollowing
+            followerCount += wasFollowing ? 1 : -1
+            errorMessage = error.localizedDescription
+        }
     }
+
+    private func loadFollowState() async {
+        async let following = (try? await FollowService.isFollowing(djID: user.id)) ?? false
+        async let count = await FollowService.followerCount(for: user.id)
+        (isFollowing, followerCount) = await (following, count)
+    }
+
+    // MARK: - Chat
 
     func openChatRoomID(with otherUserID: String) -> String {
         let sortedIDs = [user.id, otherUserID].sorted()
         return "dm-\(sortedIDs[0])-\(sortedIDs[1])"
     }
+
+    // MARK: - Avatar
 
     func loadAvatarURL() async {
         guard let key = user.avatarKey else { return }
@@ -60,8 +93,9 @@ final class DJViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Live updates
+
     private func subscribeToUserUpdates() {
-        // Amplify v2: DataStore.publisher removed — use observe(_:) async sequence
         Task {
             do {
                 for try await change in Amplify.DataStore.observe(User.self) {
