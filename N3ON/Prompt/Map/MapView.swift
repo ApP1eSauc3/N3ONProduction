@@ -16,10 +16,14 @@ struct MapView: View {
 
     var body: some View {
         ZStack(alignment: .trailing) {
+            // Black fallback prevents any white flash behind the map
+            // during load or in safe-area regions the map doesn't cover.
+            Color.black.ignoresSafeArea()
+
             CustomMapView(
                 region: $viewModel.mapRegion,
                 venues: viewModel.venues,
-                visibleDJPins: [],
+                visibleDJPins: viewModel.djPins,
                 groupLocations: [],
                 allEvents: viewModel.events,
                 onDoubleTap: handleDoubleTap,

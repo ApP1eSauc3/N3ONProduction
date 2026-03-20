@@ -2,7 +2,7 @@
 // N3ON
 //
 
-import SwiftUI
+import Foundation
 import Amplify
 import Combine
 

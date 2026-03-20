@@ -1,20 +1,17 @@
-//
-//  MediaPostComposer.swift
-//  N3ON
-//
-//  Created by liam howe on 12/5/2025.
-//
+// MediaPostComposerView.swift
+// N3ON — Prompt layer
+
 import SwiftUI
 import Amplify
 import PhotosUI
 
-struct MediaPostComposer: View {
+struct MediaPostComposerView: View {
     @State private var selectedType: MediaType = .image
     @State private var selectedImages: [UIImage] = []
     @State private var selectedVideos: [URL] = []
     @State private var selectedAudios: [URL] = []
     @State private var caption: String = ""
-    @Binding var posts: [Post] // your local UI Post model
+    @Binding var posts: [Post]
 
     @State private var showMediaPicker = false
     @State private var showAudioPicker = false
@@ -32,7 +29,7 @@ struct MediaPostComposer: View {
             Button("Select Media") {
                 switch selectedType {
                 case .image, .video: showMediaPicker = true
-                case .audio:        showAudioPicker = true
+                case .audio:         showAudioPicker = true
                 }
             }
 
@@ -67,32 +64,31 @@ struct MediaPostComposer: View {
         isUploading = true
         defer { isUploading = false }
 
+        // Use AuthService — never call Amplify.Auth directly from a view
+        guard let userID = await AuthService.currentUserIdOrNil() else { return }
+
         var keyList: [String] = []
         var typeList: [String] = []
 
         do {
-            let auth = try await Amplify.Auth.getCurrentUser()
-            // images
             if selectedType == .image {
                 for img in selectedImages {
                     guard let jpeg = ImagePipeline.makeJPEGData(from: img, config: .feed) else { continue }
-                    let key = MediaKind.feedImage(userID: auth.userId).makeKey(extension: "jpg")
+                    let key = MediaKind.feedImage(userID: userID).makeKey(extension: "jpg")
                     _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .protected)
                     keyList.append(key); typeList.append(MediaType.image.rawValue)
                 }
             }
-            // videos
             if selectedType == .video {
                 for videoURL in selectedVideos {
-                    let key = MediaKind.feedVideo(userID: auth.userId).makeKey(extension: "mov")
+                    let key = MediaKind.feedVideo(userID: userID).makeKey(extension: "mov")
                     _ = try await StorageUploader.uploadFile(url: videoURL, key: key, contentType: "video/quicktime", access: .protected)
                     keyList.append(key); typeList.append(MediaType.video.rawValue)
                 }
             }
-            // audios
             if selectedType == .audio {
                 for audioURL in selectedAudios {
-                    let key = MediaKind.feedAudio(userID: auth.userId).makeKey(extension: "m4a")
+                    let key = MediaKind.feedAudio(userID: userID).makeKey(extension: "m4a")
                     _ = try await StorageUploader.uploadFile(url: audioURL, key: key, contentType: "audio/m4a", access: .protected)
                     keyList.append(key); typeList.append(MediaType.audio.rawValue)
                 }
@@ -103,7 +99,7 @@ struct MediaPostComposer: View {
                     id: UUID().uuidString,
                     urls: keyList,
                     types: typeList,
-                    timestamp: Temporal.DateTime(Date()),
+                    timestamp: Temporal.DateTime(Date(), timeZone: .current),
                     caption: caption
                 )
                 posts.insert(newPost, at: 0)

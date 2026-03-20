@@ -3,8 +3,6 @@
 //  N3ON
 //
 
-import SwiftUI
-import Amplify
 import UIKit
 
 enum AvatarState: Equatable {
