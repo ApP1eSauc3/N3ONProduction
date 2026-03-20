@@ -56,7 +56,7 @@ struct EventDetailView: View {
             .padding()
         }
         .navigationTitle("Event Details")
-        .onChange(of: vm.errorMessage) { message in
+        .onChangeCompat(of: vm.errorMessage) { _, message in
             showError = message != nil
         }
         .alert("Purchase Failed", isPresented: $showError) {
