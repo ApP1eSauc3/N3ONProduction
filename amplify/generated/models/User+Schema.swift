@@ -12,6 +12,7 @@ extension User {
     case beatBPM
     case isDJ
     case djRank
+    case isCurated
     case messages
     case chatRoom
     case venues
@@ -34,7 +35,8 @@ extension User {
     let user = User.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.create, .update, .delete, .read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.create, .update, .delete, .read]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.create, .update, .delete, .read])
     ]
     
     model.listPluralName = "Users"
@@ -52,6 +54,7 @@ extension User {
       .field(user.beatBPM, is: .optional, ofType: .int),
       .field(user.isDJ, is: .required, ofType: .bool),
       .field(user.djRank, is: .optional, ofType: .int),
+      .field(user.isCurated, is: .required, ofType: .bool),
       .hasMany(user.messages, is: .optional, ofType: Message.self, associatedWith: Message.keys.sender),
       .hasMany(user.chatRoom, is: .optional, ofType: UserChatRooms.self, associatedWith: UserChatRooms.keys.user),
       .hasMany(user.venues, is: .optional, ofType: Venue.self, associatedWith: Venue.keys.owner),

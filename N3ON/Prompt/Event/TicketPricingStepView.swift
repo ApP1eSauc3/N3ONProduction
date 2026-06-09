@@ -1,164 +1,241 @@
-//
-//  TicketPricingStepView.swift
-//  N3ON
-//
-//  Created by liam howe on 12/7/2025.
-//
+// TicketPricingStepView.swift
+// N3ON — Prompt layer
+// Stage 3: set ticket price, preview revenue split, upload poster, go live.
+// "Go Live" is disabled until a poster is selected. The upload + status
+// transition to "live" are both handled in EventDraftViewModel.uploadPosterAndGoLive(_:).
 
 import SwiftUI
 import PhotosUI
-import Amplify
 
 struct TicketPricingStepView: View {
     @EnvironmentObject var draft: EventDraftViewModel
-    @State private var posterItem: PhotosPickerItem? = nil
-    @State private var posterImage: Image? = nil
-    @State private var showRankAlert: Bool = false
-    @State private var showEndorseRequestSheet = false
+    @State private var posterItem: PhotosPickerItem?
+    @State private var pendingImage: UIImage?
+    @State private var showPreview = false
+
+    private var canGoLive: Bool {
+        pendingImage != nil && !draft.isUploadingPoster
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text("Set Ticket Price").font(.title2.bold())
-
-                Slider(value: $draft.ticketPrice, in: 0...100, step: 1) {
-                    Text("Price")
-                }
-                Text("$\(Int(draft.ticketPrice)) per ticket")
-                    .font(.headline)
-
-                Divider()
-
-                Text("Choose your profit share").font(.title2.bold())
-
-                Slider(value: $draft.djSharePercentage, in: 10...90, step: 5) {
-                    Text("Share")
-                }
-                Text("DJ Share: \(Int(draft.djSharePercentage))%")
-                    .font(.headline)
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Estimated Total Revenue: $\(Double(draft.revenueBreakdown.totalCoins), specifier: "%.2f")")
-                    Text("Your Estimated Earnings: $\(Double(draft.revenueBreakdown.hostDJCoins), specifier: "%.2f")")
-                        .foregroundColor(.purple)
-                }
-                .font(.subheadline)
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Upload Poster")
-                        .font(.title2.bold())
-
-                    if let posterImage = posterImage {
-                        posterImage
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 200)
-                            .cornerRadius(12)
-                    } else if let posterKey = draft.posterKey,
-                              let url = URL(string: "https://your-cdn-url.com/\(posterKey)") {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                            case .success(let image):
-                                image.resizable().scaledToFit().frame(height: 200).cornerRadius(12)
-                            case .failure:
-                                Image(systemName: "photo.fill").frame(height: 200)
-                            @unknown default:
-                                EmptyView()
-                            }
-                        }
-                    } else {
-                        RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [5]))
-                            .frame(height: 200)
-                            .overlay(Text("Tap to upload poster").foregroundColor(.gray))
-                    }
-
-                    PhotosPicker(selection: $posterItem, matching: .images, photoLibrary: .shared()) {
-                        Text("Choose Poster Image")
-                            .padding()
-                            .background(Color.purple.opacity(0.1))
-                            .cornerRadius(8)
-                    }
-                }
-
-                Button("Submit Event") {
-                    Task {
-                        if draft.meetsRankRequirements() {
-                            await draft.submitEvent()
-                        } else {
-                            showRankAlert = true
-                        }
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.top, 24)
-                .alert("Insufficient DJ Rank", isPresented: $showRankAlert) {
-                    Button("Request Endorsement") {
-                        showEndorseRequestSheet = true
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("You must be a level 5 DJ (5 martini glasses) or meet collaboration requirements to create an event.")
-                }
+                pricingSection
+                posterSection
+                errorLabel
+                previewButton
+                goLiveButton
+                    .padding(.bottom, 24)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+        }
+        .sheet(isPresented: $showPreview) {
+            EventPopupPreview()
+                .environmentObject(draft)
         }
         .onChangeCompat(of: posterItem) { _, newItem in
-            guard let item = newItem else { return }
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self),
-                   let uiImage = UIImage(data: data) {
-                    self.posterImage = Image(uiImage: uiImage)
-                    draft.posterImage = uiImage
-                }
+                guard let item = newItem,
+                      let data = try? await item.loadTransferable(type: Data.self),
+                      let uiImage = UIImage(data: data) else { return }
+                pendingImage = uiImage
             }
-        }
-        .sheet(isPresented: $showEndorseRequestSheet) {
-            EndorsementRequestSheet()
         }
     }
-}
 
-struct EndorsementRequestSheet: View {
-    @Environment(\.dismiss) var dismiss
-    @State private var message = ""
+    // MARK: — Pricing
 
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Text("Request Endorsement")
-                    .font(.title)
-
-                Text("Enter a message to explain why you'd like to be endorsed by a Level 5 DJ.")
-                    .font(.subheadline)
-
-                TextEditor(text: $message)
-                    .frame(height: 150)
-                    .padding()
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.4)))
-
-                Button("Send Request") {
-                    // TODO: Save endorsement request to backend
-                    print("📨 Sent endorsement request: \(message)")
-                    dismiss()
+    private var pricingSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionLabel("TICKET PRICE")
+            VStack(spacing: 8) {
+                HStack {
+                    Text("$\(Int(draft.ticketPrice))")
+                        .font(.system(.title, design: .rounded, weight: .bold))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Text("per ticket")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.4))
                 }
-                .buttonStyle(.borderedProminent)
-
-                Spacer()
+                Slider(value: $draft.ticketPrice, in: 0...200, step: 5)
+                    .tint(Color("neonPurpleBackground"))
             }
-            .padding()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+            .padding(16)
+            .background(Color.white.opacity(0.06))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            if draft.hostDJRank == 5 {
+                profitShareSection
+            }
+
+            revenueCard
+        }
+    }
+
+    private var profitShareSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionLabel("YOUR PROFIT SHARE")
+            HStack {
+                Text("\(Int(draft.djSharePercentage))%")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .foregroundStyle(Color("neonPurpleBackground"))
+                Spacer()
+                Text("of DJ pool")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+            Slider(value: $draft.djSharePercentage, in: 0...100, step: 5)
+                .tint(Color("neonPurpleBackground"))
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var revenueCard: some View {
+        let rb = draft.revenueBreakdown
+        return VStack(spacing: 12) {
+            revenueRow("Est. total revenue", "$\(Int(rb.totalRevenue))", highlight: false)
+            revenueRow("Venue cut (40%)",    "$\(Int(rb.venueRevenue))", highlight: false)
+            Divider().background(Color.white.opacity(0.1))
+            revenueRow("Your earnings",      "$\(Int(rb.hostDJRevenue))", highlight: true)
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func revenueRow(_ label: String, _ value: String, highlight: Bool) -> some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(highlight ? .white : .white.opacity(0.5))
+            Spacer()
+            Text(value)
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .foregroundStyle(highlight ? Color("neonPurpleBackground") : .white.opacity(0.5))
+        }
+    }
+
+    // MARK: — Poster
+
+    private var posterSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                sectionLabel("EVENT POSTER")
+                Text("Required before going live")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+
+            if let image = pendingImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 220)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                PhotosPicker(selection: $posterItem, matching: .images) {
+                    Text("Change poster")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.4))
                 }
+            } else {
+                PhotosPicker(selection: $posterItem, matching: .images) {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(0.04))
+                        .frame(height: 220)
+                        .overlay(
+                            VStack(spacing: 8) {
+                                Image(systemName: "photo.badge.plus")
+                                    .font(.system(size: 32))
+                                    .foregroundStyle(Color("neonPurpleBackground").opacity(0.6))
+                                Text("Tap to choose poster")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.3))
+                            }
+                        )
+                }
+                .buttonStyle(.plain)
             }
         }
+    }
+
+    // MARK: — Error
+
+    @ViewBuilder private var errorLabel: some View {
+        if let error = draft.posterUploadError {
+            Text(error)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+    }
+
+    // MARK: — Preview button
+
+    private var previewButton: some View {
+        Button {
+            showPreview = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "eye")
+                Text("Preview as attendee")
+                    .font(.subheadline)
+            }
+            .foregroundStyle(Color("neonPurpleBackground"))
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(Color("neonPurpleBackground").opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+    }
+
+    // MARK: — Go Live button
+
+    private var goLiveButton: some View {
+        Button {
+            guard let image = pendingImage else { return }
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            Task { await draft.uploadPosterAndGoLive(image) }
+        } label: {
+            if draft.isUploadingPoster {
+                HStack(spacing: 8) {
+                    ProgressView().tint(.white)
+                    Text("Going live...")
+                        .font(.headline)
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            } else {
+                Text("Go Live")
+                    .font(.headline)
+                    .foregroundStyle(canGoLive ? .white : .white.opacity(0.3))
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 50)
+        .background(
+            canGoLive
+                ? AnyShapeStyle(Color("neonPurpleBackground"))
+                : AnyShapeStyle(Color.white.opacity(0.08))
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: Color("neonPurpleBackground").opacity(canGoLive ? 0.55 : 0), radius: 18)
+        .shadow(color: Color("neonPurpleBackground").opacity(canGoLive ? 0.85 : 0), radius: 5)
+        .disabled(!canGoLive)
+    }
+
+    // MARK: — Helpers
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Color("neonPurpleBackground"))
+            .tracking(1.5)
     }
 }

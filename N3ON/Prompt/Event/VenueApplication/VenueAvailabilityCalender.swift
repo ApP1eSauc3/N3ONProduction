@@ -4,7 +4,6 @@
 //
 
 import SwiftUI
-import Amplify
 
 struct VenueAvailabilityElegantCalendarView: View {
     @EnvironmentObject var draft: EventDraftViewModel
@@ -46,42 +45,4 @@ struct VenueAvailabilityElegantCalendarView: View {
         }
         .padding(.vertical)
     }
-}
-
-#Preview {
-    let draft = EventDraftViewModel()
-    draft.venue = Venue(
-        id: "v1",
-        name: "Club Lux",
-        description: "EDM heaven",
-        address: "123 Party St",
-        latitude: 37.78,
-        longitude: -122.41,
-        rating: 4.8,
-        imageKey: ["img1"],
-        owner: nil,
-        maxCapacity: 400,
-        currentUsers: 0,
-        revenue: 0.0,
-        approvalStatus: "APPROVED"
-    )
-
-    let sampleEvents: [Event] = [
-        Event(
-            id: "e1",
-            venueID: "v1",
-            hostDJID: "dj1",
-            vjUsername: nil,
-            package: "basic",
-            requestNote: nil,
-            eventDate: Temporal.DateTime(Date().addingTimeInterval(86400), timeZone: .current),
-            eventName: "Test Event",
-            description: "Preview event",
-            ticketPrice: 20.0,
-            availableTickets: 100
-        )
-    ]
-
-    return VenueAvailabilityElegantCalendarView(venueEvents: sampleEvents)
-        .environmentObject(draft)
 }

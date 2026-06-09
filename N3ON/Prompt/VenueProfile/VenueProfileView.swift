@@ -1,237 +1,389 @@
-//
-//  VenueProfileView.swift
-//  N3ON
-//
-//  Created by liam howe on 26/6/2024.
-//
+// VenueProfileView.swift
+// N3ON — Prompt layer
+// Venue owner's profile: shows their venue, events, gallery, and settings.
+// All state owned by VenueProfileViewModel.
 
 import SwiftUI
 import PhotosUI
-import MapKit
-import Amplify
 
 struct VenueProfileView: View {
-    @StateObject private var locationManager = LocationManager()
-    @State var venueName: String = ""
-    @State var venueAddress: String = ""
-    @State var locations = [Location]()
-    @State var mapRegion = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 50, longitude: 0),
-        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-    )
-    @State var avatarState: AvatarState = .remote(avatarKey: "default-venue-avatar")
-    @State var showImagePicker: Bool = false
-    @State var image: UIImage? = nil
-    @State var additionalImages: [UIImage] = []
-    @State var showAdditionalImagePicker: Bool = false
-    @State var uploadProgress: Double = 0.0
-    @State var selectedTab: Int = 0
-    
+    @StateObject private var vm = VenueProfileViewModel()
+    @State private var selectedTab: VenueTab = .events
+    @State private var pickedGalleryItem: PhotosPickerItem? = nil
+    @State private var showApplicationForm = false
+
+    enum VenueTab: String, CaseIterable {
+        case events = "Events"
+        case gallery = "Gallery"
+        case settings = "Settings"
+    }
+
     var body: some View {
-        VStack {
-            ZStack {
-                Color.neonPurpleBackground
+        GeometryReader { geo in
+            ZStack(alignment: .top) {
+                // DESIGN §5.1 — purple hero zone
+                Color("dullPurple").ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color("neonPurpleBackground").opacity(0.45), .clear],
+                    center: .init(x: 0.5, y: 0.0),
+                    startRadius: 0,
+                    endRadius: geo.size.width * 0.87
+                )
+                .frame(height: geo.size.height * 0.35)
+                .ignoresSafeArea(edges: .top)
+
+                // Black anchor
                 VStack {
-                    VStack {
-                        Text(venueName.isEmpty ? "Venue Name" : venueName)
-                            .font(.title)
-                            .padding(.bottom, 8)
-                        
-                        PulsingAvatarView(state: avatarState, audioKey: nil, size: 100, fromMemoryCache: false)
-                            .frame(width: 100, height: 100)
-                            .padding()
-                        
-                        Button("Change Profile Picture") {
-                            showImagePicker.toggle()
-                        }
-                        .padding()
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: 200)
-                    
-                    TabView(selection: $selectedTab) {
-                        VStack {
-                            Button("Upload venue images") {
-                                showAdditionalImagePicker = true
-                            }
-                            .padding()
-                            .background(Color.gray)
-                            .foregroundColor(.white)
-                            .cornerRadius(8.0)
-                            
-                            ScrollView {
-                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
-                                    ForEach(additionalImages, id: \.self) { image in
-                                        Image(uiImage: image)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 100, height: 100)
-                                            .clipShape(Rectangle())
-                                    }
-                                }
-                                .padding()
-                            }
-                            
-                            TextField("Venue Name", text: $venueName)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .padding()
-                            
-                            TextField("Venue Address", text: $venueAddress)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .padding()
-                            
-                            Button("Add Venue") {
-                                Task {
-                                    if let coordinate = await geocode(address: venueAddress) {
-                                        let newVenue = Location(id: UUID(), name: venueName, description: venueAddress, latitude: coordinate.latitude, longitude: coordinate.longitude)
-                                        locations.append(newVenue)
-                                    }
-                                }
-                            }
-                            .padding()
-                            .background(Color.gray)
-                            .foregroundColor(.white)
-                            .cornerRadius(8.0)
-                            
-                            Map(coordinateRegion: $mapRegion, annotationItems: locations) { location in
-                                MapMarker(coordinate: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude))
-                            }
-                            .frame(width: 250, height: 250)
-                            .onAppear {
-                                if let userLocation = locationManager.userLocation {
-                                    setMapRegion(userLocation: userLocation)
-                                }
-                            }
-                        }
-                        .tabItem {
-                            Text("Add Venue")
-                        }
-                        .tag(0)
-                        
-                        VStack {
-                            Text("Upload and Display Images")
-                                .padding()
-                        }
-                        .tabItem {
-                            Text("Images")
-                        }
-                        .tag(1)
-                    }
-                    .frame(maxHeight: .infinity)
-                    .background(Color(.darkGray))
-                    .cornerRadius(10.0)
-                    .padding()
+                    Spacer()
+                    Color.black
+                        .frame(height: geo.size.height * 0.68)
+                        .ignoresSafeArea(edges: .bottom)
+                }
+
+                if vm.isLoading {
+                    ProgressView().tint(Color("neonPurpleBackground"))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if vm.venue == nil {
+                    noVenueView
+                } else {
+                    mainContent(geo: geo)
                 }
             }
-            
-            Text("Address: \(venueAddress)")
-                .padding()
         }
-        .background(Color(.darkGray))
-        .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $image, onImagePicked: { pickedImage in
-                handleImageSelection(pickedImage)
-            })
+        .task { await vm.load() }
+        .sheet(isPresented: $showApplicationForm) {
+            NavigationStack { VenueApplicationForm() }
         }
-        .sheet(isPresented: $showAdditionalImagePicker) {
-            ImagePicker(image: Binding(get: {
-                nil
-            }, set: { newImage in
-                if let newImage = newImage {
-                    additionalImages.append(newImage)
-                    uploadAdditionalImages([newImage])
-                }
-            }), onImagePicked:{ newImage in
-                print("Additional image picked")
-                
-            })
-                
-            
-        }
-    }
-    
-    private func handleImageSelection(_ image: UIImage) {
-        self.image = image
-        uploadImage()
-    }
-    
-    private func uploadImage() {
-        guard let image = image else { return }
-        
-        if let imageData = image.jpegData(compressionQuality: 0.8) {
-            let path = StringStoragePath.fromString("public/\(UUID().uuidString).jpg")
-            
+        .onChangeCompat(of: pickedGalleryItem) { _, item in
             Task {
-                do {
-                    let uploadTask = Amplify.Storage.uploadData(
-                        path: path,
-                        data: imageData
-                    )
-                    
-                    for await progress in uploadTask.progress {
-                        await MainActor.run {
-                            self.uploadProgress = progress.fractionCompleted
-                        }
-                    }
-                    
-                    let uploadedKey = try await uploadTask.value
-                    await MainActor.run {
-                        self.avatarState = .remote(avatarKey: uploadedKey)
-                        self.uploadProgress = 1.0
-                        print("Upload completed: \(uploadedKey)")
-                    }
-                } catch {
-                    print("Failed to upload image: \(error)")
+                if let data = try? await item?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    await vm.uploadGalleryImage(image)
                 }
             }
         }
     }
 
-    func uploadAdditionalImages(_ images: [UIImage]) {
-        for image in images {
-            if let imageData = image.jpegData(compressionQuality: 0.8) {
-                let path = StringStoragePath.fromString("public/\(UUID().uuidString).jpg")
-                
-                Task {
-                    do {
-                        let uploadTask = Amplify.Storage.uploadData(
-                            path: path,
-                            data: imageData
-                        )
-                        // Use .value instead of .result
-                        let uploadedKey = try await uploadTask.value
-                        print("Additional image uploaded: \(uploadedKey)")
-                    } catch {
-                        print("Failed to upload additional image: \(error)")
+    // MARK: — No venue yet
+
+    private var noVenueView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "building.2")
+                .font(.system(size: 52))
+                .foregroundStyle(Color("neonPurpleBackground").opacity(0.6))
+            Text("No Venue Yet")
+                .font(.system(.title2, design: .rounded, weight: .semibold))
+                .foregroundStyle(.white)
+            Text("Submit an application to list your venue on N3ON.")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+            Button("Apply for a Venue") {
+                showApplicationForm = true
+            }
+            .buttonStyle(FilledButtonStyle())
+            .padding(.horizontal, 32)
+            Spacer()
+        }
+    }
+
+    // MARK: — Main content
+
+    private func mainContent(geo: GeometryProxy) -> some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                heroSection
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
+
+                // Neon dock line — DESIGN §3.5
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [.clear, Color("neonPurpleBackground"), Color("neonPurpleBackground"), .clear],
+                        startPoint: .leading, endPoint: .trailing
+                    ))
+                    .frame(height: 1.5)
+                    .shadow(color: Color("neonPurpleBackground"), radius: 10, y: 4)
+                    .shadow(color: Color("neonPurpleBackground").opacity(0.3), radius: 4, y: 2)
+
+                // Black content card
+                VStack(spacing: 0) {
+                    tabBar
+                        .padding(.top, 20)
+                    tabContent
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+                        .frame(minHeight: geo.size.height * 0.6)
+                }
+                .background(Color.black)
+            }
+        }
+    }
+
+    // MARK: — Hero
+
+    private var heroSection: some View {
+        VStack(spacing: 16) {
+            // Venue avatar
+            PulsingAvatarView(
+                state: vm.avatarState,
+                audioKey: nil,
+                size: 88,
+                fromMemoryCache: false
+            )
+
+            // Venue name + status
+            VStack(spacing: 6) {
+                Text(vm.venue?.name ?? "")
+                    .font(.system(.title2, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.white)
+
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(vm.isApproved ? Color("neonPurpleBackground") : Color.white.opacity(0.3))
+                        .frame(width: 6, height: 6)
+                    Text(vm.approvalStatus.capitalized)
+                        .font(.caption)
+                        .foregroundStyle(vm.isApproved ? Color("neonPurpleBackground") : .white.opacity(0.5))
+                }
+            }
+
+            // Quick stats
+            HStack(spacing: 32) {
+                statPill(value: "\(vm.eventCount)", label: "Events")
+                statPill(value: "\(vm.capacity)", label: "Capacity")
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func statPill(value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(.title3, design: .rounded, weight: .bold))
+                .foregroundStyle(.white)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.5))
+        }
+    }
+
+    // MARK: — Tab bar
+
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(VenueTab.allCases, id: \.rawValue) { tab in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) { selectedTab = tab }
+                } label: {
+                    VStack(spacing: 6) {
+                        Text(tab.rawValue)
+                            .font(.subheadline.weight(selectedTab == tab ? .semibold : .regular))
+                            .foregroundStyle(selectedTab == tab ? .white : .white.opacity(0.4))
+                        Rectangle()
+                            .fill(selectedTab == tab ? Color("neonPurpleBackground") : .clear)
+                            .frame(height: 2)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: — Tab content
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch selectedTab {
+        case .events:   eventsTab
+        case .gallery:  galleryTab
+        case .settings: settingsTab
+        }
+    }
+
+    // MARK: — Events tab
+
+    private var eventsTab: some View {
+        Group {
+            if vm.upcomingEvents.isEmpty {
+                emptyTabMessage(
+                    icon: "calendar.badge.plus",
+                    text: vm.isApproved
+                        ? "No upcoming events. DJs can apply to host events at your venue."
+                        : "Events are unlocked once your venue is approved."
+                )
+            } else {
+                LazyVStack(spacing: 12) {
+                    ForEach(vm.upcomingEvents, id: \.id) { event in
+                        venueEventRow(event)
                     }
                 }
             }
         }
     }
-    
-    func geocode(address: String) async -> CLLocationCoordinate2D? {
-        return await withCheckedContinuation { continuation in
-            let geocoder = CLGeocoder()
-            geocoder.geocodeAddressString(address) { placemarks, error in
-                if let error = error {
-                    print("Failed to geocode address: \(error)")
-                    continuation.resume(returning: nil)
-                } else {
-                    continuation.resume(returning: placemarks?.first?.location?.coordinate)
+
+    private func venueEventRow(_ event: Event) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(event.eventName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Text(event.eventDate.foundationDate.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+            Spacer()
+            Text("\(event.availableTickets) tickets")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.4))
+        }
+        .padding(12)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    // MARK: — Gallery tab
+
+    private var galleryTab: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            PhotosPicker(selection: $pickedGalleryItem, matching: .images) {
+                HStack(spacing: 8) {
+                    if vm.isUploadingGallery {
+                        ProgressView().tint(.white)
+                        Text("Uploading…")
+                    } else {
+                        Image(systemName: "plus.circle")
+                        Text("Add Photo")
+                    }
+                }
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color("neonPurpleBackground"))
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(Color("neonPurpleBackground").opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            .disabled(vm.isUploadingGallery)
+
+            if vm.galleryKeys.isEmpty {
+                emptyTabMessage(icon: "photo.on.rectangle", text: "No photos yet. Add some to show your venue.")
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+                    ForEach(vm.galleryKeys, id: \.self) { key in
+                        AsyncStorageImage(storageKey: key, contentMode: .fill)
+                            .frame(height: 110)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
                 }
             }
         }
     }
-    
-    func setMapRegion(userLocation: CLLocation) {
-        mapRegion = MKCoordinateRegion(
-            center: userLocation.coordinate,
-            span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-        )
+
+    // MARK: — Settings tab
+
+    private var settingsTab: some View {
+        VenueSettingsForm(vm: vm)
+    }
+
+    // MARK: — Helpers
+
+    private func emptyTabMessage(icon: String, text: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 32))
+                .foregroundStyle(.white.opacity(0.2))
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.4))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
     }
 }
 
-struct VenueProfileView_Previews: PreviewProvider {
-    static var previews: some View {
-        VenueProfileView()
+// MARK: — Settings form (extracted to avoid type-check timeout)
+
+private struct VenueSettingsForm: View {
+    @ObservedObject var vm: VenueProfileViewModel
+    @State private var editName: String = ""
+    @State private var editDescription: String = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            settingsField(label: "VENUE NAME", binding: $editName)
+            settingsField(label: "DESCRIPTION", binding: $editDescription, multiline: true)
+
+            if let error = vm.saveError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+
+            Button {
+                Task { await vm.saveChanges(name: editName, description: editDescription) }
+            } label: {
+                if vm.isSaving {
+                    ProgressView().tint(.white)
+                } else {
+                    Text("Save Changes").font(.headline).foregroundStyle(.white)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background(Color("neonPurpleBackground"))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .disabled(vm.isSaving)
+
+            NavigationLink(destination: VenueComplianceForm(venueID: vm.venue?.id ?? "")) {
+                HStack {
+                    Image(systemName: "checkmark.shield")
+                    Text("Compliance Documents")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.7))
+                .padding(12)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+
+            Spacer()
+        }
+        .onAppear {
+            editName = vm.venue?.name ?? ""
+            editDescription = vm.venue?.description ?? ""
+        }
+    }
+
+    @ViewBuilder
+    private func settingsField(label: String, binding: Binding<String>, multiline: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color("neonPurpleBackground"))
+                .tracking(1.5)
+            if multiline {
+                TextEditor(text: binding)
+                    .font(.subheadline)
+                    .foregroundStyle(.white)
+                    .frame(minHeight: 80)
+                    .padding(10)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .scrollContentBackground(.hidden)
+            } else {
+                TextField("", text: binding, prompt:
+                    Text("Enter \(label.lowercased())").foregroundColor(.white.opacity(0.3))
+                )
+                .font(.subheadline)
+                .foregroundStyle(.white)
+                .padding(12)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+        }
     }
 }

@@ -15,6 +15,11 @@ final class DJViewModel: ObservableObject {
     @Published var followerCount = 0
     @Published var isTogglingFollow = false
 
+    // Holds the long-running DataStore observation. Cancelled in deinit so
+    // this VM can actually be released — an unstored `Task { for try await ... }`
+    // captures self strongly forever.
+    private var observeTask: Task<Void, Never>?
+
     init(user: User) {
         self.user = user
         Task {
@@ -25,16 +30,23 @@ final class DJViewModel: ObservableObject {
         subscribeToUserUpdates()
     }
 
+    deinit {
+        observeTask?.cancel()
+    }
+
     // MARK: - Events
 
     func loadUpcomingEvents() async {
         isLoading = true
         defer { isLoading = false }
         do {
-            let allEvents = try await Amplify.DataStore.query(Event.self)
-            upcomingEvents = allEvents
-                .filter { $0.eventDate.foundationDate > Date() }
-                .sorted { $0.eventDate.foundationDate < $1.eventDate.foundationDate }
+            // Push the date filter to DataStore — pulling every Event and filtering
+            // in memory scales O(total events), not O(upcoming events).
+            upcomingEvents = try await Amplify.DataStore.query(
+                Event.self,
+                where: Event.keys.eventDate >= Temporal.DateTime.now()
+            )
+            .sorted { $0.eventDate.foundationDate < $1.eventDate.foundationDate }
         } catch {
             errorMessage = "Failed to load events: \(error.localizedDescription)"
         }
@@ -96,13 +108,18 @@ final class DJViewModel: ObservableObject {
     // MARK: - Live updates
 
     private func subscribeToUserUpdates() {
-        Task {
+        observeTask?.cancel()
+        observeTask = Task { [weak self] in
+            guard let self else { return }
             do {
                 for try await change in Amplify.DataStore.observe(User.self) {
+                    guard !Task.isCancelled else { return }
                     guard change.mutationType == MutationEvent.MutationType.update.rawValue,
                           let updatedUser = try? change.decodeModel(as: User.self),
                           updatedUser.id == self.user.id else { continue }
-                    self.user = updatedUser
+                    // The enclosing Task has no guaranteed actor — hop to MainActor
+                    // before mutating the @Published property on @MainActor self.
+                    await MainActor.run { self.user = updatedUser }
                 }
             } catch { }
         }

@@ -2,8 +2,9 @@
 //  DJValidationChecklist.swift
 //  N3ON
 //
-//  Created by liam howe on 12/7/2025.
-//
+// Shows lineup tally status for the host DJ during event creation.
+// Driven by EventDraftViewModel.currentTally / requiredTally — both are
+// updated in real-time by the AsyncSequence observer in EventDraftViewModel.
 
 import SwiftUI
 
@@ -12,54 +13,48 @@ struct DJValidationChecklist: View {
 
     @State private var glowPulse = false
 
+    private var tallyMet: Bool { draft.tallyMet }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            checklistRow(text: "1 Level 5 or 3 Level 4 DJs", satisfied: satisfiesCore)
-            checklistRow(text: "At least 1 Level 3 DJ", satisfied: has1Level3)
+            checklistRow(
+                text: "Tally reached (\(draft.currentTally) / \(draft.requiredTally) coins)",
+                satisfied: tallyMet
+            )
+            checklistRow(
+                text: "Invite DJs via the Limbo stage",
+                satisfied: draft.currentTally > 0
+            )
         }
         .padding()
         .background(Color.black.opacity(0.7))
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(satisfiesAll ? Color.neonGreen : Color.purple.opacity(0.6), lineWidth: 2)
-                .shadow(color: satisfiesAll ? Color.neonGreen : Color.purple.opacity(0.5),
-                        radius: glowPulse && satisfiesAll ? 10 : 5)
+                // DESIGN §3.2 — single neon accent; neonPurpleBackground when valid, dim white when not
+                .stroke(
+                    tallyMet ? Color("neonPurpleBackground") : Color.white.opacity(0.2),
+                    lineWidth: 2
+                )
+                .shadow(
+                    color: tallyMet ? Color("neonPurpleBackground") : .clear,
+                    radius: glowPulse && tallyMet ? 10 : 5
+                )
                 .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: glowPulse)
         )
-        .onAppear {
-            glowPulse = satisfiesAll
-        }
-        .onChangeCompat(of: satisfiesAll) { _, isValid in
-            glowPulse = isValid
-        }
+        .onAppear { glowPulse = tallyMet }
+        .onChangeCompat(of: tallyMet) { _, isValid in glowPulse = isValid }
     }
 
-    func checklistRow(text: String, satisfied: Bool) -> some View {
+    private func checklistRow(text: String, satisfied: Bool) -> some View {
         HStack(spacing: 10) {
             Image(systemName: satisfied ? "checkmark.circle.fill" : "xmark.octagon.fill")
-                .foregroundColor(satisfied ? .neonGreen : .neonRed)
-                .shadow(color: satisfied ? .neonGreen : .neonRed, radius: 5)
+                // DESIGN §3.2 — neon accent for satisfied; disabled opacity for not satisfied
+                .foregroundStyle(satisfied ? Color("neonPurpleBackground") : Color.white.opacity(0.3))
+                .shadow(color: satisfied ? Color("neonPurpleBackground") : .clear, radius: 5)
             Text(text)
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .font(.subheadline.bold())
         }
     }
-
-    var rankCounts: [Int: Int] {
-        Dictionary(grouping: draft.invitedDJs, by: \.rank).mapValues(\.count)
-    }
-
-    var satisfiesCore: Bool {
-        (rankCounts[5] ?? 0) >= 1 || (rankCounts[4] ?? 0) >= 3
-    }
-
-    var has1Level3: Bool {
-        (rankCounts[3] ?? 0) >= 1
-    }
-
-    var satisfiesAll: Bool {
-        satisfiesCore && has1Level3
-    }
 }
-

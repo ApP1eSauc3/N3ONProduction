@@ -23,7 +23,8 @@ extension EventDJLink {
     model.authRules = [
       rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .read, .delete]),
       rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "VenueOwnerUser", "UserGroup"], provider: .userPools, operations: [.read]),
-      rule(allow: .private, provider: .iam, operations: [.create, .read, .update, .delete])
+      rule(allow: .private, provider: .iam, operations: [.create, .read, .update, .delete]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.create, .read, .update, .delete])
     ]
     
     model.listPluralName = "EventDJLinks"

@@ -19,8 +19,8 @@ extension UserFollows {
     let userFollows = UserFollows.keys
     
     model.authRules = [
-      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .delete, .read]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "UserGroup", "VenueOwnerUser"], provider: .userPools, operations: [.read])
+      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .read, .delete]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "VenueOwnerUser", "UserGroup"], provider: .userPools, operations: [.read])
     ]
     
     model.listPluralName = "UserFollows"

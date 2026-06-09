@@ -39,13 +39,15 @@ extension AvatarState {
         }
     }
 
-    // Equatable — UIImage doesn't conform by default so we implement manually
+    // Equatable — UIImage doesn't conform by default so we implement manually.
+    // .local compares by reference identity only — pngData() would run a full
+    // PNG encode on every SwiftUI equality check, which is O(pixels).
     static func == (lhs: AvatarState, rhs: AvatarState) -> Bool {
         switch (lhs, rhs) {
         case (.remote(let lKey), .remote(let rKey)):
             return lKey == rKey
         case (.local(let lImg), .local(let rImg)):
-            return lImg.pngData() == rImg.pngData()
+            return lImg === rImg
         default:
             return false
         }

@@ -8,7 +8,8 @@
 import SwiftUI
 
 extension Color {
+    // DESIGN §1.1 — single dark-gray surface token
     static let customDarkGray = Color("appDarkGray")
-    static let neonGreen = Color(red: 0.0, green: 1.0, blue: 0.5)
-    static let neonRed   = Color(red: 1.0, green: 0.2, blue: 0.3)
+    // DESIGN §3.2 — one neon accent only; neonPurpleBackground is the token, used via Color("neonPurpleBackground")
+    // neonGreen and neonRed removed — they violated the single-accent rule
 }

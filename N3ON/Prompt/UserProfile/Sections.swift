@@ -2,19 +2,25 @@
 // N3ON
 
 import SwiftUI
-import Amplify
 
 // MARK: - RegularUserSection
 
 struct RegularUserSection: View {
     @State private var myTickets: [(ticket: Ticket, eventName: String)] = []
     @State private var isLoadingTickets = false
+    @State private var selectedTicket: (ticket: Ticket, eventName: String)?
+    @State private var currentUserID: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("My Tickets")
-                .font(.headline)
-                .foregroundStyle(.white)
+            HStack(spacing: 10) {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color("neonPurpleBackground"))
+                    .frame(width: 3, height: 16)
+                Text("My Tickets")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+            }
 
             if isLoadingTickets {
                 ProgressView()
@@ -33,23 +39,48 @@ struct RegularUserSection: View {
                 .padding(.vertical, 20)
             } else {
                 ForEach(myTickets, id: \.ticket.id) { entry in
-                    TicketSummaryRow(ticket: entry.ticket, eventName: entry.eventName)
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        selectedTicket = entry
+                    } label: {
+                        TicketSummaryRow(ticket: entry.ticket, eventName: entry.eventName)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
         .task { await loadTickets() }
+        .sheet(item: Binding(
+            get: { selectedTicket.map { TicketSheetItem(ticket: $0.ticket, eventName: $0.eventName) } },
+            set: { if $0 == nil { selectedTicket = nil } }
+        )) { item in
+            TicketDetailView(ticket: item.ticket, eventName: item.eventName, userID: currentUserID)
+        }
     }
 
     private func loadTickets() async {
         isLoadingTickets = true
         defer { isLoadingTickets = false }
+        currentUserID = await AuthService.currentUserIdOrNil() ?? ""
         guard let tickets = try? await TicketService.myTickets() else { return }
         var result: [(Ticket, String)] = []
         for ticket in tickets {
-            let name = (try? await Amplify.DataStore.query(Event.self, byId: ticket.eventID))?.eventName
+            let name = (try? await EventService.fetchEvent(byId: ticket.eventID))?.eventName
             result.append((ticket, name ?? "Unknown Event"))
         }
         myTickets = result
+    }
+}
+
+// Identifiable wrapper so sheet(item:) can use the tuple
+private struct TicketSheetItem: Identifiable {
+    let id: String
+    let ticket: Ticket
+    let eventName: String
+    init(ticket: Ticket, eventName: String) {
+        self.id = ticket.id
+        self.ticket = ticket
+        self.eventName = eventName
     }
 }
 
@@ -88,13 +119,22 @@ private struct TicketSummaryRow: View {
         }
         .padding(10)
         .background(Color.white.opacity(0.04))
-        .cornerRadius(10)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
 // MARK: - DJSection
 
 struct DJSection: View {
+    let rank: Int
+    let userID: String
+    /// Capability-layer result (Rank ≥ 4 OR admin-curated during bootstrap). Drives the Create Event tool.
+    let canCreateEvent: Bool
+
+    @State private var showAudioPicker = false
+    @State private var isUploadingAudio = false
+    @State private var audioUploadError: String?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
@@ -111,9 +151,10 @@ struct DJSection: View {
                     EventCreationFlowView()
                         .environmentObject(EventDraftViewModel())
                 } label: {
-                    toolLabel("Create Event", "calendar.badge.plus")
+                    toolLabel("Create Event", "calendar.badge.plus", locked: !canCreateEvent)
                 }
                 .buttonStyle(ToolGridButtonStyle())
+                .disabled(!canCreateEvent)
 
                 NavigationLink {
                     UserEventTimelineView()
@@ -129,26 +170,126 @@ struct DJSection: View {
                 }
                 .buttonStyle(ToolGridButtonStyle())
 
-                NavigationLink {
-                    MyPostsView()
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showAudioPicker = true
                 } label: {
-                    toolLabel("My Posts", "square.and.arrow.up")
+                    toolLabel(
+                        isUploadingAudio ? "Uploading…" : "Audio Clip",
+                        isUploadingAudio ? "arrow.up.circle" : "waveform",
+                        locked: false
+                    )
                 }
                 .buttonStyle(ToolGridButtonStyle())
+                .disabled(isUploadingAudio)
+            }
+
+            if let err = audioUploadError {
+                Text(err)
+                    .font(.caption)
+                    .foregroundStyle(.red.opacity(0.8))
+                    .padding(.horizontal, 4)
+            }
+
+            // MARK: — Rank progression
+            if rank > 0 && rank < 5 {
+                rankProgressionSection
+            }
+        }
+        .sheet(isPresented: $showAudioPicker) {
+            AudioPicker(selectedAudio: Binding(
+                get: { nil },
+                set: { url in
+                    guard let url else { return }
+                    Task { await uploadAudio(url: url) }
+                }
+            ))
+        }
+    }
+
+    // MARK: — Rank progression section
+
+    private var rankProgressionSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color("neonPurpleBackground"))
+                    .frame(width: 3, height: 16)
+                Text("Rank Progression")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+            }
+
+            NavigationLink {
+                EndorsementProgressView(userID: userID, currentRank: rank)
+            } label: {
+                rankNavRow(
+                    icon: "arrow.up.circle",
+                    title: "Rank \(rank) → \(rank + 1)",
+                    subtitle: "Track endorsements toward your next rank"
+                )
+            }
+
+            NavigationLink {
+                EndorsementInboxView(userID: userID, currentRank: rank)
+            } label: {
+                rankNavRow(
+                    icon: "checkmark.seal",
+                    title: "Endorsement Inbox",
+                    subtitle: "Review requests from DJs seeking your endorsement"
+                )
             }
         }
     }
 
-    private func toolLabel(_ title: String, _ system: String) -> some View {
+    private func rankNavRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(Color("neonPurpleBackground"))
+                .frame(width: 36)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.3))
+        }
+        .padding(14)
+        .background(Color.white.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func uploadAudio(url: URL) async {
+        isUploadingAudio = true
+        audioUploadError = nil
+        defer { isUploadingAudio = false }
+        do {
+            try await AvatarUploadService.uploadProfileAudio(from: url)
+        } catch {
+            audioUploadError = "Upload failed — try again"
+        }
+    }
+
+    private func toolLabel(_ title: String, _ system: String, locked: Bool = false) -> some View {
         HStack {
-            Image(systemName: system)
+            Image(systemName: locked ? "lock" : system)
             Text(title)
         }
         .frame(maxWidth: .infinity)
         .padding(12)
         .background(Color.customDarkGray)
-        .foregroundStyle(.white)
-        .cornerRadius(10)
+        .foregroundStyle(locked ? .white.opacity(0.3) : .white)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
@@ -197,6 +338,12 @@ struct VenueSection: View {
                 } label: {
                     rowLabel("Event Requests", "tray.full")
                 }
+
+                NavigationLink {
+                    TicketScannerView()
+                } label: {
+                    rowLabel("Scan Tickets", "qrcode.viewfinder")
+                }
             }
         }
     }
@@ -212,7 +359,7 @@ struct VenueSection: View {
         .padding(12)
         .background(Color.customDarkGray)
         .foregroundStyle(.white)
-        .cornerRadius(10)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -261,8 +408,7 @@ struct VenueListView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .task {
             isLoading = true
-            venues = (try? await Amplify.DataStore.query(Venue.self,
-                where: Venue.keys.approvalStatus == "APPROVED")) ?? []
+            venues = (try? await VenueService.fetchApproved()) ?? []
             isLoading = false
         }
     }
@@ -313,47 +459,9 @@ struct EventRequestsView: View {
         isLoading = true
         defer { isLoading = false }
         guard let ownerID = await AuthService.currentUserIdOrNil(),
-              let venue = try? await Amplify.DataStore.query(
-                Venue.self,
-                where: Venue.keys.owner == ownerID
-              ).first
+              let venue = try? await VenueService.fetchOwned(by: ownerID).first
         else { return }
-        events = (try? await Amplify.DataStore.query(
-            Event.self,
-            where: Event.keys.venueID == venue.id
-        )) ?? []
-    }
-}
-
-// MARK: - MyPostsView
-// Loads the current user's posts and renders them in the PostFeedView.
-
-struct MyPostsView: View {
-    @State private var posts: [Post] = []
-    @State private var isLoading = false
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-            if isLoading {
-                ProgressView().tint(.white)
-            } else {
-                PostFeedView(posts: posts)
-            }
-        }
-        .navigationTitle("My Posts")
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .task { await loadPosts() }
-    }
-
-    private func loadPosts() async {
-        isLoading = true
-        defer { isLoading = false }
-        guard let ownerID = await AuthService.currentUserIdOrNil() else { return }
-        posts = (try? await Amplify.DataStore.query(
-            Post.self,
-            where: Post.keys.ownerID == ownerID
-        )) ?? []
+        events = (try? await EventService.fetchEvents(forVenueID: venue.id)) ?? []
     }
 }
 
@@ -388,10 +496,7 @@ struct VenueComplianceWrapper: View {
     private func resolveVenue() async {
         defer { isLoading = false }
         guard let ownerID = await AuthService.currentUserIdOrNil(),
-              let venue = try? await Amplify.DataStore.query(
-                Venue.self,
-                where: Venue.keys.owner == ownerID
-              ).first
+              let venue = try? await VenueService.fetchOwned(by: ownerID).first
         else { return }
         venueID = venue.id
     }

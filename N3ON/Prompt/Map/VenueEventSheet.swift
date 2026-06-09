@@ -5,7 +5,6 @@
 // Lists upcoming events at the venue and provides GPS directions.
 
 import SwiftUI
-import Amplify
 
 extension Event: Identifiable {}
 

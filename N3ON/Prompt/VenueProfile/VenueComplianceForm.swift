@@ -1,17 +1,9 @@
 // VenueComplianceForm.swift
-// N3ON
-//
+// N3ON — Prompt layer
+// Compliance document submission for venue owners.
+// Accessed via NavigationLink from VenueSettingsForm — already inside UserProfileView's NavigationStack.
 
 import SwiftUI
-import Amplify
-
-
-struct VenueComplianceRecord {
-    let venueID: String
-    let licenseType: String
-    let contractorName: String
-    let submittedAt: Date
-}
 
 struct VenueComplianceForm: View {
     let venueID: String
@@ -22,7 +14,6 @@ struct VenueComplianceForm: View {
     @State private var submissionSuccess = false
     @State private var isSubmitting = false
     @State private var errorMessage: String?
-    @State private var showDocumentPicker = false
 
     // TODO: These should be fetched from DataStore/API to allow admin management
     let licenses = [
@@ -41,177 +32,176 @@ struct VenueComplianceForm: View {
     ]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Venue Compliance")
-                            .font(.largeTitle.bold())
-                            .foregroundColor(.white)
-                        Text("Complete all required documentation for your venue operations")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.bottom, 8)
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("REQUIRED LICENSES")
-                            .font(.caption)
-                            .foregroundColor(Color("neonPurpleBackground"))
-                            .tracking(1.5)
-
-                        Menu {
-                            ForEach(licenses, id: \.self) { license in
-                                Button(license) { selectedLicense = license }
-                            }
-                        } label: {
-                            menuLabel(
-                                text: selectedLicense.isEmpty ? "Select License Type" : selectedLicense,
-                                isEmpty: selectedLicense.isEmpty
-                            )
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("PREFERRED CONTRACTORS")
-                            .font(.caption)
-                            .foregroundColor(Color("neonPurpleBackground"))
-                            .tracking(1.5)
-
-                        Menu {
-                            ForEach(contractors, id: \.self) { contractor in
-                                Button(contractor) { selectedContractor = contractor }
-                            }
-                        } label: {
-                            menuLabel(
-                                text: selectedContractor.isEmpty ? "Select Service Provider" : selectedContractor,
-                                isEmpty: selectedContractor.isEmpty
-                            )
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("DOCUMENT UPLOAD")
-                            .font(.caption)
-                            .foregroundColor(Color("neonPurpleBackground"))
-                            .tracking(1.5)
-
-                        HStack {
-                            Image(systemName: "doc.text.fill")
-                                .foregroundColor(Color("neonPurpleBackground"))
-                                .frame(width: 24)
-                            Text("Documents can be uploaded after form submission")
-                                .foregroundColor(.white)
-                                .font(.callout)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color("dullPurple"))
-                        .cornerRadius(12)
-                    }
-                    .padding(.top)
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .font(.callout)
-                            .padding(.horizontal)
-                    }
-
-                    Button(action: { Task { await submitCompliance() } }) {
-                        HStack {
-                            if isSubmitting {
-                                ProgressView().progressViewStyle(.circular).tint(.white)
-                            } else {
-                                Text("Submit Compliance").font(.headline.bold())
-                                Image(systemName: "checkmark.shield.fill")
-                            }
-                        }
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color("neonPurpleBackground"))
-                        .cornerRadius(15)
-                        .shadow(color: Color("neonPurpleBackground").opacity(0.5), radius: 10, x: 0, y: 5)
-                    }
-                    .padding(.top, 24)
-                    .disabled(selectedLicense.isEmpty || selectedContractor.isEmpty || isSubmitting)
-                    .opacity((selectedLicense.isEmpty || selectedContractor.isEmpty) ? 0.6 : 1)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 24) {
+                // Header
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Compliance")
+                        .font(.system(.title2, design: .rounded, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text("Complete all required documentation for your venue operations.")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.5))
                 }
-                .padding()
-            }
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.black, Color("dullPurple").opacity(0.1)]),
-                    startPoint: .top,
-                    endPoint: .bottom
+                .padding(.bottom, 8)
+
+                // License picker
+                pickerSection(
+                    label: "REQUIRED LICENSES",
+                    items: licenses,
+                    selection: $selectedLicense,
+                    placeholder: "Select License Type"
                 )
-                .ignoresSafeArea()
-            )
-            .navigationBarTitleDisplayMode(.inline)
-            .alert(
-                submissionSuccess ? "Submitted" : "Submission Failed",
-                isPresented: $showingSubmissionAlert
-            ) {
-                Button("OK", role: .cancel) {
-                    if submissionSuccess {
-                        selectedLicense = ""
-                        selectedContractor = ""
+
+                // Contractor picker
+                pickerSection(
+                    label: "PREFERRED CONTRACTORS",
+                    items: contractors,
+                    selection: $selectedContractor,
+                    placeholder: "Select Service Provider"
+                )
+
+                // Document upload placeholder
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("DOCUMENT UPLOAD")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color("neonPurpleBackground"))
+                        .tracking(1.5)
+
+                    HStack(spacing: 12) {
+                        Image(systemName: "doc.text.fill")
+                            .foregroundStyle(Color("neonPurpleBackground"))
+                            .frame(width: 24)
+                        Text("Documents can be uploaded after form submission.")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.7))
+                        Spacer()
                     }
+                    .padding(12)
+                    .background(Color.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
-            } message: {
-                Text(submissionSuccess
-                     ? "Your compliance form has been saved successfully."
-                     : (errorMessage ?? "An unknown error occurred.")
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red.opacity(0.8))
+                }
+
+                submitButton
+                    .padding(.top, 8)
+            }
+            .padding(16)
+        }
+        .background(Color.black.ignoresSafeArea())
+        .navigationTitle("Compliance")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .alert(
+            submissionSuccess ? "Submitted" : "Submission Failed",
+            isPresented: $showingSubmissionAlert
+        ) {
+            Button("OK", role: .cancel) {
+                if submissionSuccess {
+                    selectedLicense = ""
+                    selectedContractor = ""
+                }
+            }
+        } message: {
+            Text(submissionSuccess
+                 ? "Your compliance form has been saved successfully."
+                 : (errorMessage ?? "An unknown error occurred.")
+            )
+        }
+    }
+
+    // MARK: — Picker section
+
+    private func pickerSection(
+        label: String,
+        items: [String],
+        selection: Binding<String>,
+        placeholder: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color("neonPurpleBackground"))
+                .tracking(1.5)
+
+            Menu {
+                ForEach(items, id: \.self) { item in
+                    Button(item) { selection.wrappedValue = item }
+                }
+            } label: {
+                HStack {
+                    Text(selection.wrappedValue.isEmpty ? placeholder : selection.wrappedValue)
+                        .font(.subheadline)
+                        .foregroundStyle(selection.wrappedValue.isEmpty ? .white.opacity(0.3) : .white)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(Color("neonPurpleBackground"))
+                }
+                .padding(12)
+                .background(Color.white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color("neonPurpleBackground").opacity(0.25), lineWidth: 1)
                 )
             }
         }
     }
 
-   
+    // MARK: — Submit button
+
+    private var canSubmit: Bool {
+        !selectedLicense.isEmpty && !selectedContractor.isEmpty
+    }
+
+    private var submitButton: some View {
+        Button(action: { Task { await submitCompliance() } }) {
+            HStack(spacing: 8) {
+                if isSubmitting {
+                    ProgressView().tint(.white)
+                } else {
+                    Image(systemName: "checkmark.shield.fill")
+                    Text("Submit Compliance")
+                        .font(.headline)
+                }
+            }
+            .foregroundStyle(canSubmit ? .white : .white.opacity(0.3))
+            .frame(maxWidth: .infinity, minHeight: 50)
+        }
+        .background(canSubmit
+                    ? AnyShapeStyle(Color("neonPurpleBackground"))
+                    : AnyShapeStyle(Color.white.opacity(0.08)))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: Color("neonPurpleBackground").opacity(canSubmit ? 0.55 : 0), radius: 18)
+        .shadow(color: Color("neonPurpleBackground").opacity(canSubmit ? 0.85 : 0), radius: 5)
+        .disabled(!canSubmit || isSubmitting)
+    }
+
+    // MARK: — Submission
+
     @MainActor
     private func submitCompliance() async {
-        guard !selectedLicense.isEmpty && !selectedContractor.isEmpty else { return }
+        guard canSubmit else { return }
         isSubmitting = true
         defer { isSubmitting = false }
-
         do {
-            // IMPORTANT: VenueComplianceSubmission Swift model is generated by
-            // `amplify codegen models` after schema.graphql is updated.
-            // Run `amplify codegen models` before building or this will not compile.
-            let submission = VenueComplianceSubmission(
-                id: UUID().uuidString,
+            try await VenueService.saveCompliance(
                 venueID: venueID,
                 licenseType: selectedLicense,
-                contractorName: selectedContractor,
-                submittedAt: Temporal.DateTime.now(),
-                status: "pending_review"
+                contractorName: selectedContractor
             )
-            try await Amplify.DataStore.save(submission)
-
             submissionSuccess = true
             showingSubmissionAlert = true
-
         } catch {
             submissionSuccess = false
             errorMessage = "Failed to submit: \(error.localizedDescription)"
             showingSubmissionAlert = true
         }
-    }
-
-    @ViewBuilder
-    private func menuLabel(text: String, isEmpty: Bool) -> some View {
-        HStack {
-            Text(text).foregroundColor(isEmpty ? .gray : .white)
-            Spacer()
-            Image(systemName: "chevron.down").foregroundColor(Color("neonPurpleBackground"))
-        }
-        .padding()
-        .background(Color("dullPurple"))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color("neonPurpleBackground").opacity(0.3), lineWidth: 1)
-        )
     }
 }

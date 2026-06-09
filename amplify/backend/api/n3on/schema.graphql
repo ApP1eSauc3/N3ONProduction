@@ -30,15 +30,32 @@
 # 8. ChatRoom: added @index on associatedEvent so event-specific rooms are queryable.
 #
 # groups used across the schema:
-#   DJUser, VenueOwnerUser, UserGroup
+#   DJUser, VenueOwnerUser, UserGroup, AdminUser
+#
+# ─────────────────────────────────────────────
+# BOOTSTRAP CURATION (cold-start) — REQUIRES DEPLOY
+# ─────────────────────────────────────────────
+# To break the launch deadlock (no ranked DJs / no accrued tally), the admin team
+# curates DJs and events directly. The ranking system is unchanged — it is gated by
+# CurationConfig.platformMode on the client. The backend pieces below must be deployed:
+#   1. Create an "AdminUser" group in the Cognito console (the existing groups were
+#      created there too — userPoolGroupList in auth/cli-inputs.json is empty), then
+#      add the admin team's accounts to it.
+#   2. New fields: User.isCurated, Event.isFeatured (both admin-writable).
+#   3. AdminUser @auth rules added to User / Event / EventDJLink for curation.
+#   4. EndorsementRequest @auth fixed: recipient updates status; creator can no longer
+#      self-approve (closes a privilege hole alongside fixing accept/decline).
+#   After editing: `amplify push` then `amplify codegen models`, then clean-build in Xcode.
 
 # ─────────────────────────────────────────────
 # USER
 # ─────────────────────────────────────────────
-type User 
-  @model 
+type User
+  @model
   @auth(rules: [
-    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"] }
+    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"] },
+    # Admin (bootstrap curation): seed djRank + toggle isCurated on any user
+    { allow: groups, groups: ["AdminUser"] }
   ]) {
   id: ID!
   username: String!
@@ -52,6 +69,13 @@ type User
   # Weights live in Lambda config — not hardcoded here so they can be
   # adjusted without a schema migration or Lambda redeploy.
   djRank: Int
+
+  # BOOTSTRAP CURATION (cold-start): admin marks specific DJs as curated so they
+  # can host events during the bootstrap phase regardless of djRank. Kept distinct
+  # from djRank so the rank ladder stays meaningful. Admin-writable (AdminUser).
+  # NEW FIELD — run `amplify push` then `amplify codegen models` before referencing
+  # User.isCurated in Swift; the generated User.swift does not have it yet.
+  isCurated: Boolean! @default(value: "false")
 
   messages: [Message] @hasMany(indexName: "bySender", fields: ["id"])
   chatRoom: [ChatRoom] @manyToMany(relationName: "UserChatRooms")
@@ -204,7 +228,9 @@ type Post
 # ─────────────────────────────────────────────
 type Event @model @auth(rules: [
   { allow: owner, operations: [create, update, delete] },
-  { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] }
+  { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] },
+  # Admin (bootstrap curation): force-publish and feature events created by anyone
+  { allow: groups, groups: ["AdminUser"], operations: [create, read, update, delete] }
 ]) {
   id: ID!
   venueID: ID! @index(name: "byVenue", sortKeyFields: ["eventDate"])
@@ -223,6 +249,16 @@ type Event @model @auth(rules: [
   description: String!
   ticketPrice: Float!
   availableTickets: Int!
+
+  # "pending"   — created in limbo, tally not yet met, not visible on map
+  # "live"      — tally met, poster uploaded, visible on map to all users
+  # "cancelled"
+  status: String! @default(value: "pending")
+
+  # BOOTSTRAP CURATION: admin can feature a curated event so it surfaces on the
+  # map regardless of organic status. NEW FIELD — run `amplify push` then
+  # `amplify codegen models` before referencing Event.isFeatured in Swift.
+  isFeatured: Boolean! @default(value: "false")
 
   # ✅ REMOVED: attendees: [ID]! — this duplicated the Attendance join model
   # and created two sources of truth for attendance count. Use attendances below.
@@ -256,14 +292,23 @@ type Ticket @model @auth(rules: [
 type EndorsementRequest 
   @model
   @auth(rules: [
-    { allow: owner, operations: [create, read, update, delete] },
-    { allow: groups, groups: ["DJUser"], operations: [read] }
+    # ✅ FIX: the creator (candidate) may create / read / withdraw their request,
+    # but must NOT be able to set status — otherwise a DJ can self-approve.
+    { allow: owner, operations: [create, read, delete] },
+    # ✅ FIX: the recipient (senior DJ) accepts/declines by updating status.
+    # ownerField "toUserID" scopes update to the addressed DJ only.
+    # NOTE: assumes User.id == the Cognito sub used as the owner claim — verify on push.
+    { allow: owner, ownerField: "toUserID", operations: [read, update] },
+    { allow: groups, groups: ["DJUser"], operations: [read] },
+    # Admin (bootstrap): moderate endorsement requests
+    { allow: groups, groups: ["AdminUser"], operations: [read, update, delete] }
   ]) {
   id: ID!
   fromUserID: ID! @index(name: "byFromUser", sortKeyFields: ["timestamp"])
   fromUser: User @belongsTo(fields: ["fromUserID"])
   toUserID: ID! @index(name: "byToUser", sortKeyFields: ["timestamp"])
   toUser: User @belongsTo(fields: ["toUserID"])
+  targetRank: Int!
   message: String!
   status: String! # "pending" | "approved" | "rejected"
   timestamp: AWSDateTime!
@@ -304,7 +349,9 @@ type EventDJLink
     # All authenticated users can read — needed to display tally in UI
     { allow: groups, groups: ["DJUser","VenueOwnerUser","UserGroup"], operations: [read] },
     # Lambda writes coinContribution and rankAtJoining via IAM
-    { allow: private, provider: iam, operations: [create, read, update, delete] }
+    { allow: private, provider: iam, operations: [create, read, update, delete] },
+    # Admin (bootstrap curation): hand-build an event lineup before the join Lambda is live
+    { allow: groups, groups: ["AdminUser"], operations: [create, read, update, delete] }
   ]) {
   id: ID!
   eventID: ID! @index(name: "byEvent", sortKeyFields: ["createdAt"])
@@ -334,6 +381,21 @@ type EventDJLink
 #   minCapacity: 0,   maxCapacity: 200, requiredTally: 40
 #   minCapacity: 201, maxCapacity: 500, requiredTally: 55
 #   minCapacity: 501, maxCapacity: null (unlimited), requiredTally: 80
+
+# ─────────────────────────────────────────────
+# USER FOLLOWS
+# ─────────────────────────────────────────────
+type UserFollows
+  @model
+  @auth(rules: [
+    { allow: owner, operations: [create, read, delete] },
+    { allow: groups, groups: ["DJUser","VenueOwnerUser","UserGroup"], operations: [read] }
+  ]) {
+  id: ID!
+  followerID: ID! @index(name: "byFollower", sortKeyFields: ["createdAt"])
+  followeeID: ID! @index(name: "byFollowee", sortKeyFields: ["createdAt"])
+  createdAt: AWSDateTime!
+}
 
 # ─────────────────────────────────────────────
 # TRANSACTION  ← NEW

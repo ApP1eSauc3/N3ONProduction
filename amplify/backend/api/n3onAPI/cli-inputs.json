@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "paths": {
+    "/tickets/purchase": {
+      "name": "/tickets/purchase",
+      "lambdaFunction": "purchaseTicket",
+      "permissions": {
+        "setting": "private",
+        "auth": [
+          "create",
+          "read",
+          "update",
+          "delete"
+        ]
+      }
+    },
+    "/events/join": {
+      "name": "/events/join",
+      "lambdaFunction": "joinEvent",
+      "permissions": {
+        "setting": "private",
+        "auth": [
+          "create",
+          "read",
+          "update",
+          "delete"
+        ]
+      }
+    }
+  }
+}

@@ -72,7 +72,7 @@ struct VenuePopupView: View {
             maxCapacity: 300,
             currentUsers: 0,
             revenue: 0,
-            approvalStatus: "APPROVED"
+            approvalStatus: "approved"
         ),
         onStartEvent: {}
     )

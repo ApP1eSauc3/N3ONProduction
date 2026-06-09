@@ -17,6 +17,10 @@ final class InviteSearchBarViewModel: ObservableObject {
     @Published var results: [UserSummary] = []
 
     private var debounceTimer: AnyCancellable?
+    // Holds the current in-flight DataStore query so rapid keystrokes cancel
+    // previous searches — otherwise a slower earlier query can overwrite a
+    // faster later one and the UI shows stale results.
+    private var searchTask: Task<Void, Never>?
 
     private func debounceSearch() {
         debounceTimer?.cancel()
@@ -28,16 +32,17 @@ final class InviteSearchBarViewModel: ObservableObject {
     }
 
     func performSearch(term: String) {
-        Task {
+        searchTask?.cancel()
+        searchTask = Task {
             do {
                 let allUsers = try await Amplify.DataStore.query(User.self)
+                guard !Task.isCancelled else { return }
                 let filtered = allUsers.filter {
                     $0.username.lowercased().contains(term.lowercased())
                 }
-                await MainActor.run {
-                    self.results = filtered.map {
-                        UserSummary(id: $0.id, username: $0.username, avatarKey: $0.avatarKey, isDJ: $0.isDJ)
-                    }
+                // Already on @MainActor via the class annotation — no hop needed.
+                self.results = filtered.map {
+                    UserSummary(id: $0.id, username: $0.username, avatarKey: $0.avatarKey, isDJ: $0.isDJ)
                 }
             } catch {
                 print("❌ Error fetching users: \(error)")

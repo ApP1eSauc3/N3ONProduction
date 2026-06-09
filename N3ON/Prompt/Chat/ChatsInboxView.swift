@@ -2,148 +2,11 @@
 //  ChatsInboxView.swift
 //  N3ON
 //
-//  Created by liam howe on 28/8/2025.
-//
+// ChatsInboxVM and ChatSummary live in Workflow/ChatsInboxVM.swift.
 
 import SwiftUI
-import Combine
-import Amplify
 
-struct ChatSummary: Identifiable, Equatable {
-    let id: String
-    let title: String
-    let last: String?
-    let lastAt: Date?
-    let unread: Int
-    let isEvent: Bool
-    let eventDate: Date?
-    let pinned: Bool
-}
-
-@MainActor
-final class ChatsInboxVM: ObservableObject {
-    @Published var pinned: [ChatSummary] = []
-    @Published var others: [ChatSummary] = []
-    @Published var loading = false
-
-    private var bag = Set<AnyCancellable>()
-    private(set) var me: String?
-
-    func start() {
-        Task { await refresh() }
-        observe()
-    }
-
-    func refresh() async {
-        loading = true
-        defer { loading = false }
-        do {
-            let auth = try await Amplify.Auth.getCurrentUser()
-            me = auth.userId
-
-            let links = try await Amplify.DataStore.query(
-                UserChatRooms.self,
-                where: UserChatRooms.keys.user == auth.userId
-            )
-            let roomIds = Set(links.compactMap { $0.chatRoom.id })
-            guard !roomIds.isEmpty else { pinned = []; others = []; return }
-
-            // Amplify DataStore has no .in() predicate — query all and filter in memory
-            let allRooms = try await Amplify.DataStore.query(ChatRoom.self)
-            let rooms = allRooms.filter { roomIds.contains($0.id) }
-
-            var summaries: [ChatSummary] = []
-            for room in rooms {
-                if let s = try await summarize(room: room, me: auth.userId) { summaries.append(s) }
-            }
-
-            let pinnedItems = summaries.filter { $0.pinned }
-                .sorted {
-                    if let l = $0.eventDate, let r = $1.eventDate, l != r { return l < r }
-                    return ($0.lastAt ?? .distantPast) > ($1.lastAt ?? .distantPast)
-                }
-            let otherItems = summaries.filter { !$0.pinned }
-                .sorted { ($0.lastAt ?? .distantPast) > ($1.lastAt ?? .distantPast) }
-
-            self.pinned = pinnedItems
-            self.others = otherItems
-        } catch {
-            print("Inbox refresh error:", error.localizedDescription)
-        }
-    }
-
-    private func unreadCount(for roomID: String, me: String) async throws -> Int {
-        let unreadMsgs = try await Amplify.DataStore.query(
-            Message.self,
-            where: Message.keys.chatRoomID == roomID && Message.keys.isRead == false
-        )
-        return unreadMsgs.reduce(0) { acc, m in
-            ((m.sender?.id ?? "nil") != me) ? acc + 1 : acc
-        }
-    }
-
-    fileprivate func summarize(room: ChatRoom, me: String) async throws -> ChatSummary? {
-        let last = room.lastMessage
-        let lastAt = room.lastMessageTimestamp?.foundationDate
-
-        let links = try await Amplify.DataStore.query(
-            UserChatRooms.self,
-            where: UserChatRooms.keys.chatRoom == room.id
-        )
-        let users = links.compactMap { $0.user }
-        let otherNames = users.filter { $0.id != me }.map { $0.username }
-
-        let title: String = {
-            if room.associatedEvent != nil { return "Event Chat" }
-            if otherNames.count == 1 { return otherNames[0] }
-            if otherNames.count > 1 { return otherNames.joined(separator: ", ") }
-            return room.name
-        }()
-
-        let unread = try await unreadCount(for: room.id, me: me)
-
-        var pinned = false
-        var eventDate: Date? = nil
-        if let eid = room.associatedEvent,
-           let event = try await Amplify.DataStore.query(Event.self, byId: eid) {
-            eventDate = event.eventDate.foundationDate
-            let today = Calendar.current.startOfDay(for: Date())
-            let active = (eventDate ?? today) >= today
-            if active {
-                if event.hostDJID == me {
-                    pinned = true
-                } else if let venue = try await Amplify.DataStore.query(Venue.self, byId: event.venueID),
-                          venue.owner?.id == me {
-                    pinned = true
-                }
-            }
-        }
-
-        return ChatSummary(
-            id: room.id,
-            title: title,
-            last: last,
-            lastAt: lastAt,
-            unread: unread,
-            isEvent: room.associatedEvent != nil,
-            eventDate: eventDate,
-            pinned: pinned
-        )
-    }
-
-    private func observe() {
-        Amplify.Hub.publisher(for: .dataStore)
-            .sink { _ in } receiveValue: { [weak self] payload in
-                guard let self else { return }
-                if payload.eventName == HubPayload.EventName.DataStore.syncReceived,
-                   let ev = payload.data as? MutationEvent,
-                   ["Message","ChatRoom","Event","UserChatRooms"].contains(ev.modelName) {
-                    Task { await self.refresh() }
-                }
-            }
-            .store(in: &bag)
-    }
-}
+// MARK: - View
 
 struct ChatsInboxView: View {
     @StateObject private var vm = ChatsInboxVM()
@@ -151,39 +14,76 @@ struct ChatsInboxView: View {
     @State private var showChat = false
 
     var body: some View {
-        Group {
-            if vm.loading {
-                ProgressView("Loading…")
-            } else if vm.pinned.isEmpty && vm.others.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "bubble.left.and.bubble.right")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.secondary)
-                    Text("No conversations yet").foregroundStyle(.secondary)
-                }
-            } else {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        if !vm.pinned.isEmpty {
-                            SectionHeader("Active Events")
-                            ForEach(vm.pinned) { r in ChatRow(r) { open(r) } }
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            Group {
+                if vm.loading {
+                    ProgressView()
+                        .tint(Color("neonPurpleBackground"))
+                } else if vm.pinned.isEmpty && vm.others.isEmpty {
+                    emptyState
+                } else {
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            if !vm.pinned.isEmpty {
+                                inboxSection("Active Events", rows: vm.pinned)
+                            }
+                            if !vm.others.isEmpty {
+                                inboxSection("Messages", rows: vm.others)
+                            }
                         }
-                        if !vm.others.isEmpty {
-                            SectionHeader("Messages")
-                            ForEach(vm.others) { r in ChatRow(r) { open(r) } }
-                        }
+                        .padding(.horizontal)
+                        .padding(.top, 12)
+                        .padding(.bottom, 32)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 12)
-                    .padding(.bottom, 24)
                 }
             }
         }
         .task { vm.start() }
-        .sheet(isPresented: $showChat) { if let openVM { ChatView(viewModel: openVM) } }
+        .sheet(isPresented: $showChat) {
+            if let openVM { ChatView(viewModel: openVM) }
+        }
         .navigationTitle("Chats")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
-            NavigationLink(destination: InviteDJSearchView()) { Image(systemName: "square.and.pencil") }
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink(destination: InviteDJSearchView()) {
+                    Image(systemName: "square.and.pencil")
+                        .foregroundStyle(Color("neonPurpleBackground"))
+                }
+            }
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "bubble.left.and.bubble.right")
+                .font(.system(size: 44))
+                .foregroundStyle(Color("neonPurpleBackground").opacity(0.4))
+            Text("No conversations yet")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.5))
+            Text("DJs can message each other and venue owners\nthrough shared events.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.3))
+                .multilineTextAlignment(.center)
+        }
+    }
+
+    @ViewBuilder
+    private func inboxSection(_ title: String, rows: [ChatSummary]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.7))
+                .padding(.leading, 4)
+            ForEach(rows) { row in
+                ChatRow(row) { open(row) }
+            }
         }
     }
 
@@ -194,52 +94,106 @@ struct ChatsInboxView: View {
     }
 }
 
-private struct SectionHeader: View {
-    let title: String
-    init(_ t: String) { title = t }
-    var body: some View { HStack { Text(title).font(.headline); Spacer() } }
-}
+// MARK: - Chat Row
 
 private struct ChatRow: View {
     let row: ChatSummary
     let tap: () -> Void
-    init(_ row: ChatSummary, _ tap: @escaping () -> Void) { self.row = row; self.tap = tap }
+
+    init(_ row: ChatSummary, _ tap: @escaping () -> Void) {
+        self.row = row
+        self.tap = tap
+    }
 
     var body: some View {
         Button(action: tap) {
             HStack(spacing: 12) {
+                // Avatar icon
                 Circle()
-                    .fill(row.isEvent ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
+                    .fill(row.isEvent
+                          ? Color("neonPurpleBackground").opacity(0.15)
+                          : Color.white.opacity(0.07))
                     .frame(width: 44, height: 44)
-                    .overlay(Image(systemName: row.isEvent ? "calendar" : "person.2"))
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text(row.title).font(.subheadline).bold().lineLimit(1)
+                    .overlay(
+                        Image(systemName: row.isEvent ? "music.note" : "person.fill")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(row.isEvent
+                                             ? Color("neonPurpleBackground")
+                                             : Color.white.opacity(0.6))
+                    )
+
+                // Title + last message
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(row.title)
+                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
                         Spacer()
-                        if let ts = row.lastAt { Text(short(ts)).font(.caption2).foregroundStyle(.secondary) }
+                        if let ts = row.lastAt {
+                            Text(relativeTime(ts))
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.4))
+                        }
                     }
+
                     if let last = row.last, !last.isEmpty {
-                        Text(last).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        Text(last)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.5))
+                            .lineLimit(1)
+                    }
+
+                    // Expiry indicator for event rooms
+                    if row.isEvent {
+                        expiryLabel
                     }
                 }
+
+                // Unread badge
                 if row.unread > 0 {
                     Text("\(row.unread)")
-                        .font(.caption2).bold()
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Capsule().fill(Color.accentColor.opacity(0.2)))
+                        .font(.caption2.bold())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(Color("neonPurpleBackground"))
+                                .shadow(color: Color("neonPurpleBackground").opacity(0.5), radius: 6)
+                        )
                 }
             }
-            .padding(10)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(.secondarySystemBackground)))
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white.opacity(row.unread > 0 ? 0.08 : 0.05))
+            )
         }
         .buttonStyle(.plain)
     }
 
-    private func short(_ d: Date) -> String {
-        let f = DateFormatter()
-        f.doesRelativeDateFormatting = true
-        f.dateStyle = .short; f.timeStyle = .short
-        return f.string(from: d)
+    @ViewBuilder
+    private var expiryLabel: some View {
+        if row.isExpired {
+            Label("Expired", systemImage: "clock.badge.xmark")
+                .font(.caption2)
+                .foregroundStyle(.white.opacity(0.3))
+        } else if let exp = row.expiresAt {
+            let hours = Int(exp.timeIntervalSinceNow / 3600)
+            if hours < 48 {
+                Label("Closes in \(max(hours, 0))h", systemImage: "clock")
+                    .font(.caption2)
+                    .foregroundStyle(hours < 6
+                                     ? Color("neonPurpleBackground").opacity(0.8)
+                                     : Color.white.opacity(0.35))
+            }
+        }
+    }
+
+    private func relativeTime(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }

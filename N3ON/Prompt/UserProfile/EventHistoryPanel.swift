@@ -240,9 +240,11 @@ class EventHistoryViewModel: ObservableObject {
     func loadAttendanceHistory(for userId: String) {
         isLoading = true
         errorMessage = nil
-        
-        // In real app, this would be an async network call
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+        // Stubbed network delay — replace with the real service call when wired up.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            guard let self else { return }
             self.events = [
                 EventHistory(
                     id: "1",

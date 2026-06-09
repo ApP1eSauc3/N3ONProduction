@@ -18,6 +18,8 @@ extension Event {
     case description
     case ticketPrice
     case availableTickets
+    case status
+    case isFeatured
     case attendances
     case createdAt
     case updatedAt
@@ -31,7 +33,8 @@ extension Event {
     
     model.authRules = [
       rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.create, .read, .update, .delete])
     ]
     
     model.listPluralName = "Events"
@@ -57,6 +60,8 @@ extension Event {
       .field(event.description, is: .required, ofType: .string),
       .field(event.ticketPrice, is: .required, ofType: .double),
       .field(event.availableTickets, is: .required, ofType: .int),
+      .field(event.status, is: .required, ofType: .string),
+      .field(event.isFeatured, is: .required, ofType: .bool),
       .hasMany(event.attendances, is: .optional, ofType: Attendance.self, associatedWith: Attendance.keys.event),
       .field(event.createdAt, is: .optional, isReadOnly: true, ofType: .dateTime),
       .field(event.updatedAt, is: .optional, isReadOnly: true, ofType: .dateTime)

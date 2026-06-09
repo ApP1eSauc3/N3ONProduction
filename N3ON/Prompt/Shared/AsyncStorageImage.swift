@@ -30,7 +30,9 @@ struct AsyncStorageImage: View {
         .task(id: storageKey) {
             image = nil
             guard let url = try? await StorageUploader.signedURL(for: storageKey, access: .protected) else { return }
-            guard let data = try? Data(contentsOf: url) else { return }
+            guard !Task.isCancelled else { return }
+            guard let (data, _) = try? await URLSession.shared.data(from: url) else { return }
+            guard !Task.isCancelled else { return }
             image = UIImage(data: data)
         }
     }

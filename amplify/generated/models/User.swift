@@ -10,6 +10,7 @@ public struct User: Model {
   public var beatBPM: Int?
   public var isDJ: Bool
   public var djRank: Int?
+  public var isCurated: Bool
   public var messages: List<Message>?
   public var chatRoom: List<UserChatRooms>?
   public var venues: List<Venue>?
@@ -31,6 +32,7 @@ public struct User: Model {
       beatBPM: Int? = nil,
       isDJ: Bool,
       djRank: Int? = nil,
+      isCurated: Bool,
       messages: List<Message>? = [],
       chatRoom: List<UserChatRooms>? = [],
       venues: List<Venue>? = [],
@@ -49,6 +51,7 @@ public struct User: Model {
       beatBPM: beatBPM,
       isDJ: isDJ,
       djRank: djRank,
+      isCurated: isCurated,
       messages: messages,
       chatRoom: chatRoom,
       venues: venues,
@@ -70,6 +73,7 @@ public struct User: Model {
       beatBPM: Int? = nil,
       isDJ: Bool,
       djRank: Int? = nil,
+      isCurated: Bool,
       messages: List<Message>? = [],
       chatRoom: List<UserChatRooms>? = [],
       venues: List<Venue>? = [],
@@ -90,6 +94,7 @@ public struct User: Model {
       self.beatBPM = beatBPM
       self.isDJ = isDJ
       self.djRank = djRank
+      self.isCurated = isCurated
       self.messages = messages
       self.chatRoom = chatRoom
       self.venues = venues

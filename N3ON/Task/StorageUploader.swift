@@ -11,26 +11,35 @@
 //    Source: https://docs.amplify.aws/swift/build-a-backend/storage/download/#generate-a-download-url
 //
 // 3. All methods are now consistently async throws — no silent swallowing.
+//
+// ACCESS LEVEL CONVENTION (mirrored in StorageService.swift)
+//   • .guest     — publicly readable content (event posters, venue imagery).
+//   • .protected — owner-writable, cross-user readable (avatars, DJ audio, posts).
+//                  Default for uploadJPEG/uploadFile below.
+//   • .private   — only the uploader can read.
+// Callers should pass `access:` explicitly rather than relying on the default,
+// so the intent is auditable at every call site. The same access level MUST
+// be used for the matching signedURL(for:access:) read — mismatches are silent 403s.
 
 import Foundation
 import Amplify
 
 enum MediaKind {
     case avatar(userID: String)
+    case profileAudio(userID: String)
     case eventPoster(eventID: String)
     case venueImage(venueID: String)
     case feedImage(userID: String)
     case feedVideo(userID: String)
-    case feedAudio(userID: String)
 
     func makeKey(extension ext: String) -> String {
         switch self {
-        case .avatar(let uid):      return "avatars/\(uid).\(ext)"
-        case .eventPoster(let eid): return "events/\(eid)/poster-\(UUID().uuidString).\(ext)"
-        case .venueImage(let vid):  return "venues/\(vid)/img-\(UUID().uuidString).\(ext)"
-        case .feedImage(let uid):   return "feed/\(uid)/img-\(UUID().uuidString).\(ext)"
-        case .feedVideo(let uid):   return "feed/\(uid)/vid-\(UUID().uuidString).\(ext)"
-        case .feedAudio(let uid):   return "feed/\(uid)/aud-\(UUID().uuidString).\(ext)"
+        case .avatar(let uid):        return "avatars/\(uid).\(ext)"
+        case .profileAudio(let uid):  return "profile-audio/\(uid).\(ext)"
+        case .eventPoster(let eid):   return "events/\(eid)/poster-\(UUID().uuidString).\(ext)"
+        case .venueImage(let vid):    return "venues/\(vid)/img-\(UUID().uuidString).\(ext)"
+        case .feedImage(let uid):     return "feed/\(uid)/img-\(UUID().uuidString).\(ext)"
+        case .feedVideo(let uid):     return "feed/\(uid)/vid-\(UUID().uuidString).\(ext)"
         }
     }
 }

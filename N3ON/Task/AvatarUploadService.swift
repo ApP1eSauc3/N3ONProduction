@@ -33,4 +33,19 @@ enum AvatarUploadService {
         try await Amplify.DataStore.save(me)
         return .remote(avatarKey: key)
     }
+
+    /// Uploads an audio file from a local URL and saves the S3 key to the user's profile.
+    /// - Returns: The S3 key of the uploaded audio.
+    @discardableResult
+    static func uploadProfileAudio(from url: URL) async throws -> String {
+        guard let auth = try? await Amplify.Auth.getCurrentUser(),
+              var me = try await Amplify.DataStore.query(User.self, byId: auth.userId)
+        else { throw UploadError.userNotFound }
+
+        let key = MediaKind.profileAudio(userID: auth.userId).makeKey(extension: "m4a")
+        _ = try await StorageUploader.uploadFile(url: url, key: key, contentType: "audio/m4a", access: .protected)
+        me.profileAudioKey = key
+        try await Amplify.DataStore.save(me)
+        return key
+    }
 }

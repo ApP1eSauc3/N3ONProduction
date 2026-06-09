@@ -8,22 +8,24 @@
 import SwiftUI
 
 struct RoleContainer<Regular: View, DJ: View, Venue: View>: View {
-    let roles: Set<AppRole>
-    let isDJMode: Bool
+    let role: AppRole
     @ViewBuilder var regular: Regular
     @ViewBuilder var dj: DJ
     @ViewBuilder var venue: Venue
 
     var body: some View {
+        // DESIGN §2.4 RoleContainer internal spacing — 20pt (off-grid, should be 24pt space6). Change here.
         VStack(spacing: 20) {
-            if roles.contains(.venue) && !isDJMode {
+            if role == .venue {
                 venue
-            } else if roles.contains(.dj) && isDJMode {
+            } else if role == .dj {
                 dj
             } else {
                 regular
             }
         }
+        // DESIGN §2.4 RoleContainer horizontal padding — .padding(.horizontal) uses system default (~16pt).
+        // Replace with .padding(.horizontal, 16) to make it explicit and locked to the §2.4 page margin.
         .padding(.horizontal)
     }
 }

@@ -1,93 +1,76 @@
 // SessionView.swift
-// N3ON
+// N3ON — Prompt layer
+// Root auth gate — owns AuthViewModel (single source of truth for all auth state).
+// Switches on vm.flowState to render the correct screen with a cross-fade transition.
+// UserState flows downward to MainView via @EnvironmentObject.
 //
-// CHANGES FROM ORIGINAL:
-// 1. isSignedIn is now only set to true AFTER getCurrentSession() completes —
-//    original set it immediately on the Hub event, before userState was populated.
-//    This caused a race where MainView rendered with empty userId on slow networks.
-//    Source: https://docs.amplify.aws/swift/build-a-backend/auth/sign-in/#observe-auth-events
-//
-// 2. Added isLoading state to show a spinner during initial session check,
-//    preventing the LoginView flashing briefly on every cold launch for signed-in users.
-//
-// 3. observeSession() sign-in case now waits for full session load before
-//    setting isSignedIn — same fix applied consistently.
+// Architecture derived from Kilo-Loco's SessionView pattern, rewritten to:
+//   — own AuthViewModel (not SessionManager) to comply with N3ON's Workflow layer rules
+//   — use .task instead of .onAppear + Combine for Hub observation
+//   — remove @MainActor from struct (redundant — View body always runs on main actor)
+//   — use ZStack + @ViewBuilder rather than Group (Group is ambiguous in Swift 6)
 
-import Amplify
-import Combine
 import SwiftUI
 
-@MainActor
 struct SessionView: View {
-    @StateObject var userState: UserState = .init()
-    @State private var isSignedIn: Bool = false
-    @State private var isLoading: Bool = true        // NEW: prevents login flash on launch
-    @State private var tokens: Set<AnyCancellable> = []
+    @StateObject private var vm = AuthViewModel()
 
     var body: some View {
-        Group {
-            if isLoading {
-                ProgressView()                        // brief spinner while session resolves
-                    .progressViewStyle(.circular)
-            } else if isSignedIn {
-                MainView()
-                    .environmentObject(userState)
-            } else {
-                LoginView()
-                    .environmentObject(userState)
-            }
+        ZStack {
+            Color.black.ignoresSafeArea()
+            currentScreen
         }
-        .onAppear {
-            Task { await getCurrentSession() }
-            observeSession()
+        .animation(.easeInOut(duration: 0.25), value: vm.flowState)
+        .task { await vm.load() }
+    }
+
+    // MARK: — Screen routing
+
+    @ViewBuilder
+    private var currentScreen: some View {
+        switch vm.flowState {
+        case .loading:
+            loadingView
+        case .login:
+            LoginView()
+                .environmentObject(vm)
+        case .signUp:
+            SignUpView()
+                .environmentObject(vm)
+        case .confirmCode(let username):
+            ConfirmationSignupView(username: username)
+                .environmentObject(vm)
+        case .resetPassword:
+            ResetPasswordView()
+                .environmentObject(vm)
+        case .confirmReset(let username):
+            ConfirmResetView(username: username)
+                .environmentObject(vm)
+        case .roleSelection(let username):
+            RoleSelectionView(username: username)
+                .environmentObject(vm)
+        case .authenticated:
+            MainView()
+                .environmentObject(vm.userState)
+                .environmentObject(vm)
         }
     }
 
-    func getCurrentSession() async {
-        defer { isLoading = false }                  // always clear loading on exit
+    // MARK: — Loading state (cold launch session check)
 
-        do {
-            let session = try await Amplify.Auth.fetchAuthSession()
-            guard session.isSignedIn else { return } // isSignedIn stays false
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            // N3ON wordmark with neon glow — §3.1 two-layer shadow
+            Text("N3ON")
+                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .shadow(color: Color("neonPurpleBackground").opacity(0.55), radius: 18)
+                .shadow(color: Color("neonPurpleBackground").opacity(0.85), radius: 5)
 
-            let authUser = try await Amplify.Auth.getCurrentUser()
-            userState.userId = authUser.userId
-            userState.username = authUser.username
-
-            if let user = try await Amplify.DataStore.query(User.self, byId: authUser.userId) {
-                userState.avatarState = .remote(avatarKey: user.avatarKey ?? "defaultAvatarKey")
-            }
-
-            // ✅ FIXED: only set isSignedIn = true once ALL state is ready
-            // Original set this at the top before any of the above ran
-            isSignedIn = true
-
-        } catch {
-            print("Session load error: \(error)")
-            // isSignedIn remains false → shows LoginView
+            ProgressView()
+                .tint(Color("neonPurpleBackground"))
+                .scaleEffect(0.8)
         }
-    }
-
-    func observeSession() {
-        Amplify.Hub.publisher(for: .auth)
-            .receive(on: DispatchQueue.main)
-            .sink { payload in
-                switch payload.eventName {
-                case HubPayload.EventName.Auth.signedIn:
-                    // ✅ FIXED: don't set isSignedIn = true here — wait for full load
-                    Task { await getCurrentSession() }
-
-                case HubPayload.EventName.Auth.signedOut,
-                     HubPayload.EventName.Auth.sessionExpired:
-                    isSignedIn = false
-                    userState.userId = ""
-                    userState.username = ""
-                    userState.avatarState = .remote(avatarKey: "default-avatar")
-
-                default:
-                    break
-                }
-            }
-            .store(in: &tokens)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

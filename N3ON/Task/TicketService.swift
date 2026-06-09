@@ -26,14 +26,15 @@ enum TicketPurchaseError: LocalizedError {
 
 enum TicketService {
 
-    static func purchaseTicket(eventID: String) async throws {
+    static func purchaseTicket(eventID: String, quantity: Int = 1) async throws {
         let userID = try await AuthService.currentUserId()
 
-        let body: [String: String] = [
+        let body: [String: Any] = [
             "eventID": eventID,
-            "userID": userID
+            "userID": userID,
+            "quantity": max(1, quantity)
         ]
-        let bodyData = try JSONEncoder().encode(body)
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
 
         let request = RESTRequest(
             apiName: "n3onAPI",

@@ -50,7 +50,19 @@ struct MixedMediaPicker: UIViewControllerRepresentable {
                     }
                 case .video:
                     result.itemProvider.loadFileRepresentation(forTypeIdentifier: "public.movie") { url, _ in
-                        if let url { Task { @MainActor in self.parent.selectedVideos.append(url) } }
+                        // loadFileRepresentation's temp URL is deleted when this closure
+                        // returns. Copy to a stable location BEFORE the Task hop, or the
+                        // URL will point at a missing file by the time upload runs.
+                        guard let url else { return }
+                        let dest = FileManager.default.temporaryDirectory
+                            .appendingPathComponent(UUID().uuidString)
+                            .appendingPathExtension(url.pathExtension)
+                        do {
+                            try FileManager.default.copyItem(at: url, to: dest)
+                        } catch {
+                            return
+                        }
+                        Task { @MainActor in self.parent.selectedVideos.append(dest) }
                     }
                 case .audio:
                     break

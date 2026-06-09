@@ -40,4 +40,25 @@ enum EventService {
             where: Event.keys.venueID == venueID
         )
     }
+
+    // Set of calendar start-of-day dates that already have an event at this venue.
+    // Used by EventDatePickerView to warn on date conflicts.
+    static func bookedDates(forVenueID venueID: String) async -> Set<Date> {
+        let events = (try? await fetchEvents(forVenueID: venueID)) ?? []
+        let cal = Calendar.current
+        return Set(events.map { cal.startOfDay(for: $0.eventDate.foundationDate) })
+    }
+
+    // Delete an event by ID. Called when a host DJ cancels during the limbo stage.
+    static func cancelEvent(id: String) async throws {
+        guard let event = try await Amplify.DataStore.query(Event.self, byId: id) else { return }
+        try await Amplify.DataStore.delete(event)
+    }
+
+    // All registered DJs excluding the requesting user.
+    // Used by EventInviteSheet to build the invite list.
+    static func allDJs(excludingID myID: String) async -> [User] {
+        let all = (try? await Amplify.DataStore.query(User.self)) ?? []
+        return all.filter { $0.isDJ && $0.id != myID }
+    }
 }

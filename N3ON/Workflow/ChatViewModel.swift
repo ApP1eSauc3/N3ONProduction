@@ -1,128 +1,160 @@
 // ChatViewModel.swift
-// N3ON
+// N3ON — Workflow layer
 //
+// 2026 architecture:
+//   • Real-time observation via Amplify.DataStore.observe() (AsyncSequence, not Combine Hub)
+//   • Optimistic message inserts — message appears at .sending before DataStore confirms
+//   • All DataStore calls delegated to ChatRoomService (Task layer)
+//   • Observation task cancelled on deinit — no memory leaks
 
 import Foundation
 import Amplify
-import Combine
 
 @MainActor
 final class ChatViewModel: ObservableObject {
-    @Published var messages: [Message] = []
+    @Published var messages: [ChatMessage] = []
     @Published var messageText = ""
     @Published var participants: [User] = []
+    @Published var isLoading = false
     @Published var errorMessage: String?
 
     let currentUserID: String
-    private let chatRoomID: String
+    let chatRoomID: String
     private var currentUser: User?
-    private var cancellables = Set<AnyCancellable>()
+
+    // Structured concurrency: one child task owns the observation stream.
+    // Cancelled automatically when this VM is deallocated.
+    private var observationTask: Task<Void, Never>?
 
     init(chatRoomID: String, currentUserID: String) {
         self.chatRoomID = chatRoomID
         self.currentUserID = currentUserID
-        Task {
-            await loadCurrentUser()
-            await loadChatRoom()
-            observeNewMessages()
-        }
     }
 
-    private func loadCurrentUser() async {
+    // MARK: - Load
+
+    func load() async {
+        isLoading = true
+        defer { isLoading = false }
+
         currentUser = try? await Amplify.DataStore.query(User.self, byId: currentUserID)
-    }
 
-    func sendMessage() {
-        guard !messageText.isEmpty else { return }
-        guard let sender = currentUser else {
-            errorMessage = "Could not identify sender. Please try again."
+        do {
+            let raw = try await ChatRoomService.messages(for: chatRoomID)
+            messages = raw.map(toChatMessage)
+            participants = try await ChatRoomService.participants(for: chatRoomID, excludingID: currentUserID)
+        } catch {
+            errorMessage = "Could not load messages."
             return
         }
+
+        startObserving()
+        await ChatRoomService.markRead(in: chatRoomID, userID: currentUserID)
+    }
+
+    // MARK: - Send
+
+    func sendMessage() {
+        guard !messageText.trimmingCharacters(in: .whitespaces).isEmpty,
+              let sender = currentUser else { return }
 
         let text = messageText
         messageText = ""
 
+        // Optimistic insert — visible immediately with .sending state
+        let tempID = UUID().uuidString
+        messages.append(ChatMessage(
+            id: tempID,
+            sender: sender.username,
+            content: text,
+            timestamp: Date(),
+            isCurrentUser: true,
+            deliveryStatus: .sending
+        ))
+
         Task {
             do {
                 let msg = Message(
-                    id: UUID().uuidString,
+                    id: tempID,
                     sender: sender,
                     chatRoomID: chatRoomID,
                     content: text,
-                    timestamp: Temporal.DateTime.now(),
+                    timestamp: Temporal.DateTime(Date(), timeZone: .current),
                     isRead: false,
                     readBy: []
                 )
-                try await Amplify.DataStore.save(msg)
-                try await updateChatRoomLastMessage(with: text)
+                try await ChatRoomService.send(message: msg)
+                updateStatus(id: tempID, to: .sent)
             } catch {
-                errorMessage = "Send failed: \(error.localizedDescription)"
+                updateStatus(id: tempID, to: .failed)
+                // Restore text so the user can retry
                 messageText = text
+                errorMessage = "Send failed — tap to retry."
             }
         }
     }
 
-    private func loadChatRoom() async {
-        do {
-            guard let _ = try await Amplify.DataStore.query(ChatRoom.self, byId: chatRoomID) else { return }
+    // MARK: - Mark read
 
-            let messageResults = try await Amplify.DataStore.query(
-                Message.self,
-                where: Message.keys.chatRoomID == chatRoomID
-            )
-            let links = try await Amplify.DataStore.query(
-                UserChatRooms.self,
-                // NOTE: Amplify manyToMany codegen field naming is inconsistent.
-                // After running `amplify codegen models`, verify whether the generated
-                // field is chatRoomId or chatRoomID — check the generated UserChatRooms.swift file.
-                where: UserChatRooms.keys.chatRoom == chatRoomID
-            )
-
-            messages = messageResults.sorted {
-                ($0.timestamp.foundationDate ?? .distantPast) < ($1.timestamp.foundationDate ?? .distantPast)
-            }
-            participants = links.compactMap { $0.user }
-
-        } catch {
-            errorMessage = "Failed to load chat: \(error.localizedDescription)"
+    func markRead() async {
+        await ChatRoomService.markRead(in: chatRoomID, userID: currentUserID)
+        for i in messages.indices where !messages[i].isCurrentUser {
+            messages[i].deliveryStatus = .read
         }
     }
 
-    private func observeNewMessages() {
-        Amplify.Hub.publisher(for: .dataStore)
-            .sink(receiveCompletion: { _ in }) { [weak self] event in
-                guard let self else { return }
-                guard
-                    event.eventName == HubPayload.EventName.DataStore.syncReceived,
-                    let mutationEvent = event.data as? MutationEvent,
-                    mutationEvent.modelName == "Message",
-                    let newMessage = try? mutationEvent.decodeModel(as: Message.self),
-                    newMessage.chatRoomID == self.chatRoomID
-                else { return }
+    // MARK: - Lifecycle
 
-                Task { @MainActor [weak self] in
-                    self?.messages.append(newMessage)
+    deinit {
+        observationTask?.cancel()
+    }
+
+    // MARK: - Private
+
+    /// Observes the DataStore mutation stream using AsyncSequence.
+    /// Replaces the Combine Hub subscription with structured concurrency.
+    private func startObserving() {
+        observationTask?.cancel()
+        observationTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                for try await change in Amplify.DataStore.observe(Message.self) {
+                    guard !Task.isCancelled else { return }
+
+                    // Only handle creates for this room from other participants
+                    guard change.mutationType == MutationEvent.MutationType.create.rawValue,
+                          let incoming = try? change.decodeModel(as: Message.self),
+                          incoming.chatRoomID == self.chatRoomID,
+                          (incoming.sender?.id ?? "") != self.currentUserID
+                    else { continue }
+
+                    await MainActor.run { [weak self] in
+                        guard let self else { return }
+                        // De-duplicate: optimistic insert may already hold this id
+                        guard !self.messages.contains(where: { $0.id == incoming.id }) else { return }
+                        self.messages.append(self.toChatMessage(incoming))
+                    }
                 }
-            }
-            .store(in: &cancellables)
-    }
-
-    private func updateChatRoomLastMessage(with text: String) async throws {
-        guard var chatRoom = try await Amplify.DataStore.query(ChatRoom.self, byId: chatRoomID) else { return }
-        chatRoom.lastMessage = text
-        chatRoom.lastMessageTimestamp = Temporal.DateTime.now()
-        try await Amplify.DataStore.save(chatRoom)
-    }
-
-    func markMessageAsRead() async {
-        let unread = messages.filter { !$0.isRead && ($0.sender?.id ?? "") != currentUserID }
-
-        for var m in unread {
-            m.isRead = true
-            try? await Amplify.DataStore.save(m)
-            if let i = messages.firstIndex(where: { $0.id == m.id }) {
-                messages[i] = m
+            } catch {
+                // Stream ended — DataStore offline or session signed out.
+                // ChatView's .task modifier will re-call load() when the view re-appears.
             }
         }
+    }
+
+    private func toChatMessage(_ m: Message) -> ChatMessage {
+        ChatMessage(
+            id: m.id,
+            sender: m.sender?.username ?? "Unknown",
+            content: m.content,
+            timestamp: m.timestamp.foundationDate ?? Date(),
+            isCurrentUser: (m.sender?.id ?? "") == currentUserID,
+            deliveryStatus: m.isRead ? .read : .delivered
+        )
+    }
+
+    private func updateStatus(id: String, to status: ChatMessage.DeliveryStatus) {
+        guard let i = messages.firstIndex(where: { $0.id == id }) else { return }
+        messages[i].deliveryStatus = status
     }
 }

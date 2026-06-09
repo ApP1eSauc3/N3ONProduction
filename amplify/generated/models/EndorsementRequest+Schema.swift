@@ -8,6 +8,7 @@ extension EndorsementRequest {
     case id
     case fromUser
     case toUser
+    case targetRank
     case message
     case status
     case timestamp
@@ -22,8 +23,10 @@ extension EndorsementRequest {
     let endorsementRequest = EndorsementRequest.keys
     
     model.authRules = [
-      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .read, .update, .delete]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser"], provider: .userPools, operations: [.read])
+      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .read, .delete]),
+      rule(allow: .owner, ownerField: "toUserID", identityClaim: "cognito:username", provider: .userPools, operations: [.read, .update]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser"], provider: .userPools, operations: [.read]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.read, .update, .delete])
     ]
     
     model.listPluralName = "EndorsementRequests"
@@ -39,6 +42,7 @@ extension EndorsementRequest {
       .field(endorsementRequest.id, is: .required, ofType: .string),
       .belongsTo(endorsementRequest.fromUser, is: .optional, ofType: User.self, targetNames: ["fromUserID"]),
       .belongsTo(endorsementRequest.toUser, is: .optional, ofType: User.self, targetNames: ["toUserID"]),
+      .field(endorsementRequest.targetRank, is: .required, ofType: .int),
       .field(endorsementRequest.message, is: .required, ofType: .string),
       .field(endorsementRequest.status, is: .required, ofType: .string),
       .field(endorsementRequest.timestamp, is: .required, ofType: .dateTime),

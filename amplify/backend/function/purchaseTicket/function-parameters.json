@@ -1,0 +1,109 @@
+{
+  "permissions": {
+    "storage": {
+      "ProfileData": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "User:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Venue:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "DailyUserCount:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Review:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "ChatRoom:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Message:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Post:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Event:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Ticket:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "EndorsementRequest:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Attendance:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "EventDJLink:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "UserFollows:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Transaction:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "VenueComplianceSubmission:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    }
+  },
+  "lambdaLayers": [],
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "tablePrefix",
+      "environmentVariableName": "TABLE_PREFIX"
+    }
+  ]
+}

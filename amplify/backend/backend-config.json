@@ -27,6 +27,28 @@
       },
       "providerPlugin": "awscloudformation",
       "service": "AppSync"
+    },
+    "n3onAPI": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "purchaseTicket"
+        },
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "joinEvent"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "API Gateway"
     }
   },
   "auth": {
@@ -83,12 +105,44 @@
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
+    "joinEvent": {
+      "build": true,
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
     "n3on3dbadbe4CustomMessage": {
       "build": true,
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
     "n3on3dbadbe4PostConfirmation": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "purchaseTicket": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "BucketName"
+          ],
+          "category": "storage",
+          "resourceName": "ProfileData"
+        },
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput"
+          ],
+          "category": "api",
+          "resourceName": "n3on"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "rankPromotion": {
       "build": true,
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
@@ -114,6 +168,30 @@
         {
           "category": "function",
           "resourceName": "S3Triggerba3b2651"
+        }
+      ]
+    },
+    "AMPLIFY_function_joinEvent_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "joinEvent"
+        }
+      ]
+    },
+    "AMPLIFY_function_joinEvent_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "joinEvent"
+        }
+      ]
+    },
+    "AMPLIFY_function_joinEvent_tablePrefix": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "joinEvent"
         }
       ]
     },
@@ -178,6 +256,46 @@
         {
           "category": "function",
           "resourceName": "n3on3dbadbe4PostConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_purchaseTicket_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "purchaseTicket"
+        }
+      ]
+    },
+    "AMPLIFY_function_purchaseTicket_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "purchaseTicket"
+        }
+      ]
+    },
+    "AMPLIFY_function_purchaseTicket_tablePrefix": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "purchaseTicket"
+        }
+      ]
+    },
+    "AMPLIFY_function_rankPromotion_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "rankPromotion"
+        }
+      ]
+    },
+    "AMPLIFY_function_rankPromotion_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "rankPromotion"
         }
       ]
     }

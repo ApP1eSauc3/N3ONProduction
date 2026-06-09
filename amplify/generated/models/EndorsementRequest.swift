@@ -6,6 +6,7 @@ public struct EndorsementRequest: Model {
   public let id: String
   public var fromUser: User?
   public var toUser: User?
+  public var targetRank: Int
   public var message: String
   public var status: String
   public var timestamp: Temporal.DateTime
@@ -15,12 +16,14 @@ public struct EndorsementRequest: Model {
   public init(id: String = UUID().uuidString,
       fromUser: User? = nil,
       toUser: User? = nil,
+      targetRank: Int,
       message: String,
       status: String,
       timestamp: Temporal.DateTime) {
     self.init(id: id,
       fromUser: fromUser,
       toUser: toUser,
+      targetRank: targetRank,
       message: message,
       status: status,
       timestamp: timestamp,
@@ -30,6 +33,7 @@ public struct EndorsementRequest: Model {
   internal init(id: String = UUID().uuidString,
       fromUser: User? = nil,
       toUser: User? = nil,
+      targetRank: Int,
       message: String,
       status: String,
       timestamp: Temporal.DateTime,
@@ -38,6 +42,7 @@ public struct EndorsementRequest: Model {
       self.id = id
       self.fromUser = fromUser
       self.toUser = toUser
+      self.targetRank = targetRank
       self.message = message
       self.status = status
       self.timestamp = timestamp

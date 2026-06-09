@@ -16,6 +16,8 @@ public struct Event: Model {
   public var description: String
   public var ticketPrice: Double
   public var availableTickets: Int
+  public var status: String
+  public var isFeatured: Bool
   public var attendances: List<Attendance>?
   public var createdAt: Temporal.DateTime?
   public var updatedAt: Temporal.DateTime?
@@ -33,6 +35,8 @@ public struct Event: Model {
       description: String,
       ticketPrice: Double,
       availableTickets: Int,
+      status: String,
+      isFeatured: Bool,
       attendances: List<Attendance>? = []) {
     self.init(id: id,
       venueID: venueID,
@@ -47,6 +51,8 @@ public struct Event: Model {
       description: description,
       ticketPrice: ticketPrice,
       availableTickets: availableTickets,
+      status: status,
+      isFeatured: isFeatured,
       attendances: attendances,
       createdAt: nil,
       updatedAt: nil)
@@ -64,6 +70,8 @@ public struct Event: Model {
       description: String,
       ticketPrice: Double,
       availableTickets: Int,
+      status: String,
+      isFeatured: Bool,
       attendances: List<Attendance>? = [],
       createdAt: Temporal.DateTime? = nil,
       updatedAt: Temporal.DateTime? = nil) {
@@ -80,6 +88,8 @@ public struct Event: Model {
       self.description = description
       self.ticketPrice = ticketPrice
       self.availableTickets = availableTickets
+      self.status = status
+      self.isFeatured = isFeatured
       self.attendances = attendances
       self.createdAt = createdAt
       self.updatedAt = updatedAt

@@ -7,21 +7,49 @@ import Amplify
 import AWSPluginsCore
 
 struct AccessControlService {
-    /// Returns the set of roles the current signed-in user belongs to.
-    /// Returns an empty set if the session is absent or the token cannot be decoded.
-    static func currentUserRoles() async -> Set<AppRole> {
+    /// Returns the single role for the current signed-in user.
+    /// Roles are mutually exclusive — a user holds exactly one Cognito group at a time.
+    /// Priority: .venue → .dj → .regular. Falls back to .regular on any failure.
+    static func currentUserRole() async -> AppRole {
+        let resolved = await currentGroups().compactMap(AppRole.init(rawValue:))
+        if resolved.contains(.venue) { return .venue }
+        if resolved.contains(.dj)    { return .dj }
+        return .regular
+    }
+
+    /// True when the signed-in user belongs to the `AdminUser` Cognito group.
+    /// Admin is an **orthogonal capability**, not an `AppRole` — an admin who is
+    /// also a DJ/regular keeps their normal role and UI. Bootstrap/curation gates
+    /// read this via `CurationService`. Falls back to `false` on any failure.
+    static func isAdmin() async -> Bool {
+        await currentGroups().contains("AdminUser")
+    }
+
+    /// Decodes the `cognito:groups` claim from the current id token.
+    /// Returns `[]` on any failure (no session, malformed token, missing claim).
+    /// Shared by `currentUserRole()` and `isAdmin()` so JWT decoding lives in one place.
+    private static func currentGroups() async -> [String] {
         do {
             let session = try await Amplify.Auth.fetchAuthSession()
             guard let provider = session as? AuthCognitoTokensProvider else { return [] }
-            // Result.get() avoids existential pattern-match ambiguity (see Task/AGENTS.md)
             let idToken: String
             do { idToken = try provider.getCognitoTokens().get().idToken }
             catch { return [] }
             guard let payload = decodeJWT(idToken),
                   let groups = payload["cognito:groups"] as? [String]
             else { return [] }
-            return Set(groups.compactMap(AppRole.init(rawValue:)))
+            return groups
         } catch { return [] }
+    }
+
+    /// Returns true when the given userID holds at least one ticket for the event.
+    /// Called by TicketScannerView after reading the attendee's QR code.
+    static func validateTicket(userID: String, eventID: String) async -> Bool {
+        let tickets = (try? await Amplify.DataStore.query(
+            Ticket.self,
+            where: Ticket.keys.eventID == eventID
+        )) ?? []
+        return tickets.contains { $0.userID == userID }
     }
 
     // AuthCognitoTokens.idToken is a raw JWT string — no structured payload API in AWSPluginsCore.
