@@ -56,9 +56,17 @@ amplifytools.xcconfig
 # AWS environment — contains account IDs, IAM ARNs, deployment bucket names
 amplify/team-provider-info.json
 
-# the AI tooling internal tooling — not project source
+# AI assistant tooling — not project source
 tech-scout-context.md
 SKILLS.md
 CODEBASE_STATUS.md
 generated-src/
 docs/
+CLAUDE.md
+**/CLAUDE.md
+.claude/
+**/.claude/
+AGENTS.md
+**/AGENTS.md
+.agent-config/
+**/.agent-config/
