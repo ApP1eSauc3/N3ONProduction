@@ -34,14 +34,18 @@ final class EventViewModel: ObservableObject {
             if !djIDs.contains(event.hostDJID) {
                 djIDs.insert(event.hostDJID, at: 0)
             }
-            var users: [User] = []
-            for id in djIDs {
-                guard !Task.isCancelled else { return }
-                if let user = try? await UserService.fetch(byId: id) {
-                    users.append(user)
+            // Independent per-DJ fetches — fan out so an 8-DJ lineup costs one
+            // round-trip of latency, not eight. Order is restored afterwards.
+            let fetched = await withTaskGroup(of: (Int, User?).self) { group in
+                for (index, id) in djIDs.enumerated() {
+                    group.addTask { (index, try? await UserService.fetch(byId: id)) }
                 }
+                var results = [User?](repeating: nil, count: djIDs.count)
+                for await (index, user) in group { results[index] = user }
+                return results
             }
-            djProfiles = users
+            guard !Task.isCancelled else { return }
+            djProfiles = fetched.compactMap { $0 }
         } catch {
             // Non-fatal — missing lineup doesn't block purchase
         }

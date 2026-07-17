@@ -23,9 +23,9 @@
 //                  not plumb. Only use .protected for content the uploader alone
 //                  will ever view.
 //   • .private   — only the uploader can read.
-// Callers should pass `access:` explicitly rather than relying on the default,
-// so the intent is auditable at every call site. The same access level MUST
-// be used for the matching signedURL(for:access:) read — mismatches are silent 403s.
+// `access:` has no default — every call site states its intent explicitly.
+// The same access level MUST be used for the matching signedURL(for:access:)
+// read — mismatches are silent 403s.
 
 import Foundation
 import Amplify
@@ -55,7 +55,7 @@ struct StorageUploader {
     static func uploadJPEG(
         _ data: Data,
         key: String,
-        access: StorageAccessLevel = .protected
+        access: StorageAccessLevel
     ) async throws -> String {
         let result = try await Amplify.Storage
             .uploadData(
@@ -73,7 +73,7 @@ struct StorageUploader {
         url: URL,
         key: String,
         contentType: String,
-        access: StorageAccessLevel = .protected
+        access: StorageAccessLevel
     ) async throws -> String {
         let result = try await Amplify.Storage
             .uploadFile(
@@ -88,7 +88,7 @@ struct StorageUploader {
     // ✅ FIXED: native async/await — callback wrapper removed, deprecated API gone
     static func signedURL(
         for key: String,
-        access: StorageAccessLevel = .protected
+        access: StorageAccessLevel
     ) async throws -> URL {
         try await Amplify.Storage.getURL(
             key: key,

@@ -29,6 +29,9 @@ enum AvatarUploadService {
 
         let key = MediaKind.avatar(userID: auth.userId).makeKey(extension: "jpg")
         _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .guest)
+        // The avatar key is deterministic (avatars/{uid}.jpg) — replace the
+        // cache entry or every open view serves the old photo until relaunch.
+        await ImageCache.store(data: jpeg, forKey: key)
         me.avatarKey = key
         try await Amplify.DataStore.save(me)
         return .remote(avatarKey: key)

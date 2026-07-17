@@ -36,6 +36,7 @@ struct PulsingAvatarView: View {
     let size: CGFloat               // DESIGN §3.4 — image diameter; ring = size+4; container = size+20
 
     @State private var image: UIImage?
+    @State private var loadedKey: String?   // S3 key `image` was decoded from
     @State private var player: AVAudioPlayer?
     @State private var isPulsing = false
 
@@ -45,6 +46,7 @@ struct PulsingAvatarView: View {
         self.size = size
         if case .remote(let key) = state, let cached = ImageCache.shared.image(forKey: key) {
             _image = State(initialValue: cached)
+            _loadedKey = State(initialValue: key)
         }
     }
 
@@ -121,12 +123,21 @@ struct PulsingAvatarView: View {
     private func loadImage() async {
         switch state {
         case .remote(let avatarKey):
+            // Key changed under a stable view identity — show the new key's
+            // cached image (or the placeholder) immediately, so a failed
+            // download can't leave the previous key's avatar on screen.
+            if loadedKey != avatarKey {
+                image = ImageCache.shared.image(forKey: avatarKey)
+                loadedKey = image == nil ? nil : avatarKey
+            }
             guard let loaded = try? await ImageCache.loadImage(forKey: avatarKey, access: .guest) else { return }
             guard !Task.isCancelled else { return }
             image = loaded
+            loadedKey = avatarKey
 
         case .local(let uiImage):
             image = uiImage
+            loadedKey = nil
         }
     }
 

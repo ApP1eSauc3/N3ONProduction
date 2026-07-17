@@ -101,7 +101,10 @@ final class ChatsInboxVM: ObservableObject {
     // MARK: - Private
 
     private func summarize(room: ChatRoom, me: String) async throws -> ChatSummary? {
-        let others = try await ChatRoomService.participants(for: room.id, excludingID: me)
+        // Participants and unread count are independent queries — overlap them.
+        async let othersFetch = ChatRoomService.participants(for: room.id, excludingID: me)
+        async let unreadFetch = ChatRoomService.unreadCount(in: room.id, excludingSenderID: me)
+        let others = try await othersFetch
         let otherNames = others.map { $0.username }
 
         let title: String = {
@@ -111,7 +114,7 @@ final class ChatsInboxVM: ObservableObject {
             return room.name
         }()
 
-        let unread = try await ChatRoomService.unreadCount(in: room.id, excludingSenderID: me)
+        let unread = try await unreadFetch
 
         var pinned    = false
         var eventDate: Date? = nil

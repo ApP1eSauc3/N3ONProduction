@@ -152,9 +152,9 @@
 		AA00000100000000000000AA /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				CLAUDE.md,
 				Auth/CLAUDE.md,
 				Chat/CLAUDE.md,
+				CLAUDE.md,
 				Event/CLAUDE.md,
 				Map/CLAUDE.md,
 				UserProfile/CLAUDE.md,
@@ -180,79 +180,12 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA000001000000000000001A /* Data */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				AA000001000000000000006A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-				C58619112F74263500E3076E /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = Data;
-			sourceTree = "<group>";
-		};
-		AA000001000000000000002A /* Task */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				AA000001000000000000007A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = Task;
-			sourceTree = "<group>";
-		};
-		AA000001000000000000003A /* Workflow */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				AA000001000000000000008A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = Workflow;
-			sourceTree = "<group>";
-		};
-		AA000001000000000000004A /* Tools */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				AA000001000000000000009A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = Tools;
-			sourceTree = "<group>";
-		};
-		AA000001000000000000005A /* Prompt */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				AA00000100000000000000AA /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = Prompt;
-			sourceTree = "<group>";
-		};
-		C5BF9E462D83C32F0093C5A8 /* copilot source editor */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = "copilot source editor";
-			sourceTree = "<group>";
-		};
+		AA000001000000000000001A /* Data */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000001000000000000006A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, C58619112F74263500E3076E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Data; sourceTree = "<group>"; };
+		AA000001000000000000002A /* Task */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000001000000000000007A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Task; sourceTree = "<group>"; };
+		AA000001000000000000003A /* Workflow */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000001000000000000008A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Workflow; sourceTree = "<group>"; };
+		AA000001000000000000004A /* Tools */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000001000000000000009A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Tools; sourceTree = "<group>"; };
+		AA000001000000000000005A /* Prompt */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA00000100000000000000AA /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Prompt; sourceTree = "<group>"; };
+		C5BF9E462D83C32F0093C5A8 /* copilot source editor */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "copilot source editor"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */

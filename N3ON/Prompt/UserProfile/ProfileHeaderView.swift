@@ -53,7 +53,7 @@ struct ProfileHeaderView: View {
             // Mode pill + role switch hint
             modeIndicator
 
-            // DJ public profile shortcut
+            // DJ-only region: public profile shortcut + follower stats
             if vm.role == .dj {
                 Button {
                     showDJProfilePreview = true
@@ -62,10 +62,7 @@ struct ProfileHeaderView: View {
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.45))
                 }
-            }
 
-            // Followers/following — DJ only
-            if vm.role == .dj {
                 // DESIGN §5.1 stats row spacing — 24pt (space6). Change here.
                 HStack(spacing: 24) {
                     StatItem(value: vm.followers, label: "Followers")
@@ -94,20 +91,7 @@ struct ProfileHeaderView: View {
             Button {
                 showRoleSwitchConfirm = true
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "headphones")
-                        .font(.caption2)
-                    Text("DJ")
-                        .font(.caption.bold())
-                }
-                .foregroundStyle(Color.cyan)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(
-                    Capsule()
-                        .fill(Color.cyan.opacity(0.12))
-                        .overlay(Capsule().stroke(Color.cyan.opacity(0.35), lineWidth: 1))
-                )
+                RolePill(icon: "headphones", text: "DJ", tint: .cyan)
             }
             .accessibilityLabel("DJ mode active — tap to switch to Fan mode")
         } else if vm.role == .regular {
@@ -115,38 +99,16 @@ struct ProfileHeaderView: View {
             Button {
                 showBecomeDJSheet = true
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "person.fill")
-                        .font(.caption2)
-                    Text("Fan")
-                        .font(.caption.bold())
-                }
-                .foregroundStyle(.white.opacity(0.45))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(
-                    Capsule()
-                        .fill(Color.white.opacity(0.06))
-                        .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1))
-                )
+                RolePill(icon: "person.fill", text: "Fan",
+                         foreground: .white.opacity(0.45),
+                         fill: .white.opacity(0.06),
+                         stroke: .white.opacity(0.12))
             }
             .accessibilityLabel("Fan mode active — tap to enable DJ mode")
         } else if vm.role == .venue {
             // Static — venue role is admin-assigned via Cognito
-            HStack(spacing: 6) {
-                Image(systemName: "building.2.fill")
-                    .font(.caption2)
-                Text("Venue")
-                    .font(.caption.bold())
-            }
-            .foregroundStyle(Color("neonPurpleBackground"))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(Color("neonPurpleBackground").opacity(0.12))
-                    .overlay(Capsule().stroke(Color("neonPurpleBackground").opacity(0.35), lineWidth: 1))
-            )
+            RolePill(icon: "building.2.fill", text: "Venue",
+                     tint: Color("neonPurpleBackground"))
         }
     }
 }

@@ -17,9 +17,15 @@ enum CurationService {
     /// - In **curated** mode, also allowed for admins and admin-curated DJs
     ///   (`User.isCurated`), so the team can hand-pick the launch roster.
     /// - In **community** mode, only the Rank ≥ 4 gate applies.
-    static func canCreateEvent(user: User, isAdmin: Bool) -> Bool {
+    /// `mode` defaults to the live config; tests inject `.curated` / `.community`
+    /// to exercise both phases (the config value is a compile-time constant).
+    static func canCreateEvent(
+        user: User,
+        isAdmin: Bool,
+        mode: PlatformMode = CurationConfig.platformMode
+    ) -> Bool {
         if (user.djRank ?? 0) >= 4 { return true }
-        guard CurationConfig.platformMode == .curated else { return false }
+        guard mode == .curated else { return false }
         return isAdmin || user.isCurated
     }
 
@@ -27,5 +33,8 @@ enum CurationService {
     /// go live. Mirrors `CurationConfig` and is centralised here so views and
     /// ViewModels have a single entry point. In curated mode the tally is off
     /// (the join/tally pipeline is dormant); flipping to community re-enforces it.
-    static var tallyEnforced: Bool { CurationConfig.tallyEnforced }
+    static var tallyEnforced: Bool { tallyEnforced(in: CurationConfig.platformMode) }
+
+    /// Mode-explicit variant — the testable seam behind `tallyEnforced`.
+    static func tallyEnforced(in mode: PlatformMode) -> Bool { mode == .community }
 }

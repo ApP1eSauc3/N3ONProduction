@@ -19,8 +19,10 @@ final class AdminCurationViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            djs = try await AdminService.allDJs()
-            events = try await AdminService.allEvents()
+            // Two independent full-table reads — run them concurrently.
+            async let djsFetch = AdminService.allDJs()
+            async let eventsFetch = AdminService.allEvents()
+            (djs, events) = try await (djsFetch, eventsFetch)
         } catch {
             errorMessage = "Could not load admin data: \(error.localizedDescription)"
         }

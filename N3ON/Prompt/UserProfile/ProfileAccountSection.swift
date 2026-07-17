@@ -13,30 +13,14 @@ struct ProfileAccountSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Section header — muted bar distinguishes utility rows from feature zones
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color.white.opacity(0.3))
-                    .frame(width: 3, height: 16)
-                Text("Account")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-            }
+            // Muted bar distinguishes utility rows from feature zones
+            ProfileSectionHeader(title: "Account", barColor: .white.opacity(0.3))
 
             // Sign Out
             Button {
                 Task { await authVM.signOut() }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.right.square")
-                    Text("Sign Out")
-                    Spacer()
-                }
-                .font(.subheadline)
-                .foregroundStyle(.white)
-                .padding(12)                // DESIGN §1.6 row inner padding — 12pt
-                .background(Color.customDarkGray)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))           // DESIGN §1.6 row radius — 10pt
+                ProfileRowLabel(icon: "arrow.right.square", title: "Sign Out")
             }
             .frame(minHeight: 44)           // HIG minimum tap target
             .contentShape(Rectangle())
@@ -46,16 +30,7 @@ struct ProfileAccountSection: View {
                 UIImpactFeedbackGenerator(style: .heavy).impactOccurred() // DESIGN §4 destructive haptic
                 showDeleteConfirm = true
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "trash")
-                    Text("Delete Account")
-                    Spacer()
-                }
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5))
-                .padding(12)
-                .background(Color.customDarkGray)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                ProfileRowLabel(icon: "trash", title: "Delete Account", textOpacity: 0.5)
             }
             .frame(minHeight: 44)
             .contentShape(Rectangle())

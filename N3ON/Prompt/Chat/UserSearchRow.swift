@@ -13,22 +13,14 @@ struct UserSearchRow: View {
     let onAdd: () -> Void
     let onMessage: () -> Void  // ✅ Add this line
 
-    @State private var avatarImage: UIImage?
-
     var body: some View {
         HStack(spacing: 10) {
-            if let avatarImage {
-                Image(uiImage: avatarImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 32, height: 32)
-                    .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(Color.purple)
-                    .frame(width: 32, height: 32)
-                    .overlay(Text(String(user.username.prefix(1))).foregroundColor(.white))
-            }
+            // DESIGN §3.4 — shared avatar component (36pt search-row size);
+            // loading, caching, and placeholder live in PulsingAvatarView.
+            PulsingAvatarView(
+                state: .remote(avatarKey: user.avatarKey ?? "default-avatar"),
+                size: 36
+            )
 
             Text(user.username)
             Spacer()
@@ -54,9 +46,5 @@ struct UserSearchRow: View {
             }
         }
         .padding(.vertical, 4)
-        .task {
-            guard let key = user.avatarKey else { return }
-            avatarImage = try? await ImageCache.loadImage(forKey: key, access: .guest)
-        }
     }
 }

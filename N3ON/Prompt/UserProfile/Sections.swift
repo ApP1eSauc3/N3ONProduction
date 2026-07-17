@@ -13,14 +13,7 @@ struct RegularUserSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color("neonPurpleBackground"))
-                    .frame(width: 3, height: 16)
-                Text("My Tickets")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-            }
+            ProfileSectionHeader(title: "My Tickets")
 
             if isLoadingTickets {
                 ProgressView()
@@ -137,14 +130,7 @@ struct DJSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color("neonPurpleBackground"))
-                    .frame(width: 3, height: 16)
-                Text("DJ Tools")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-            }
+            ProfileSectionHeader(title: "DJ Tools")
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 NavigationLink {
@@ -211,14 +197,7 @@ struct DJSection: View {
 
     private var rankProgressionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color("neonPurpleBackground"))
-                    .frame(width: 3, height: 16)
-                Text("Rank Progression")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-            }
+            ProfileSectionHeader(title: "Rank Progression")
 
             NavigationLink {
                 EndorsementProgressView(userID: userID, currentRank: rank)
@@ -311,14 +290,7 @@ private struct ToolGridButtonStyle: ButtonStyle {
 struct VenueSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color("neonPurpleBackground"))
-                    .frame(width: 3, height: 16)
-                Text("Venue Tools")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-            }
+            ProfileSectionHeader(title: "Venue Tools")
 
             VStack(spacing: 12) {
                 NavigationLink {
