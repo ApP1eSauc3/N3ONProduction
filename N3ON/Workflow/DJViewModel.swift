@@ -9,7 +9,6 @@ final class DJViewModel: ObservableObject {
     @Published var user: User
     @Published var upcomingEvents: [Event] = []
     @Published var isLoading = false
-    @Published var avatarURL: URL?
     @Published var errorMessage: String?
     @Published var isFollowing = false
     @Published var followerCount = 0
@@ -24,7 +23,6 @@ final class DJViewModel: ObservableObject {
         self.user = user
         Task {
             await loadUpcomingEvents()
-            await loadAvatarURL()
             await loadFollowState()
         }
         subscribeToUserUpdates()
@@ -40,13 +38,7 @@ final class DJViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            // Push the date filter to DataStore — pulling every Event and filtering
-            // in memory scales O(total events), not O(upcoming events).
-            upcomingEvents = try await Amplify.DataStore.query(
-                Event.self,
-                where: Event.keys.eventDate >= Temporal.DateTime.now()
-            )
-            .sorted { $0.eventDate.foundationDate < $1.eventDate.foundationDate }
+            upcomingEvents = try await EventService.fetchUpcomingEvents()
         } catch {
             errorMessage = "Failed to load events: \(error.localizedDescription)"
         }
@@ -92,17 +84,6 @@ final class DJViewModel: ObservableObject {
     func openChatRoomID(with otherUserID: String) -> String {
         let sortedIDs = [user.id, otherUserID].sorted()
         return "dm-\(sortedIDs[0])-\(sortedIDs[1])"
-    }
-
-    // MARK: - Avatar
-
-    func loadAvatarURL() async {
-        guard let key = user.avatarKey else { return }
-        do {
-            avatarURL = try await StorageUploader.signedURL(for: key, access: .protected)
-        } catch {
-            avatarURL = nil
-        }
     }
 
     // MARK: - Live updates

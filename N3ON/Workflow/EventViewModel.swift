@@ -2,7 +2,6 @@
 // N3ON
 
 import Foundation
-import Amplify
 import UIKit
 
 @MainActor
@@ -29,10 +28,7 @@ final class EventViewModel: ObservableObject {
         isLoadingDJs = true
         defer { isLoadingDJs = false }
         do {
-            let links = try await Amplify.DataStore.query(
-                EventDJLink.self,
-                where: EventDJLink.keys.event == event.id
-            )
+            let links = try await EventService.djLinks(forEventID: event.id)
             var djIDs: [String] = links.map(\.djID)
             // Host DJ may not have a link record yet — always show them first
             if !djIDs.contains(event.hostDJID) {
@@ -41,7 +37,7 @@ final class EventViewModel: ObservableObject {
             var users: [User] = []
             for id in djIDs {
                 guard !Task.isCancelled else { return }
-                if let user = try? await Amplify.DataStore.query(User.self, byId: id) {
+                if let user = try? await UserService.fetch(byId: id) {
                     users.append(user)
                 }
             }
@@ -57,7 +53,7 @@ final class EventViewModel: ObservableObject {
 
         do {
             try await TicketService.purchaseTicket(eventID: event.id, quantity: ticketQuantity)
-            if let refreshed = try await Amplify.DataStore.query(Event.self, byId: event.id) {
+            if let refreshed = try await EventService.fetchEvent(byId: event.id) {
                 event = refreshed
             }
             // Schedule a local reminder 24h before the event

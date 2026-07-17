@@ -13,9 +13,15 @@
 // 3. All methods are now consistently async throws — no silent swallowing.
 //
 // ACCESS LEVEL CONVENTION (mirrored in StorageService.swift)
-//   • .guest     — publicly readable content (event posters, venue imagery).
-//   • .protected — owner-writable, cross-user readable (avatars, DJ audio, posts).
-//                  Default for uploadJPEG/uploadFile below.
+//   • .guest     — anything displayed to OTHER users: avatars, DJ audio,
+//                  event posters, venue imagery. (Upload still requires auth;
+//                  "guest" only means the read path is not identity-scoped.)
+//   • .protected — owner-writable. ⚠️ Keys resolve to protected/{identityId}/…
+//                  using the CALLER's identityId — so another user signing this
+//                  key gets a URL into their OWN (empty) prefix → silent 403.
+//                  Cross-user reads need targetIdentityId, which this app does
+//                  not plumb. Only use .protected for content the uploader alone
+//                  will ever view.
 //   • .private   — only the uploader can read.
 // Callers should pass `access:` explicitly rather than relying on the default,
 // so the intent is auditable at every call site. The same access level MUST

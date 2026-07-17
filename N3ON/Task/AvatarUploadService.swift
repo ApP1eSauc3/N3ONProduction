@@ -28,7 +28,7 @@ enum AvatarUploadService {
         else { throw UploadError.encodingFailed }
 
         let key = MediaKind.avatar(userID: auth.userId).makeKey(extension: "jpg")
-        _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .protected)
+        _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .guest)
         me.avatarKey = key
         try await Amplify.DataStore.save(me)
         return .remote(avatarKey: key)
@@ -43,7 +43,7 @@ enum AvatarUploadService {
         else { throw UploadError.userNotFound }
 
         let key = MediaKind.profileAudio(userID: auth.userId).makeKey(extension: "m4a")
-        _ = try await StorageUploader.uploadFile(url: url, key: key, contentType: "audio/m4a", access: .protected)
+        _ = try await StorageUploader.uploadFile(url: url, key: key, contentType: "audio/m4a", access: .guest)
         me.profileAudioKey = key
         try await Amplify.DataStore.save(me)
         return key

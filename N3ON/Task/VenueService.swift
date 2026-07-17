@@ -120,7 +120,7 @@ enum VenueService {
         for image in images {
             guard let jpeg = image.jpegData(compressionQuality: 0.8) else { continue }
             let key = MediaKind.venueImage(venueID: venueID).makeKey(extension: "jpg")
-            let uploaded = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .protected)
+            let uploaded = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .guest)
             keys.append(uploaded)
         }
         return keys

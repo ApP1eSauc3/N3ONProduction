@@ -13,18 +13,16 @@ struct UserSearchRow: View {
     let onAdd: () -> Void
     let onMessage: () -> Void  // ✅ Add this line
 
-    @State private var avatarURL: URL?
+    @State private var avatarImage: UIImage?
 
     var body: some View {
         HStack(spacing: 10) {
-            if let url = avatarURL {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Circle().fill(Color.gray.opacity(0.3))
-                }
-                .frame(width: 32, height: 32)
-                .clipShape(Circle())
+            if let avatarImage {
+                Image(uiImage: avatarImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 32, height: 32)
+                    .clipShape(Circle())
             } else {
                 Circle()
                     .fill(Color.purple)
@@ -58,7 +56,7 @@ struct UserSearchRow: View {
         .padding(.vertical, 4)
         .task {
             guard let key = user.avatarKey else { return }
-            avatarURL = try? await StorageUploader.signedURL(for: key, access: .protected)
+            avatarImage = try? await ImageCache.loadImage(forKey: key, access: .guest)
         }
     }
 }

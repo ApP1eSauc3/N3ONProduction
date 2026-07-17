@@ -93,7 +93,7 @@ struct AdminCurationView: View {
             HStack(spacing: 12) {
                 PulsingAvatarView(
                     state: .remote(avatarKey: dj.avatarKey ?? "default-avatar"),
-                    audioKey: nil, size: 40, fromMemoryCache: true
+                    audioKey: nil, size: 40
                 )
                 VStack(alignment: .leading, spacing: 2) {
                     Text("@\(dj.username)")
@@ -253,7 +253,7 @@ private struct LineupSheet: View {
                             HStack(spacing: 12) {
                                 PulsingAvatarView(
                                     state: .remote(avatarKey: dj.avatarKey ?? "default-avatar"),
-                                    audioKey: nil, size: 36, fromMemoryCache: true
+                                    audioKey: nil, size: 36
                                 )
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("@\(dj.username)")

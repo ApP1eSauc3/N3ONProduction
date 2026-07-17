@@ -41,11 +41,7 @@ final class UnreadCounterVM: ObservableObject {
             let userID = try await AuthService.currentUserId()
             me = userID
 
-            let links = try await Amplify.DataStore.query(
-                UserChatRooms.self,
-                where: UserChatRooms.keys.user == userID
-            )
-            let roomIDs = Array(Set(links.compactMap { $0.chatRoom.id }))
+            let roomIDs = try await ChatRoomService.roomIDs(for: userID)
             guard !roomIDs.isEmpty else { self.count = 0; return }
 
             // Per-room unread queries are independent — fan them out. N sequential
@@ -54,13 +50,7 @@ final class UnreadCounterVM: ObservableObject {
             try await withThrowingTaskGroup(of: Int.self) { group in
                 for rid in roomIDs {
                     group.addTask {
-                        let unread = try await Amplify.DataStore.query(
-                            Message.self,
-                            where: Message.keys.chatRoomID == rid && Message.keys.isRead == false
-                        )
-                        return unread.reduce(0) { acc, m in
-                            (m.sender?.id ?? "") != userID ? acc + 1 : acc
-                        }
+                        try await ChatRoomService.unreadCount(in: rid, excludingSenderID: userID)
                     }
                 }
                 for try await roomCount in group { total += roomCount }

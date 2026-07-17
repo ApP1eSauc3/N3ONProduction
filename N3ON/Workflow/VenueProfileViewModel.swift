@@ -70,22 +70,26 @@ final class VenueProfileViewModel: ObservableObject {
     // MARK: — Gallery upload
 
     func uploadGalleryImage(_ image: UIImage) async {
-        guard let venueID = venue?.id else { return }
+        guard var current = venue else { return }
         isUploadingGallery = true
+        saveError = nil
         defer { isUploadingGallery = false }
         do {
-            let keys = try await VenueService.uploadImages([image], venueID: venueID)
-            guard let key = keys.first else { return }
+            let keys = try await VenueService.uploadImages([image], venueID: current.id)
+            guard let key = keys.first else {
+                saveError = "Image could not be processed."
+                return
+            }
             galleryKeys.append(key)
-            var updated = venue!
-            updated.imageKey = galleryKeys
-            venue = try await VenueService.update(updated)
+            current.imageKey = galleryKeys
+            venue = try await VenueService.update(current)
             // Update avatar to the first image if it was the default
             if galleryKeys.count == 1 {
                 avatarState = .remote(avatarKey: key)
             }
         } catch {
-            // silently fail — image stays in local state only
+            // The user initiated this and waited for it — never fail silently.
+            saveError = "Image upload failed: \(error.localizedDescription)"
         }
     }
 

@@ -18,14 +18,17 @@ enum AdminService {
     // MARK: - Reads (admin console)
 
     /// All DJ users, alphabetical. Admin-console roster source.
-    static func allDJs() async -> [User] {
-        let users = (try? await Amplify.DataStore.query(User.self)) ?? []
+    /// Throws on query failure — an admin tool must distinguish "no DJs"
+    /// from "query failed", so errors are never swallowed here.
+    static func allDJs() async throws -> [User] {
+        let users = try await Amplify.DataStore.query(User.self)
         return users.filter { $0.isDJ }.sorted { $0.username < $1.username }
     }
 
     /// All events, soonest-first by event date. Admin-console event source.
-    static func allEvents() async -> [Event] {
-        let events = (try? await Amplify.DataStore.query(Event.self)) ?? []
+    /// Throws on query failure (see allDJs).
+    static func allEvents() async throws -> [Event] {
+        let events = try await Amplify.DataStore.query(Event.self)
         return events.sorted { $0.eventDate.foundationDate > $1.eventDate.foundationDate }
     }
 

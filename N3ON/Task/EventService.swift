@@ -61,4 +61,17 @@ enum EventService {
         let all = (try? await Amplify.DataStore.query(User.self)) ?? []
         return all.filter { $0.isDJ && $0.id != myID }
     }
+
+    // DJ lineup links for an event — used to display the lineup and compute the tally.
+    static func djLinks(forEventID eventID: String) async throws -> [EventDJLink] {
+        try await Amplify.DataStore.query(
+            EventDJLink.self,
+            where: EventDJLink.keys.event == eventID
+        )
+    }
+
+    // Upserts an event record.
+    static func save(_ event: Event) async throws {
+        try await Amplify.DataStore.save(event)
+    }
 }

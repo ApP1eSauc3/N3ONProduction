@@ -33,8 +33,6 @@
 		ACD735FE7536294206CAD5B6 /* ChatRoom+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A13EA29F6489AA8A3868293 /* ChatRoom+Schema.swift */; };
 		B6F12E4BD05A47A67D947CB7 /* awsconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = DF46BDBF469E16BDBDE290A9 /* awsconfiguration.json */; };
 		B8C71EFB919ED22AA6A8CF86 /* Event.swift in Sources */ = {isa = PBXBuildFile; fileRef = 901AAFE76B16C0B526E44835 /* Event.swift */; };
-		C57BA43E2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */; };
-		C57BA43F2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */; };
 		C57BA9562E7430D700E80A53 /* AmplifyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962CA66C4FFDE282448D9527 /* AmplifyModels.swift */; };
 		C59FCD962D54681700DBCA1B /* AWSAPIPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD952D54681700DBCA1B /* AWSAPIPlugin */; };
 		C59FCD982D54681700DBCA1B /* AWSCognitoAuthPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD972D54681700DBCA1B /* AWSCognitoAuthPlugin */; };
@@ -44,13 +42,9 @@
 		C59FCDA02D54681700DBCA1B /* Amplify in Frameworks */ = {isa = PBXBuildFile; productRef = C59FCD9F2D54681700DBCA1B /* Amplify */; };
 		C5BF9E432D83C32F0093C5A8 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5BF9E422D83C32F0093C5A8 /* Cocoa.framework */; };
 		C5BF9E452D83C32F0093C5A8 /* XcodeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5BF9E442D83C32F0093C5A8 /* XcodeKit.framework */; };
-		C5C67D722F63CEA00075ED38 /* TransactionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C67D712F63CEA00075ED38 /* TransactionType.swift */; };
-		C5C67D732F63CEA00075ED38 /* TransactionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C67D712F63CEA00075ED38 /* TransactionType.swift */; };
 		C5DAE7DB2BFC7B220001E794 /* N3ONApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE7DA2BFC7B220001E794 /* N3ONApp.swift */; };
-		C5DAE7DD2BFC7B220001E794 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE7DC2BFC7B220001E794 /* ContentView.swift */; };
 		C5DAE7DF2BFC7B240001E794 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5DAE7DE2BFC7B240001E794 /* Assets.xcassets */; };
 		C5DAE7E22BFC7B240001E794 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5DAE7E12BFC7B240001E794 /* Preview Assets.xcassets */; };
-		C5DAE7E42BFC7B240001E794 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE7E32BFC7B240001E794 /* Persistence.swift */; };
 		C5DAE7E72BFC7B240001E794 /* N3ON.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = C5DAE7E52BFC7B240001E794 /* N3ON.xcdatamodeld */; };
 		C5DD98582DCDB45F00431EC5 /* Message+Equatable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DD98572DCDB45F00431EC5 /* Message+Equatable.swift */; };
 		C5DD98592DCDB45F00431EC5 /* Message+Equatable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5DD98572DCDB45F00431EC5 /* Message+Equatable.swift */; };
@@ -105,17 +99,13 @@
 		AE42145BE70C360706D92336 /* Review.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Review.swift; path = amplify/generated/models/Review.swift; sourceTree = "<group>"; };
 		BA2578201C0843BD66D69F2C /* Transaction+Schema.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = "Transaction+Schema.swift"; path = "amplify/generated/models/Transaction+Schema.swift"; sourceTree = "<group>"; };
 		C55E7B0F2C50266900B142E2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnreadCounterVM.swift; sourceTree = "<group>"; };
 		C5BF9E412D83C32F0093C5A8 /* copilot source editor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "copilot source editor.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5BF9E422D83C32F0093C5A8 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
 		C5BF9E442D83C32F0093C5A8 /* XcodeKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XcodeKit.framework; path = Library/Frameworks/XcodeKit.framework; sourceTree = DEVELOPER_DIR; };
-		C5C67D712F63CEA00075ED38 /* TransactionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionType.swift; sourceTree = "<group>"; };
 		C5DAE7D72BFC7B220001E794 /* N3ON.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = N3ON.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C5DAE7DA2BFC7B220001E794 /* N3ONApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = N3ONApp.swift; sourceTree = "<group>"; };
-		C5DAE7DC2BFC7B220001E794 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C5DAE7DE2BFC7B240001E794 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C5DAE7E12BFC7B240001E794 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		C5DAE7E32BFC7B240001E794 /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
 		C5DAE7E62BFC7B240001E794 /* N3ON.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = N3ON.xcdatamodel; sourceTree = "<group>"; };
 		C5DD98572DCDB45F00431EC5 /* Message+Equatable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Message+Equatable.swift"; sourceTree = "<group>"; };
 		CD5BE2B379D82C75B014C5CE /* Post+Schema.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = "Post+Schema.swift"; path = "amplify/generated/models/Post+Schema.swift"; sourceTree = "<group>"; };
@@ -162,9 +152,23 @@
 		AA00000100000000000000AA /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				AGENTS.md,
+				CLAUDE.md,
+				Auth/CLAUDE.md,
+				Chat/CLAUDE.md,
+				Event/CLAUDE.md,
+				Map/CLAUDE.md,
+				UserProfile/CLAUDE.md,
+				VenueProfile/CLAUDE.md,
 			);
 			target = C5DAE7D62BFC7B220001E794 /* N3ON */;
+		};
+		C58619112F74263500E3076E /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				TransactionType.swift,
+				UnreadCounterVM.swift,
+			);
+			target = C5BF9E402D83C32F0093C5A8 /* copilot source editor */;
 		};
 		C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -176,12 +180,79 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA000001000000000000001A /* Data */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000001000000000000006A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Data; sourceTree = "<group>"; };
-		AA000001000000000000002A /* Task */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000001000000000000007A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Task; sourceTree = "<group>"; };
-		AA000001000000000000003A /* Workflow */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000001000000000000008A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Workflow; sourceTree = "<group>"; };
-		AA000001000000000000004A /* Tools */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA000001000000000000009A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Tools; sourceTree = "<group>"; };
-		AA000001000000000000005A /* Prompt */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (AA00000100000000000000AA /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Prompt; sourceTree = "<group>"; };
-		C5BF9E462D83C32F0093C5A8 /* copilot source editor */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "copilot source editor"; sourceTree = "<group>"; };
+		AA000001000000000000001A /* Data */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA000001000000000000006A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+				C58619112F74263500E3076E /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		AA000001000000000000002A /* Task */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA000001000000000000007A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Task;
+			sourceTree = "<group>";
+		};
+		AA000001000000000000003A /* Workflow */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA000001000000000000008A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Workflow;
+			sourceTree = "<group>";
+		};
+		AA000001000000000000004A /* Tools */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA000001000000000000009A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Tools;
+			sourceTree = "<group>";
+		};
+		AA000001000000000000005A /* Prompt */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA00000100000000000000AA /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Prompt;
+			sourceTree = "<group>";
+		};
+		C5BF9E462D83C32F0093C5A8 /* copilot source editor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C5BF9E4D2D83C32F0093C5A8 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "copilot source editor";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -263,8 +334,6 @@
 		C5DAE7CE2BFC7B220001E794 = {
 			isa = PBXGroup;
 			children = (
-				C5C67D712F63CEA00075ED38 /* TransactionType.swift */,
-				C57BA43D2E6D5CBA00E80A53 /* UnreadCounterVM.swift */,
 				C5DAE7D92BFC7B220001E794 /* N3ON */,
 				C5BF9E462D83C32F0093C5A8 /* copilot source editor */,
 				C5DAE7D82BFC7B220001E794 /* Products */,
@@ -293,9 +362,7 @@
 				AA000001000000000000005A /* Prompt */,
 				C55E7B0F2C50266900B142E2 /* Info.plist */,
 				C5DAE7DA2BFC7B220001E794 /* N3ONApp.swift */,
-				C5DAE7DC2BFC7B220001E794 /* ContentView.swift */,
 				C5DAE7DE2BFC7B240001E794 /* Assets.xcassets */,
-				C5DAE7E32BFC7B240001E794 /* Persistence.swift */,
 				C5DAE7E02BFC7B240001E794 /* Preview Content */,
 				C5DAE7E52BFC7B240001E794 /* N3ON.xcdatamodeld */,
 			);
@@ -455,8 +522,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				C5DD98582DCDB45F00431EC5 /* Message+Equatable.swift in Sources */,
-				C57BA43E2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */,
-				C5C67D732F63CEA00075ED38 /* TransactionType.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -465,8 +530,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				C57BA9562E7430D700E80A53 /* AmplifyModels.swift in Sources */,
-				C5DAE7E42BFC7B240001E794 /* Persistence.swift in Sources */,
-				C5DAE7DD2BFC7B220001E794 /* ContentView.swift in Sources */,
 				C5DAE7DB2BFC7B220001E794 /* N3ONApp.swift in Sources */,
 				C5DAE7E72BFC7B240001E794 /* N3ON.xcdatamodeld in Sources */,
 				F190EF1193BE9565E1FCE506 /* User+Schema.swift in Sources */,
@@ -483,8 +546,6 @@
 				C5DD98592DCDB45F00431EC5 /* Message+Equatable.swift in Sources */,
 				2CAD03755C851FA1B75EE02D /* Review.swift in Sources */,
 				F6163EE2CBB6DAC6E8909745 /* Attendance+Schema.swift in Sources */,
-				C57BA43F2E6D5CBA00E80A53 /* UnreadCounterVM.swift in Sources */,
-				C5C67D722F63CEA00075ED38 /* TransactionType.swift in Sources */,
 				0BC771A750D0D3944CA5FA96 /* Attendance.swift in Sources */,
 				C63B4C1D51229DA1F8D63C5A /* EndorsementRequest+Schema.swift in Sources */,
 				D1F962975CDB1592D2895257 /* EndorsementRequest.swift in Sources */,

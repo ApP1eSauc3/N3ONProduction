@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Amplify
 import Combine
 
 @MainActor
@@ -35,7 +34,7 @@ final class InviteSearchBarViewModel: ObservableObject {
         searchTask?.cancel()
         searchTask = Task {
             do {
-                let allUsers = try await Amplify.DataStore.query(User.self)
+                let allUsers = try await UserService.fetchAll()
                 guard !Task.isCancelled else { return }
                 let filtered = allUsers.filter {
                     $0.username.lowercased().contains(term.lowercased())
