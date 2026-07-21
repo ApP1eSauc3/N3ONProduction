@@ -165,7 +165,7 @@ struct RoleSelectionView: View {
         Button {
             guard let role = selected else { return }
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            vm.completeRoleSelection(username: username, isDJ: role == .dj)
+            Task { await vm.completeRoleSelection(username: username, isDJ: role == .dj) }
         } label: {
             Text("Continue")
                 .font(.headline)

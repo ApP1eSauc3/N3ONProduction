@@ -7,7 +7,6 @@
 
 import SwiftUI
 import AVFoundation
-import Combine
 
 struct AudioPlayerView: View {
     let url: URL
@@ -103,37 +102,46 @@ struct AudioPlayerView: View {
 }
 
 // MARK: - ViewModel
-class AudioPlayerViewModel: ObservableObject {
+@MainActor
+final class AudioPlayerViewModel: ObservableObject {
     @Published var isPlaying = false
     @Published var isReady = false
     @Published var progress: Double = 0
     @Published var currentTimeString = "00:00"
     @Published var durationString = "00:00"
-    
+
     private var player: AVPlayer?
     private var timeObserver: Any?
-    private var cancellables = Set<AnyCancellable>()
-    
+    private var observationTasks: [Task<Void, Never>] = []
+
     func loadAudio(url: URL) {
-        player = AVPlayer(url: url)
-        
-        player?.publisher(for: \.status)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] status in
-                self?.isReady = status == .readyToPlay
+        let player = AVPlayer(url: url)
+        self.player = player
+
+        // KVO publishers consumed as AsyncSequences (.values): each iteration
+        // resumes on this @MainActor class — no Combine, no manual queue hop.
+        observationTasks.forEach { $0.cancel() }
+        observationTasks = [
+            Task { [weak self] in
+                for await status in player.publisher(for: \.status).values {
+                    guard !Task.isCancelled else { return }
+                    self?.isReady = status == .readyToPlay
+                }
+            },
+            Task { [weak self] in
+                guard let item = player.currentItem else { return }
+                for await duration in item.publisher(for: \.duration).values {
+                    guard !Task.isCancelled else { return }
+                    guard duration.seconds > 0 else { continue }
+                    self?.durationString = duration.formattedString
+                }
             }
-            .store(in: &cancellables)
-        
-        player?.currentItem?.publisher(for: \.duration)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] duration in
-                guard duration.seconds > 0 else { return }
-                self?.durationString = duration.formattedString
-            }
-            .store(in: &cancellables)
-        
+        ]
+
         setupPeriodicTimeObserver()
     }
+
+    deinit { observationTasks.forEach { $0.cancel() } }
     
     func togglePlayback() {
         guard isReady else { return }
@@ -171,10 +179,14 @@ class AudioPlayerViewModel: ObservableObject {
             forInterval: CMTime(seconds: 0.5, preferredTimescale: 600),
             queue: .main
         ) { [weak self] time in
-            guard let self else { return }
-            let duration = self.player?.currentItem?.duration.seconds ?? 1
-            self.progress = time.seconds / duration
-            self.currentTimeString = time.formattedString
+            // Delivered on the main queue (queue: .main above) — assumeIsolated
+            // states that fact to the compiler instead of re-dispatching.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let duration = self.player?.currentItem?.duration.seconds ?? 1
+                self.progress = time.seconds / duration
+                self.currentTimeString = time.formattedString
+            }
         }
     }
 }

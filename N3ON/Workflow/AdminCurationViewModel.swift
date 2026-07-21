@@ -18,8 +18,14 @@ final class AdminCurationViewModel: ObservableObject {
     func load() async {
         isLoading = true
         defer { isLoading = false }
-        djs = await AdminService.allDJs()
-        events = await AdminService.allEvents()
+        do {
+            // Two independent full-table reads — run them concurrently.
+            async let djsFetch = AdminService.allDJs()
+            async let eventsFetch = AdminService.allEvents()
+            (djs, events) = try await (djsFetch, eventsFetch)
+        } catch {
+            errorMessage = "Could not load admin data: \(error.localizedDescription)"
+        }
     }
 
     // MARK: - DJ actions
@@ -44,7 +50,7 @@ final class AdminCurationViewModel: ObservableObject {
     func forcePublish(_ event: Event) async {
         do {
             try await AdminService.forcePublish(eventID: event.id)
-            events = await AdminService.allEvents()
+            events = try await AdminService.allEvents()
         } catch { errorMessage = error.localizedDescription }
     }
 

@@ -28,12 +28,14 @@ struct AsyncStorageImage: View {
             }
         }
         .task(id: storageKey) {
+            if let cached = ImageCache.shared.image(forKey: storageKey) {
+                image = cached
+                return
+            }
             image = nil
-            guard let url = try? await StorageUploader.signedURL(for: storageKey, access: .protected) else { return }
+            guard let loaded = try? await ImageCache.loadImage(forKey: storageKey, access: .guest) else { return }
             guard !Task.isCancelled else { return }
-            guard let (data, _) = try? await URLSession.shared.data(from: url) else { return }
-            guard !Task.isCancelled else { return }
-            image = UIImage(data: data)
+            image = loaded
         }
     }
 }

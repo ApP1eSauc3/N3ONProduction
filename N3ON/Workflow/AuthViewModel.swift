@@ -48,20 +48,34 @@ final class AuthViewModel: ObservableObject {
                 userState.updateFromUser(user)
                 flowState = .authenticated
             } else {
-                // First sign-in after role selection — create the User record now.
+                // Signed in but no User record yet — first sign-in after role
+                // selection, or a recovery case (reinstall / second device /
+                // interrupted first run).
                 let id = try await AuthService.currentUserId()
                 userState.userId = id
                 if let pendingUsername = UserDefaults.standard.string(forKey: "pendingUsername") {
                     let isDJ = UserDefaults.standard.bool(forKey: "pendingIsDJ")
-                    if let created = try? await AuthService.createInitialUserRecord(
-                        username: pendingUsername, isDJ: isDJ
-                    ) {
+                    do {
+                        let created = try await AuthService.createInitialUserRecord(
+                            username: pendingUsername, isDJ: isDJ
+                        )
                         userState.updateFromUser(created)
+                        // Clear pending data only on success — keep it for retry.
+                        UserDefaults.standard.removeObject(forKey: "pendingUsername")
+                        UserDefaults.standard.removeObject(forKey: "pendingIsDJ")
+                        flowState = .authenticated
+                    } catch {
+                        // Never land the user in the app with no User record.
+                        // Role selection retries creation via completeRoleSelection.
+                        errorMessage = "Could not finish setting up your profile — please try again."
+                        flowState = .roleSelection(username: pendingUsername)
                     }
-                    UserDefaults.standard.removeObject(forKey: "pendingUsername")
-                    UserDefaults.standard.removeObject(forKey: "pendingIsDJ")
+                } else {
+                    // No pending role data on this device — re-ask instead of
+                    // authenticating a user who has no profile record.
+                    let username = (try? await AuthService.currentUsername()) ?? ""
+                    flowState = .roleSelection(username: username)
                 }
-                flowState = .authenticated
             }
         } catch {
             // No active session — route to login.
@@ -156,13 +170,32 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    /// Called by RoleSelectionView. Persists the choice so loadSession() can
-    /// create the User record after the user signs in for the first time.
-    func completeRoleSelection(username: String, isDJ: Bool) {
-        UserDefaults.standard.set(username, forKey: "pendingUsername")
-        UserDefaults.standard.set(isDJ, forKey: "pendingIsDJ")
+    /// Called by RoleSelectionView.
+    /// Normal sign-up flow (no session yet): persists the choice so loadSession()
+    /// can create the User record after the user signs in for the first time.
+    /// Recovery flow (already signed in, no User record): creates the record
+    /// immediately — bouncing a signed-in user back to the login screen would
+    /// be both confusing and unnecessary.
+    func completeRoleSelection(username: String, isDJ: Bool) async {
         errorMessage = nil
-        flowState = .login
+        guard await AuthService.currentUserIdOrNil() != nil else {
+            UserDefaults.standard.set(username, forKey: "pendingUsername")
+            UserDefaults.standard.set(isDJ, forKey: "pendingIsDJ")
+            flowState = .login
+            return
+        }
+        guard !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let created = try await AuthService.createInitialUserRecord(username: username, isDJ: isDJ)
+            userState.updateFromUser(created)
+            UserDefaults.standard.removeObject(forKey: "pendingUsername")
+            UserDefaults.standard.removeObject(forKey: "pendingIsDJ")
+            flowState = .authenticated
+        } catch {
+            errorMessage = "Could not save your role: \(authErrorMessage(from: error))"
+        }
     }
 
     func requestReset(username: String) async {

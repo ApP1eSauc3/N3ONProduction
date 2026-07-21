@@ -167,7 +167,7 @@ struct MapView: View {
             await viewModel.loadMapData()
         }
         .sheet(isPresented: $showSearch) {
-            SearchView()
+            MapSearchView()
         }
         // Venue / DJ roles: show venue sheet
         .sheet(item: $selectedVenue) { venue in

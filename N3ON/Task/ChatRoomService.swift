@@ -31,6 +31,27 @@ struct ChatRoomService {
         )
     }
 
+    /// All chat rooms. DataStore has no .in() predicate, so callers that need
+    /// a specific subset (e.g. rooms a user belongs to) filter this in memory.
+    static func allRooms() async throws -> [ChatRoom] {
+        try await Amplify.DataStore.query(ChatRoom.self)
+    }
+
+    /// Creates the event chat room record for a newly-published event.
+    static func createEventChatRoom(eventID: String) async throws {
+        let now = Temporal.DateTime.now()
+        let chatRoom = ChatRoom(
+            id: UUID().uuidString,
+            name: "event-\(eventID)",
+            createdAt: now,
+            updatedAt: now,
+            lastMessage: "",
+            lastMessageTimestamp: now,
+            associatedEvent: eventID
+        )
+        try await Amplify.DataStore.save(chatRoom)
+    }
+
     // MARK: - Messages
 
     /// All messages in a room, sorted oldest-first.
@@ -84,6 +105,15 @@ struct ChatRoomService {
                 }
             }
         }
+    }
+
+    /// Count of unread messages in `roomID` not sent by `excludingSenderID`.
+    static func unreadCount(in roomID: String, excludingSenderID: String) async throws -> Int {
+        let msgs = try await Amplify.DataStore.query(
+            Message.self,
+            where: Message.keys.chatRoomID == roomID && Message.keys.isRead == false
+        )
+        return msgs.filter { ($0.sender?.id ?? "") != excludingSenderID }.count
     }
 
     // MARK: - Participants

@@ -37,7 +37,7 @@ final class ChatViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        currentUser = try? await Amplify.DataStore.query(User.self, byId: currentUserID)
+        currentUser = try? await UserService.fetch(byId: currentUserID)
 
         do {
             let raw = try await ChatRoomService.messages(for: chatRoomID)

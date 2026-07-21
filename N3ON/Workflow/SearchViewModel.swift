@@ -1,6 +1,6 @@
 // SearchViewModel.swift
 // N3ON — Workflow layer
-// Drives SearchView. Debounces the query so DataStore isn't hammered on every
+// Drives MapSearchView. Debounces the query so DataStore isn't hammered on every
 // keystroke. Segmented by category: DJs, Events, Venues.
 
 import Foundation

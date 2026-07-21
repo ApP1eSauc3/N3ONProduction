@@ -81,8 +81,7 @@ struct EndorsementInboxView: View {
                 PulsingAvatarView(
                     state: .remote(avatarKey: req.fromUser?.avatarKey ?? "default-avatar"),
                     audioKey: nil,
-                    size: 48,
-                    fromMemoryCache: true
+                    size: 48
                 )
                 VStack(alignment: .leading, spacing: 3) {
                     Text("@\(req.fromUser?.username ?? "—")")

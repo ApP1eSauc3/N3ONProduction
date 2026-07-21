@@ -5,11 +5,14 @@
 //  Created by liam howe on 8/3/2025.
 //
 // ACCESS LEVEL CONVENTION (mirrored in StorageUploader.swift)
-//   • .guest     — publicly readable content (event posters, venue imagery,
-//                  anything shown to unauthenticated or cross-user viewers).
-//                  Set `isPublished = true` on uploadImage() to select this.
-//   • .protected — owner-writable, cross-user readable (avatars, published posts).
-//                  This is the default for uploadJPEG/uploadFile in StorageUploader.
+//   • .guest     — anything displayed to OTHER users: avatars, DJ audio,
+//                  event posters, venue imagery. Set `isPublished = true`
+//                  on uploadImage() to select this.
+//   • .protected — owner-writable. ⚠️ NOT cross-user readable in practice:
+//                  keys resolve to protected/{identityId}/… using the CALLER's
+//                  identityId, so another user signing the same key gets a URL
+//                  into their own (empty) prefix → silent 403. Cross-user reads
+//                  require targetIdentityId, which this app does not plumb.
 //   • .private   — only the uploader can read it.
 // NEVER mix access levels between the upload call and the matching
 // signedURL(for:access:) call — permission mismatches produce silent 403s.

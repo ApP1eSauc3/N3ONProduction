@@ -281,8 +281,7 @@ private struct DJAvatarCell: View {
             PulsingAvatarView(
                 state: AvatarState.fromUser(user),
                 audioKey: user.profileAudioKey,
-                size: 52,
-                fromMemoryCache: false
+                size: 52
             )
             Text("@\(user.username)")
                 .font(.caption2)

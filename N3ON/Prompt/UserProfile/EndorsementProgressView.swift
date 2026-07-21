@@ -146,8 +146,7 @@ struct EndorsementProgressView: View {
             PulsingAvatarView(
                 state: .remote(avatarKey: req.toUser?.avatarKey ?? "default-avatar"),
                 audioKey: nil,
-                size: 40,
-                fromMemoryCache: true
+                size: 40
             )
 
             VStack(alignment: .leading, spacing: 2) {
@@ -313,8 +312,7 @@ private struct EndorserPickerSheet: View {
                             PulsingAvatarView(
                                 state: .remote(avatarKey: dj.avatarKey ?? "default-avatar"),
                                 audioKey: nil,
-                                size: 44,
-                                fromMemoryCache: true
+                                size: 44
                             )
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("@\(dj.username)")
@@ -351,8 +349,7 @@ private struct EndorserPickerSheet: View {
                     PulsingAvatarView(
                         state: .remote(avatarKey: dj.avatarKey ?? "default-avatar"),
                         audioKey: nil,
-                        size: 36,
-                        fromMemoryCache: true
+                        size: 36
                     )
                     Text("@\(dj.username)")
                         .font(.subheadline.weight(.semibold))

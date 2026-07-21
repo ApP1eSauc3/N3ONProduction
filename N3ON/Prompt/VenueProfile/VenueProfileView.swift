@@ -130,8 +130,7 @@ struct VenueProfileView: View {
             PulsingAvatarView(
                 state: vm.avatarState,
                 audioKey: nil,
-                size: 88,
-                fromMemoryCache: false
+                size: 88
             )
 
             // Venue name + status

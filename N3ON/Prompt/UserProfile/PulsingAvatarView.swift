@@ -34,17 +34,20 @@ struct PulsingAvatarView: View {
     let state: AvatarState          // DESIGN §3.4 — avatar image source (remote key or local UIImage)
     let audioKey: String?           // optional S3 key for profile audio clip
     let size: CGFloat               // DESIGN §3.4 — image diameter; ring = size+4; container = size+20
-    let fromMemoryCache: Bool
 
     @State private var image: UIImage?
+    @State private var loadedKey: String?   // S3 key `image` was decoded from
     @State private var player: AVAudioPlayer?
     @State private var isPulsing = false
 
-    init(state: AvatarState, audioKey: String? = nil, size: CGFloat, fromMemoryCache: Bool = false) {
+    init(state: AvatarState, audioKey: String? = nil, size: CGFloat) {
         self.state = state
         self.audioKey = audioKey
         self.size = size
-        self.fromMemoryCache = fromMemoryCache
+        if case .remote(let key) = state, let cached = ImageCache.shared.image(forKey: key) {
+            _image = State(initialValue: cached)
+            _loadedKey = State(initialValue: key)
+        }
     }
 
     var body: some View {
@@ -120,20 +123,27 @@ struct PulsingAvatarView: View {
     private func loadImage() async {
         switch state {
         case .remote(let avatarKey):
-            guard let url = try? await StorageUploader.signedURL(for: avatarKey, access: .protected) else { return }
+            // Key changed under a stable view identity — show the new key's
+            // cached image (or the placeholder) immediately, so a failed
+            // download can't leave the previous key's avatar on screen.
+            if loadedKey != avatarKey {
+                image = ImageCache.shared.image(forKey: avatarKey)
+                loadedKey = image == nil ? nil : avatarKey
+            }
+            guard let loaded = try? await ImageCache.loadImage(forKey: avatarKey, access: .guest) else { return }
             guard !Task.isCancelled else { return }
-            guard let (data, _) = try? await URLSession.shared.data(from: url) else { return }
-            guard !Task.isCancelled else { return }
-            image = UIImage(data: data)
+            image = loaded
+            loadedKey = avatarKey
 
         case .local(let uiImage):
             image = uiImage
+            loadedKey = nil
         }
     }
 
     private func loadAudioIfNeeded() async {
         guard let audioKey = audioKey else { return }
-        guard let url = try? await StorageUploader.signedURL(for: audioKey, access: .protected) else { return }
+        guard let url = try? await StorageUploader.signedURL(for: audioKey, access: .guest) else { return }
         guard !Task.isCancelled else { return }
         // Data(contentsOf:) is synchronous — it blocks a cooperative thread for
         // the full download. Use the async overload so the task yields.

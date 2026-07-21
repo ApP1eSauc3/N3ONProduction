@@ -2,7 +2,6 @@
 // N3ON
 
 import Foundation
-import Amplify
 import UIKit
 
 @MainActor
@@ -29,23 +28,24 @@ final class EventViewModel: ObservableObject {
         isLoadingDJs = true
         defer { isLoadingDJs = false }
         do {
-            let links = try await Amplify.DataStore.query(
-                EventDJLink.self,
-                where: EventDJLink.keys.event == event.id
-            )
+            let links = try await EventService.djLinks(forEventID: event.id)
             var djIDs: [String] = links.map(\.djID)
             // Host DJ may not have a link record yet — always show them first
             if !djIDs.contains(event.hostDJID) {
                 djIDs.insert(event.hostDJID, at: 0)
             }
-            var users: [User] = []
-            for id in djIDs {
-                guard !Task.isCancelled else { return }
-                if let user = try? await Amplify.DataStore.query(User.self, byId: id) {
-                    users.append(user)
+            // Independent per-DJ fetches — fan out so an 8-DJ lineup costs one
+            // round-trip of latency, not eight. Order is restored afterwards.
+            let fetched = await withTaskGroup(of: (Int, User?).self) { group in
+                for (index, id) in djIDs.enumerated() {
+                    group.addTask { (index, try? await UserService.fetch(byId: id)) }
                 }
+                var results = [User?](repeating: nil, count: djIDs.count)
+                for await (index, user) in group { results[index] = user }
+                return results
             }
-            djProfiles = users
+            guard !Task.isCancelled else { return }
+            djProfiles = fetched.compactMap { $0 }
         } catch {
             // Non-fatal — missing lineup doesn't block purchase
         }
@@ -57,7 +57,7 @@ final class EventViewModel: ObservableObject {
 
         do {
             try await TicketService.purchaseTicket(eventID: event.id, quantity: ticketQuantity)
-            if let refreshed = try await Amplify.DataStore.query(Event.self, byId: event.id) {
+            if let refreshed = try await EventService.fetchEvent(byId: event.id) {
                 event = refreshed
             }
             // Schedule a local reminder 24h before the event

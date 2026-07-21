@@ -17,13 +17,14 @@ struct MainView: View {
                 MapView()
                     .environmentObject(mapViewModel)
                     .tabItem {
-                        Image(systemName: "map")
+                        // HIG: image-only controls need an accessible name.
+                        Label("Map", systemImage: "map")
                     }
                     .tag(0)
-                
+
                 UserProfileView()
                     .tabItem {
-                        Image(systemName: "person")
+                        Label("Profile", systemImage: "person")
                     }
                     .tag(1)
             }

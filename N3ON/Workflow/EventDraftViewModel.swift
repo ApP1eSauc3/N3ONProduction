@@ -141,7 +141,7 @@ final class EventDraftViewModel: ObservableObject {
     /// Called on EventCreationFlowView .task. Sets hostDJRank from the current user's profile.
     func load() async {
         guard let userID = try? await AuthService.currentUserId() else { return }
-        guard let user = try? await Amplify.DataStore.query(User.self, byId: userID) else { return }
+        guard let user = try? await UserService.fetch(byId: userID) else { return }
         hostDJRank = user.djRank ?? 0
     }
 
@@ -176,7 +176,7 @@ final class EventDraftViewModel: ObservableObject {
                 status:           EventStatus.pending.rawValue,
                 isFeatured:       false
             )
-            try await Amplify.DataStore.save(event)
+            try await EventService.save(event)
             createdEventID = event.id
             startTallyObserver()
             currentStep = .limbo
@@ -193,8 +193,18 @@ final class EventDraftViewModel: ObservableObject {
             guard let self else { return }
             await self.refreshTally()
             do {
-                for try await _ in Amplify.DataStore.observe(EventDJLink.self) {
+                // observe() takes no predicate in Amplify v2 — filter in-stream.
+                // Only re-query when the mutated link belongs to THIS event;
+                // otherwise every EventDJLink write anywhere re-reads the table.
+                for try await change in Amplify.DataStore.observe(EventDJLink.self) {
                     guard !Task.isCancelled else { return }
+                    // Skip only when the link provably belongs to another event.
+                    // If the association didn't decode, refresh — never miss a tally.
+                    if let link = try? change.decodeModel(as: EventDJLink.self),
+                       let linkEventID = link.event?.id,
+                       linkEventID != self.createdEventID {
+                        continue
+                    }
                     await self.refreshTally()
                 }
             } catch { }
@@ -203,10 +213,7 @@ final class EventDraftViewModel: ObservableObject {
 
     private func refreshTally() async {
         guard let eventID = createdEventID else { return }
-        let links = (try? await Amplify.DataStore.query(
-            EventDJLink.self,
-            where: EventDJLink.keys.event == eventID
-        )) ?? []
+        let links = (try? await EventService.djLinks(forEventID: eventID)) ?? []
         currentTally = links.reduce(0) { $0 + $1.coinContribution }
     }
 
@@ -225,12 +232,12 @@ final class EventDraftViewModel: ObservableObject {
             let keyBase = userID + "-" + (createdEventID ?? UUID().uuidString)
             let key     = MediaKind.eventPoster(eventID: keyBase).makeKey(extension: "jpg")
 
-            _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .protected)
+            _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: .guest)
             posterImage = image
             posterKey   = key
 
             guard let eventID = createdEventID,
-                  var event = try? await Amplify.DataStore.query(Event.self, byId: eventID) else {
+                  var event = try? await EventService.fetchEvent(byId: eventID) else {
                 posterUploadError = "Could not locate event record."
                 return
             }
@@ -238,20 +245,10 @@ final class EventDraftViewModel: ObservableObject {
             event.ticketPrice      = ticketPrice
             event.availableTickets = availableTickets
             event.status           = EventStatus.live.rawValue
-            try await Amplify.DataStore.save(event)
+            try await EventService.save(event)
 
             // Create the event chat room — non-fatal on failure
-            let now = Temporal.DateTime.now()
-            let chatRoom = ChatRoom(
-                id:                   UUID().uuidString,
-                name:                 "event-\(eventID)",
-                createdAt:            now,
-                updatedAt:            now,
-                lastMessage:          "",
-                lastMessageTimestamp: now,
-                associatedEvent:      eventID
-            )
-            try? await Amplify.DataStore.save(chatRoom)
+            try? await ChatRoomService.createEventChatRoom(eventID: eventID)
 
             didSubmitSuccessfully = true
         } catch {

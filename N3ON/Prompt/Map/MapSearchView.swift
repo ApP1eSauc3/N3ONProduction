@@ -1,5 +1,6 @@
-// SearchView.swift
+// MapSearchView.swift
 // N3ON — Prompt layer
+// (Named per root CLAUDE.md filename-uniqueness rule — never plain SearchView.swift.)
 // Global search: DJs, Events, Venues. Presented as a full-screen sheet from MapView.
 //
 // Design reference:
@@ -13,7 +14,7 @@
 
 import SwiftUI
 
-struct SearchView: View {
+struct MapSearchView: View {
     @StateObject private var vm = SearchViewModel()
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isSearchFocused: Bool
@@ -353,8 +354,7 @@ private struct DJSearchRow: View {
             PulsingAvatarView(
                 state: AvatarState.fromUser(user),
                 audioKey: user.profileAudioKey,
-                size: 44,
-                fromMemoryCache: true
+                size: 44
             )
 
             VStack(alignment: .leading, spacing: 2) {

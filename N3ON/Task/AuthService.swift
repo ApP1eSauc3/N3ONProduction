@@ -32,6 +32,13 @@ enum AuthService {
         try? await Amplify.Auth.getCurrentUser().userId
     }
 
+    /// Cognito username of the active session. Used by the role-selection
+    /// recovery path when a signed-in user has no User record yet (reinstall,
+    /// second device, or an interrupted first run).
+    static func currentUsername() async throws -> String {
+        try await Amplify.Auth.getCurrentUser().username
+    }
+
     /// Returns the DataStore User model for the currently signed-in user, or nil
     /// if the record does not yet exist (e.g. first launch after sign-up).
     static func getCurrentUserModel() async throws -> User? {

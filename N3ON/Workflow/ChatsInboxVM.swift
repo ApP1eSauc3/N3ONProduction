@@ -57,7 +57,7 @@ final class ChatsInboxVM: ObservableObject {
             guard !roomIDs.isEmpty else { pinned = []; others = []; return }
 
             // Amplify DataStore has no .in() predicate — query all and filter in memory
-            let allRooms = try await Amplify.DataStore.query(ChatRoom.self)
+            let allRooms = try await ChatRoomService.allRooms()
             let rooms = allRooms.filter { roomIDs.contains($0.id) }
 
             // Each room's summary fires 2–4 independent DataStore queries.
@@ -101,12 +101,11 @@ final class ChatsInboxVM: ObservableObject {
     // MARK: - Private
 
     private func summarize(room: ChatRoom, me: String) async throws -> ChatSummary? {
-        let links = try await Amplify.DataStore.query(
-            UserChatRooms.self,
-            where: UserChatRooms.keys.chatRoom == room.id
-        )
-        let users = links.compactMap { $0.user }
-        let otherNames = users.filter { $0.id != me }.map { $0.username }
+        // Participants and unread count are independent queries — overlap them.
+        async let othersFetch = ChatRoomService.participants(for: room.id, excludingID: me)
+        async let unreadFetch = ChatRoomService.unreadCount(in: room.id, excludingSenderID: me)
+        let others = try await othersFetch
+        let otherNames = others.map { $0.username }
 
         let title: String = {
             if room.associatedEvent != nil { return "Event Chat" }
@@ -115,21 +114,21 @@ final class ChatsInboxVM: ObservableObject {
             return room.name
         }()
 
-        let unread = try await unreadCount(for: room.id, me: me)
+        let unread = try await unreadFetch
 
         var pinned    = false
         var eventDate: Date? = nil
         var expiresAt: Date? = nil
 
         if let eid = room.associatedEvent,
-           let event = try await Amplify.DataStore.query(Event.self, byId: eid) {
+           let event = try await EventService.fetchEvent(byId: eid) {
             eventDate = event.eventDate.foundationDate
             expiresAt = eventDate.map { $0.addingTimeInterval(chatEventExpiryInterval) }
             let expired = expiresAt.map { Date() > $0 } ?? false
             if !expired {
                 if event.hostDJID == me {
                     pinned = true
-                } else if let venue = try await Amplify.DataStore.query(Venue.self, byId: event.venueID),
+                } else if let venue = try await VenueService.fetch(byId: event.venueID),
                           venue.owner?.id == me {
                     pinned = true
                 }
@@ -147,14 +146,6 @@ final class ChatsInboxVM: ObservableObject {
             expiresAt: expiresAt,
             pinned: pinned
         )
-    }
-
-    private func unreadCount(for roomID: String, me: String) async throws -> Int {
-        let msgs = try await Amplify.DataStore.query(
-            Message.self,
-            where: Message.keys.chatRoomID == roomID && Message.keys.isRead == false
-        )
-        return msgs.filter { ($0.sender?.id ?? "") != me }.count
     }
 
     /// Observe Message mutations and refresh.

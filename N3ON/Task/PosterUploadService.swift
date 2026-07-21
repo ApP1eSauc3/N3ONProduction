@@ -15,14 +15,14 @@ import _PhotosUI_SwiftUI
 
 enum PosterUploadService {
     static func uploadFromPickerItem(_ item: PhotosPickerItem, eventId: String,
-                                     access: StorageAccessLevel = .protected) async throws -> String {
+                                     access: StorageAccessLevel = .guest) async throws -> String {
         guard let data = try? await item.loadTransferable(type: Data.self),
                       let image = UIImage(data: data) else { throw UploadError.imageDecodeFailed }
                 return try await uploadUIImage(image, eventId: eventId, access: access)
             }
 
             static func uploadUIImage(_ image: UIImage, eventId: String,
-                                      access: StorageAccessLevel = .protected) async throws -> String {
+                                      access: StorageAccessLevel = .guest) async throws -> String {
                 guard var event = try await Amplify.DataStore.query(Event.self, byId: eventId)
                 else { throw UploadError.eventNotFound }
 
