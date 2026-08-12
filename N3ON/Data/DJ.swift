@@ -16,8 +16,8 @@ struct DJ: Codable, Identifiable {
     let genre: String?
     let profileImageKey: String?
     let currentLocation: DJLocation?
-    // Populated by the caller (e.g. DJService.fetchFollowedDJs sets true for
-    // every returned DJ). Not in the GraphQL response, so excluded from decoding.
+    // Populated by the caller for each returned DJ — not in the GraphQL
+    // response, so excluded from decoding.
     var isFollowedByCurrentUser: Bool = false
 
     enum CodingKeys: String, CodingKey {
