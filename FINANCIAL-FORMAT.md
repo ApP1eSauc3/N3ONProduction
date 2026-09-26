@@ -8,9 +8,89 @@ All money AUD. Constraint honoured throughout: revenue comes only from ticket
 commission, brokered sponsorship, and government aid. No subscriptions, no
 investor money, no user-funded wallet.
 
-> **Pending reconciliation against the mission statement.** Sections 5–7 assume
-> a promoter-hire model inferred from conversation, not quoted from the mission
-> statement. Once that document is available this needs one consistency pass.
+---
+
+## 0. What N3ON is, and where the economics fight it
+
+**The mission.** A virtual ecosystem where **third parties are not required for
+DJs to host events for their communities**. DJs host events with any DJ they
+want, anywhere, including pop-ups. Atypical venues are **guided through the
+licensing** to host DJs and customers outside normal working hours, and to put
+on a great event **at a good price**. N3ON is the facilitator and the platform.
+
+Everything below is measured against that, not against a generic ticketing
+business. Three places where the mission and the arithmetic currently pull in
+opposite directions — each one a product decision, not a modelling error:
+
+### Tension 1 — "no third parties required" versus who is legally allowed to act
+
+The mission's strongest claim is disintermediation. Queensland law blocks it in
+two specific places, and no split of the door changes either:
+
+| Function | Can a DJ or the platform do it alone? |
+|---|---|
+| Sell tickets, collect money, pay the lineup | **Yes** — this is exactly what N3ON removes the middleman from |
+| Put 200 people in an unconventional building | **No.** Only a **building certifier** can approve a Class 9b change and issue the certificate of occupancy (§7) |
+| Sell alcohol | **No.** The permit is available only to an **existing licensee** or a **non-profit** — a for-profit DJ cannot hold it (§7) |
+
+So the honest form of the mission is **"no third-party promoter, agency or
+ticketing incumbent required"** — which is true and valuable — rather than no
+third parties at all. A certifier and, if there is a bar, a licensee remain
+structurally necessary.
+
+**Could N3ON absorb that role itself?** Researched, and the answer is no: **no
+platform anywhere — Australia or overseas — was found holding a liquor licence
+or a master liability policy covering third-party venues' events.** The industry
+does the reverse, pushing cover down to the participant and naming itself as an
+additional insured. See §7 for the four postures tested and the recommended one.
+
+**This wording carries legal risk, not just imprecision.** Australian Consumer
+Law s18 has no due-diligence defence and cannot be disclaimed, and the ACCC's
+stated position is that qualifications must not conflict with the overall
+message. Promising venues are "guided through the licensing" while terms say
+"not legal advice" is that conflict. **Reword the mission before building to
+it** — "we verify your approvals and connect you to the people who issue them"
+is deliverable; "we guide you through licensing" invites a regulator's reading
+the product cannot honour.
+
+### Tension 2 — "a good price" versus what the numbers need
+
+This is the sharpest conflict. The mission wants events affordable; the only
+configuration that pays DJs properly needs **$30 a ticket, which §2 establishes
+as the top of the Brisbane market**, not a good price.
+
+| What the mission wants | What the arithmetic needs |
+|---|---|
+| A good price for customers | $30 face — *at* the ceiling, with no headroom |
+| Accessible, community events | $0–20 is the actual Brisbane norm |
+
+**The resolution is capacity, not price.** At a 300-cap sellout the break-even
+price for two DJs on $750 falls to **$20.86** — inside the norm. Note the
+operating point: **that figure needs a sellout**, while the recommended
+configuration runs at 70% fill, where break-even is **$28.86** — still at the
+ceiling. Capacity solves the price problem only if the room actually fills; the
+recommendation as it stands does not assume it does. Bigger rooms
+and better fill are the only levers that deliver cheap tickets *and* proper DJ
+pay simultaneously, because the cost stack is ~93% fixed (§7). Raising the price
+is the lever that fights the mission; filling the room is the lever that serves
+it.
+
+### Tension 3 — "any DJ they want" versus the lawful pool threshold
+
+The mission wants open, self-assembled lineups. The pool arithmetic caps how
+many DJs a night can lawfully carry:
+
+- **A four-DJ bill needs $2,052 of pool to be lawful** (4 × the $513 award
+  floor) and **$3,000 to be competitive** (4 × $750).
+- A 300-cap room at 70% fill and $30 yields **$1,740** — enough for two DJs,
+  not four.
+
+So "any DJ they want" is unconstrained in *who*, but constrained in *how many*
+at a given room and price. The product should surface this at lineup-building
+time: **as each DJ is added, show what the night now pays each of them**, and
+warn when the next addition pushes the bill below the award floor. That turns a
+legal constraint into a visible design affordance rather than a nasty surprise
+on settlement night.
 
 ---
 
@@ -205,19 +285,96 @@ no sale of any kind.**
 > a building certifier and a liquor lawyer before the product gate is built on
 > them.
 
-**Minimum viable version:**
+### What "guided through the licensing" can actually mean
 
-1. **Only already-approved spaces may list** — gate on verified upload of a
-   certificate of occupancy showing **Class 9b** plus planning approval. This
-   changes the product from "activate unconventional space" to **"fill idle
-   capacity in already-compliant venues"**. Brisbane has real inventory
-   (The Joinery 300, Lightspace 500, EC Venue 200).
-2. **Dry by default**, or route alcohol through an engaged licensee.
-3. **The promoter holds the event-side obligations** — $20m public liability
-   naming the owner, OneMusic, crowd controllers, a curfew set by the noise
-   standard for that location.
+Four postures were tested against how real marketplaces operate. **Every
+platform reached — without exception — positions itself as a non-party and
+pushes licensing responsibility onto the host or guest. The strongest thing any
+of them does is require and check a document; none obtains an approval.**
+
+| Posture | Precedent | Verdict |
+|---|---|---|
+| **Verify and gate** — require the document, block listing without it | Airbnb under the NSW short-stay Code; Peerspace's "no certificate of insurance, booking cancelled" | **Recommended** |
+| **Inform** — jurisdiction checklists, "not legal advice" | Airbnb's responsible-hosting articles | Keep, as the layer underneath |
+| **Guide** — checklists plus referrals to certifiers and licensed caterers | Peerspace refers out by jurisdiction (Action Entertainment in AU) | Defensible if tightly bounded |
+| **Hold the permit** — N3ON is licensee or carries a master policy | **None found, anywhere** | **Do not attempt** |
+
+**The decisive finding is an absence.** No documented platform in Australia or
+elsewhere holds a liquor licence or a master public-liability policy that
+third-party venues' events sit under. Peerspace — the platform with the most
+developed insurance posture — does the *opposite*: it carries nothing itself and
+requires each guest to buy cover naming Peerspace as an additional insured. That
+is the industry's revealed preference.
+
+The nearest real mechanism is a **licensed caterer**: in NSW an on-premises
+licence of the catering class carries a "sale on other premises authorisation",
+letting the licensee serve at a third party's unlicensed space (notice: none
+under 100 patrons, 14 days for 101–1,999). But that is an operating business
+with premises-level obligations, not a software intermediary — and it solves
+only alcohol, not the Class 9b occupancy problem, which is the harder half.
+
+### The liability is in the marketing, not the guidance
+
+I had assumed guiding creates a duty of care that informing avoids. **That
+assumption was too strong.** *Hedley Byrne v Heller* holds that a clear
+disclaimer negates the duty itself, not merely the remedy — which is why
+Peerspace can publish referral lists *and* say "we do not provide any legal
+advice" in the same breath. Assisting operationally while disclaiming the
+advisory character is standard, drafted practice.
+
+**But that correction should not swing too far — three qualifications:**
+
+1. ***Hedley Byrne* is a 1964 English decision.** Australian negligent-
+   misstatement law runs through *Shaddock v Parramatta City Council* and
+   *MLC v Evatt*. Similar, not identical — and this document is otherwise
+   careful to cite Australian instruments.
+2. **The unfair contract terms regime can void a disclaimer** in a standard-form
+   consumer or small-business contract, which is exactly what platform terms
+   are. So "a clear disclaimer negates the duty" is materially weaker here than
+   the bare English statement implies.
+3. **Conduct can outrun the disclaimer.** Sustained operational assistance can
+   support a finding of assumed responsibility despite the words — the same
+   logic the ACCC applies to fine print. And a **referral to a specific
+   certifier who then fails** raises a selection and vetting question that is
+   not advisory at all, so an advisory disclaimer does not reach it.
+
+**The accurate statement: ACL s18 is the largest exposure, not the only one.**
+The residual risk of guiding is low, not negligible.
+
+**The real Australian exposure is statutory.** Australian Consumer Law s18
+misleading-or-deceptive conduct has **no due-diligence defence and cannot be
+disclaimed away**, and the ACCC's position is that "information in fine print
+and qualifications must not conflict with the overall message" — Samsung was
+penalised **$14 million** for exactly that conflict.
+
+> **A mission that promises venues "can be guided through the licensing" while
+> the terms say "not legal advice" is the conflict the ACCC describes.** The
+> exposure is the promise, not the checklist. **Change the words before changing
+> the product.**
+
+### Recommended posture
+
+**The platform verifies that approvals exist; it does not obtain them.**
+
+1. **Gate listing on a verified certificate of occupancy showing Class 9b**,
+   plus planning approval — uploaded as a document, not a typed claim. This is
+   the only mechanism that tracks the binding legal constraint.
+2. **Dry by default**, or route alcohol through a licensed caterer or the
+   venue's own licensee. Never the platform. **Jurisdiction caveat:** the
+   caterer mechanism above is the *NSW* on-premises catering class. **The
+   Queensland analogue was never examined** — and Queensland is the actual
+   market. Verify before relying on it.
+3. **Insurance at checkout** — $20m public liability naming the space owner,
+   with "no certificate, no booking" as the enforcement lever.
 4. **Capacity and curfew as enforced fields**, capped by the certificate of
-   occupancy and the noise assessment.
+   occupancy and the noise assessment — not free text.
+5. **Referrals, not advice** — a jurisdiction-specific list of certifiers and
+   licensed caterers, with "we do not provide legal advice" adjacent to every
+   guidance surface.
+
+This is narrower than the mission's wording but delivers its substance: an
+atypical space *can* get to a lawful event through N3ON, with the platform
+carrying the checklist, the referrals and the gate — just not the permit.
 
 > **`VenueComplianceForm` is nowhere near this.** It collects one licence type
 > and one contractor name from hardcoded placeholder lists, uploads no
@@ -600,11 +757,13 @@ The table above assumes **sellouts**. At the 70% fill modelled elsewhere
 | **70% fill (140 tickets)** | **23** | **38** | **57** |
 
 At a $95k market salary the same grid is 23/38/56 at sellouts and **32/54/80**
-at 70% fill — the $15/70% corner needs 80 events a month, which is past the
-~100-event point where support alone forces a second hire.
+at 70% fill. The worst corner — $15 face at 70% fill — needs **80 events a
+month**, against the ~100-event point where support alone forces a first hire.
+That leaves a window of roughly **20 events**: narrowed, not closed.
 
-**Planning number: 38–57 events/month at 70% fill**, or 27–40 at sellouts —
-state which assumption is in use, and never blend them.
+**Planning number for the $15–20 band: 38–57 events/month at 70% fill**, or
+27–40 at sellouts. At $30 it is 23 and 16 respectively. State both the face
+value and the fill assumption in use, and never blend them.
 
 Against that, **~100 events/month** is where support alone (160–300 hours)
 forces a first hire. **The window between "pays the founder" and "needs a second
@@ -684,9 +843,16 @@ principal case stays near 1. Get agency terms in writing.
 
 ## 16. Confidence and gaps
 
-**Verification status.** Every figure in this document has been re-derived by an
-independent pass that did not write it. The arithmetic is signed off. What
-follows is what the arithmetic *rests* on.
+**Verification status as at 2026-09-26.** Every figure has been re-derived by an
+independent pass that did not write it, most recently after the mission
+reconciliation. That is a snapshot, not a standing guarantee — **any later edit
+re-opens it.** What follows is what the arithmetic *rests* on.
+
+**Legal claims carry weaker provenance than the figures.** The Building Act and
+liquor readings in §7, and equally the ACL s18, *Hedley Byrne* and NSW
+catering-licence claims in the same section, come from research passes rather
+than a lawyer. They are internally coherent and consistently hedged, but none
+has been verified against the instruments by a qualified person.
 
 **The recommendation is supportable pending one phone call, not yet proven.**
 The fitted 300-cap / two-DJ / $30 configuration pays $870/DJ at 70% fill — but:
