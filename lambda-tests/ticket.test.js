@@ -104,3 +104,47 @@ test('input validation and auth', async () => {
   assert.strictEqual((await lambda.handler(req('u', { eventID: 'ev1' }, 'GET'))).statusCode, 405);
   assert.strictEqual((await lambda.handler({ ...req('u', {}), body: 'null' })).statusCode, 400);
 });
+
+test('CREATE_TICKET survives Ticket @auth moving to ownerField "userID" (implicit owner field removed)', { skip: check.SKIP }, () => {
+  const dropTicketOwner = (sdl) => sdl.replace(/(type Ticket [^{]*\{[\s\S]*?)\n\s*owner: String\n/, '$1\n');
+  const res = check.checkAgainst(dropTicketOwner, { CREATE_TICKET: lambda._documents.CREATE_TICKET });
+  assert.deepStrictEqual(res.CREATE_TICKET, []);
+  // Control: the edit really removed the field.
+  const ctl = check.checkAgainst(dropTicketOwner, { probe: 'mutation{ createTicket(input:{eventID:"e",userID:"u",quantity:1,purchaseTime:"2026-01-01T00:00:00Z"}){ owner } }' });
+  assert.match(ctl.probe[0], /Cannot query field "owner" on type "Ticket"/);
+});
+
+test('requiredTally mirrors EventDraftViewModel.requiredTally', () => {
+  const cases = [[100, 0, 40], [100, 20, 40], [100, 40, 20], [100, 100, 20], [300, 30, 55], [300, 60, 28], [600, 25, 80], [600, 200, 40], [200, 10, 40], [201, 0, 55], [501, 0, 80]];
+  for (const [cap, price, want] of cases) assert.strictEqual(lambda._requiredTally(cap, price), want, `${cap}/${price}`);
+});
+
+function tallyWorld(links, capacity = 150) {
+  const w = world();
+  const orig = w.fake.fetch;
+  appsync._setDeps({ fetch: async (url, init) => {
+    const { query } = JSON.parse(init.body);
+    if (query.includes('getVenue')) return { ok: true, status: 200, json: async () => ({ data: { getVenue: { id: 'v1', maxCapacity: capacity, _deleted: null } } }) };
+    if (query.includes('eventDJLinksByEventIDAndCreatedAt')) return { ok: true, status: 200, json: async () => ({ data: { eventDJLinksByEventIDAndCreatedAt: { items: links, nextToken: null } } }) };
+    return orig(url, init);
+  } });
+  return w;
+}
+
+test('tally gate (TALLY_ENFORCED=true) blocks sales until the lineup tally is met', async () => {
+  process.env.TALLY_ENFORCED = 'true';
+  try {
+    let w = tallyWorld([{ coinContribution: 25, _deleted: null }, { coinContribution: 10, _deleted: null }, { coinContribution: 25, _deleted: true }]);
+    let r = await lambda.handler(req('u', { eventID: 'ev1' }));
+    assert.deepStrictEqual([r.statusCode, b(r).errorCode, b(r).current, b(r).required], [409, 'TALLY_NOT_MET', 35, 40]);
+    assert.strictEqual(w.db.event.availableTickets, 5, 'stock untouched');
+    w = tallyWorld([{ coinContribution: 25, _deleted: null }, { coinContribution: 25, _deleted: null }]);
+    r = await lambda.handler(req('u', { eventID: 'ev1' }));
+    assert.strictEqual(b(r).success, true);
+  } finally { delete process.env.TALLY_ENFORCED; }
+});
+
+test('tally gate is off by default (curated mode)', async () => {
+  tallyWorld([]);
+  assert.strictEqual(b(await lambda.handler(req('u', { eventID: 'ev1' }))).success, true);
+});

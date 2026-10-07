@@ -28,3 +28,15 @@ module.exports = function check(docs) {
 };
 
 module.exports.SKIP = SKIP;
+
+/**
+ * Validates against a modified copy of the schema — used to check documents
+ * survive a planned @auth change before it is pushed. `edit(sdl) => sdl`.
+ */
+module.exports.checkAgainst = function checkAgainst(edit, docs) {
+  const sdl = edit(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const altered = buildSchema(PRELUDE + sdl, { assumeValidSDL: true });
+  const out = {};
+  for (const [name, doc] of Object.entries(docs)) out[name] = validate(altered, parse(doc)).map((e) => e.message);
+  return out;
+};

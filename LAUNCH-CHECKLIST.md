@@ -64,7 +64,8 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 - [x] ✅ ~~Replace `EventInviteSheet` direct `EventDJLink` creation~~ — it never created links; joining didn't exist until now.
 - [ ] 👤 `approveVenue` Lambda — not created (new function needs `amplify add function`; ask Claude to write the handler after).
 - [ ] 👤 **Deploy** — see runbook below.
-- [ ] 🤖 Server-side tally gate: nothing server-side stops an owner setting `Event.status = "live"` before the tally is met (the gate is client-side `canLeaveLimbo`). Needed before `platformMode = .community` — e.g. a status-change Lambda or moving publish into a Lambda.
+- [x] ✅ 🤖 Server-side tally gate on **ticket sales**: `purchaseTicket` refuses with `TALLY_NOT_MET` when `TALLY_ENFORCED=true` (off by default = curated mode). Mirrors the client's `requiredTally` formula (tested). Set the env var on purchaseTicket when flipping to `.community`.
+- [ ] 🤖 Remaining gap: an event *owner* can still set `Event.status = "live"` client-side before the tally (the sale is gated, the listing isn't). Close with a publish Lambda if it matters for `.community`.
 
 ### Phase 2 deploy runbook (👤, in this order)
 
@@ -77,6 +78,7 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
    ```
 3. Confirm `rankPromotion-cloudformation-template.json` now has the `apin3onGraphQLAPIIdOutput` parameter, then merge `deploy/rankPromotion-stream-trigger.json` into its `Resources` (validated with cfn-lint; filter only delivers `status = approved` records).
 4. Apply `docs/schema-auth-hardening.md` to `schema.graphql` — at minimum `EventDJLink` owner → `[read]` and `Ticket` → `ownerField: "userID"` must ship **with** this push.
+   4b. `amplify api gql-compile && (cd lambda-tests && npm test)` — **must be green before pushing.** The tests validate every Lambda GraphQL document against the *edited* schema (a selection of a field the edit removed fails here instead of failing every request in production).
 5. `amplify push` → `amplify codegen models` → clean build (⇧⌘K) → ⌘U.
 6. Smoke test with two accounts: host creates event → host link with rank weight appears in limbo tally; host invites DJ → DJ taps **Join lineup** → tally rises; uninvited DJ gets "You need an invite"; free event ticket purchase works and shows in the buyer's tickets; paid event → "Paid tickets aren't available"; two approved endorsements from senior DJs who shared an event → rank +1.
 
@@ -112,5 +114,6 @@ Unchanged — FINANCIAL-FORMAT §15: venue calls (incl. ticketing exclusivity), 
 
 ## Changelog
 
+- **2026-10-08 (later)** — Review fix: `CREATE_TICKET` no longer selects `owner` (the planned `ownerField: "userID"` removes it; new test validates against the reshaped schema). Added runbook step 4b, `TALLY_NOT_MET` gate. Lambda suite 45/45.
 - **2026-10-08** — Phases 0–2 client/Lambda work done on `fix/launch-phase-1-2` (`e72668d` + follow-up). Verified: Xcode suite 41/41, Lambda suite 41/41, no new compiler warnings (66 before and after). Corrected stale memory (deployed state, dead stats service, GROUP bug). Nothing deployed — runbook above.
 - **2026-10-07** — Checklist created from memory, FINANCIAL-FORMAT.md and docs/schema-auth-hardening.md.

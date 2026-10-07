@@ -41,10 +41,3 @@ enum N3ONRESTClient {
         }
     }
 }
-
-/// The shared response envelope. Endpoint-specific fields are decoded by the
-/// caller's own `Decodable` type.
-struct N3ONAPIEnvelope: Decodable {
-    let success: Bool
-    let errorCode: String?
-}

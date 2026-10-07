@@ -74,6 +74,7 @@ final class LambdaContractTests: XCTestCase {
         XCTAssertEqual(TicketPurchaseError(errorCode: "EVENT_ENDED"), .eventEnded)
         XCTAssertEqual(TicketPurchaseError(errorCode: "PAYMENT_REQUIRED"), .paymentRequired)
         XCTAssertEqual(TicketPurchaseError(errorCode: "LIMIT_REACHED"), .limitReached)
+        XCTAssertEqual(TicketPurchaseError(errorCode: "TALLY_NOT_MET"), .tallyNotMet)
         XCTAssertEqual(TicketPurchaseError(errorCode: "INVALID_REQUEST"), .serverError("INVALID_REQUEST"))
     }
 

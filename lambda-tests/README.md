@@ -9,6 +9,8 @@ GraphQL document is validated against the compiled schema
 cd lambda-tests && npm install && npm test
 ```
 
-Run before every `amplify push` that touches `amplify/backend/function/`.
+Run before every `amplify push` that touches `amplify/backend/function/` **or the
+schema** — after editing `schema.graphql`, run `amplify api gql-compile` first so the
+schema checks see the edited shape.
 Re-run after `amplify push` regenerates the schema build — a renamed field fails
 the `*schema*` checks instead of failing in production.

@@ -14,6 +14,11 @@
  * retried on contention. If the ticket write then fails, the decrement is
  * compensated so stock is not lost.
  *
+ * Tally gate: with TALLY_ENFORCED=true, sales stay closed until the lineup's
+ * coinContribution sum reaches the venue tier's required tally (schema
+ * comment on EventDJLink; Prompt/Event/CLAUDE.md). Off by default — curated
+ * mode lets admins publish events without an accrued lineup.
+ *
  * DEPLOY ORDER: the minted Ticket has `owner = null` (CreateTicketInput has no
  * owner field and IAM callers carry no user claims), so the buyer can only read
  * it once Ticket's @auth reads by `ownerField: "userID"` — see
@@ -23,12 +28,31 @@ const { graphql, graphqlAll, GraphQLError } = require('./appsync');
 const { callerSub, parseBody, ok, fail } = require('./http');
 
 const MAX_PER_REQUEST = 10;
+// Server-side tally gate. Off while the platform is in bootstrap/curated mode
+// (CurationConfig.platformMode == .curated, where admins force-publish); set
+// TALLY_ENFORCED=true when flipping to .community.
+const tallyEnforced = () => process.env.TALLY_ENFORCED === 'true';
 const MAX_PER_USER_PER_EVENT = 10;
 const CAS_ATTEMPTS = 5;
 
 const GET_EVENT = /* GraphQL */ `
   query GetEvent($id: ID!) {
-    getEvent(id: $id) { id status eventDate ticketPrice availableTickets _version _deleted }
+    getEvent(id: $id) { id venueID status eventDate ticketPrice availableTickets _version _deleted }
+  }
+`;
+
+const GET_VENUE = /* GraphQL */ `
+  query GetVenue($id: ID!) {
+    getVenue(id: $id) { id maxCapacity _deleted }
+  }
+`;
+
+const EVENT_LINKS = /* GraphQL */ `
+  query EventLinks($eventID: ID!, $nextToken: String) {
+    eventDJLinksByEventIDAndCreatedAt(eventID: $eventID, limit: 100, nextToken: $nextToken) {
+      items { coinContribution _deleted }
+      nextToken
+    }
   }
 `;
 
@@ -46,6 +70,10 @@ const MY_TICKETS = /* GraphQL */ `
   }
 `;
 
+// NOTE: no `owner` in CREATE_TICKET's selection — once Ticket's @auth uses
+// `ownerField: "userID"` (docs/schema-auth-hardening.md) the implicit `owner`
+// field no longer exists on Ticket and selecting it would fail validation.
+
 // Full Event scalars + sync metadata: subscribers (map, event detail) receive
 // only the fields this mutation selects.
 const SET_STOCK = /* GraphQL */ `
@@ -62,10 +90,35 @@ const CREATE_TICKET = /* GraphQL */ `
   mutation CreateTicket($input: CreateTicketInput!) {
     createTicket(input: $input) {
       id eventID userID quantity purchaseTime pricePaid createdAt updatedAt
-      owner _version _deleted _lastChangedAt
+      _version _deleted _lastChangedAt
     }
   }
 `;
+
+/**
+ * Mirror of EventDraftViewModel.requiredTally: capacity tier base (40/55/80),
+ * scaled by a price factor clamped to [0.5, 1.0], floored at 10. Free events
+ * use the base. Keep the two in lockstep.
+ */
+function requiredTally(capacity, ticketPrice) {
+  let base;
+  let midpointPrice;
+  if (capacity <= 200) { base = 40; midpointPrice = 20; }
+  else if (capacity <= 500) { base = 55; midpointPrice = 30; }
+  else { base = 80; midpointPrice = 50; }
+  if (!(ticketPrice > 0)) return base;
+  const factor = Math.min(1.0, Math.max(0.5, midpointPrice / ticketPrice));
+  return Math.max(10, Math.round(base * factor));
+}
+
+async function tallyMet(event) {
+  const venue = (await graphql(GET_VENUE, { id: event.venueID })).getVenue;
+  if (!venue || venue._deleted) return { met: false, current: 0, required: null };
+  const links = await graphqlAll(EVENT_LINKS, { eventID: event.id }, (d) => d.eventDJLinksByEventIDAndCreatedAt);
+  const current = links.filter((l) => !l._deleted).reduce((n, l) => n + l.coinContribution, 0);
+  const required = requiredTally(venue.maxCapacity, event.ticketPrice);
+  return { met: current >= required, current, required };
+}
 
 function isConditionFailure(err) {
   const types = (err instanceof GraphQLError && err.errorTypes) || [];
@@ -107,6 +160,10 @@ async function purchase(sub, eventID, quantity) {
   if (!event) return fail(404, 'EVENT_NOT_FOUND');
   if (event.status !== 'live') return fail(409, 'EVENT_NOT_ON_SALE', { status: event.status });
   if (new Date(event.eventDate).getTime() <= Date.now()) return fail(409, 'EVENT_ENDED');
+  if (tallyEnforced()) {
+    const tally = await tallyMet(event);
+    if (!tally.met) return fail(409, 'TALLY_NOT_MET', { current: tally.current, required: tally.required });
+  }
   if (event.ticketPrice > 0) return fail(402, 'PAYMENT_REQUIRED');
   if (event.availableTickets < quantity) {
     return fail(409, 'SOLD_OUT', { remainingStock: Math.max(0, event.availableTickets) });
@@ -165,4 +222,5 @@ exports.handler = async (event) => {
 };
 
 // Exposed for unit tests only.
-exports._documents = { GET_EVENT, MY_TICKETS, SET_STOCK, CREATE_TICKET };
+exports._documents = { GET_EVENT, GET_VENUE, EVENT_LINKS, MY_TICKETS, SET_STOCK, CREATE_TICKET };
+exports._requiredTally = requiredTally;

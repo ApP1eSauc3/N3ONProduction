@@ -15,6 +15,7 @@ enum TicketPurchaseError: LocalizedError, Equatable {
     case eventEnded
     case paymentRequired
     case limitReached
+    case tallyNotMet
     case serverError(String)
 
     /// Maps the purchaseTicket Lambda's `errorCode`
@@ -27,6 +28,7 @@ enum TicketPurchaseError: LocalizedError, Equatable {
         case "EVENT_ENDED":       self = .eventEnded
         case "PAYMENT_REQUIRED":  self = .paymentRequired
         case "LIMIT_REACHED":     self = .limitReached
+        case "TALLY_NOT_MET":     self = .tallyNotMet
         default:                  self = .serverError(errorCode ?? "Unknown")
         }
     }
@@ -39,6 +41,7 @@ enum TicketPurchaseError: LocalizedError, Equatable {
         case .eventEnded:          return "This event has already started."
         case .paymentRequired:     return "Paid tickets aren't available in the app yet."
         case .limitReached:        return "You've reached the ticket limit for this event."
+        case .tallyNotMet:         return "Ticket sales open once the DJ lineup is confirmed."
         case .serverError(let m):  return "Purchase failed: \(m)"
         }
     }
