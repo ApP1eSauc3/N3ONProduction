@@ -136,9 +136,6 @@ struct UserProfileView: View {
                         }
                     }
                 }
-                .onPreferenceChange(HeaderHeightKey.self) { h in
-                    headerHeight = h
-                }
                 .zIndex(1)
 
                 // ── QR full-screen overlay ─────────────────────────────────────
@@ -155,6 +152,12 @@ struct UserProfileView: View {
                     ))
                 }
             } // ZStack
+            // Scoped to the ZStack (not the ScrollView) — ProfileHeaderView, the
+            // HeaderHeightKey emitter, is a ZStack sibling of the ScrollView, so
+            // this must sit above both to see the preference bubble up.
+            .onPreferenceChange(HeaderHeightKey.self) { h in
+                headerHeight = h
+            }
             } // GeometryReader
             .task { await vm.load() }
             .task(id: vm.username) {

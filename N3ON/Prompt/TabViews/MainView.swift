@@ -31,8 +31,12 @@ struct MainView: View {
         .toolbarBackground(Color.black, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .tint(Color("neonPurpleBackground"))
-          
+
         }
     }
 
- 
+#Preview {
+    MainView()
+        .environmentObject(AuthViewModel())
+}
+
