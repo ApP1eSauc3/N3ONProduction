@@ -116,6 +116,7 @@ final class EventDraftViewModel: ObservableObject {
     @Published var didSubmitSuccessfully = false
 
     private var tallyObserverTask: Task<Void, Never>?
+    private var hostJoinTask: Task<Void, Never>?
 
     // MARK: Constants
     let venueShareRatio: Double = 0.4
@@ -179,9 +180,36 @@ final class EventDraftViewModel: ObservableObject {
             try await EventService.save(event)
             createdEventID = event.id
             startTallyObserver()
+            joinOwnLineup(eventID: event.id)
             currentStep = .limbo
         } catch {
             submissionError = "Could not save event: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - Host lineup link
+
+    /// Puts the host on their own lineup so their rank counts toward the tally.
+    /// Best-effort and non-blocking: the joinEvent Lambda reads the Event from
+    /// AppSync, and DataStore syncs the just-saved Event asynchronously, so an
+    /// early call can see EVENT_NOT_FOUND — retried with backoff. The tally
+    /// observer picks up the resulting EventDJLink via DataStore sync.
+    private func joinOwnLineup(eventID: String) {
+        hostJoinTask?.cancel()
+        hostJoinTask = Task {
+            for delay: UInt64 in [0, 1, 2, 4, 8] {
+                if delay > 0 { try? await Task.sleep(nanoseconds: delay * 1_000_000_000) }
+                guard !Task.isCancelled else { return }
+                do {
+                    try await EventService.joinLineup(eventID: eventID)
+                    return
+                } catch JoinLineupError.eventNotFound {
+                    continue   // not synced to the cloud yet
+                } catch {
+                    print("⚠️ Host lineup join failed: \(error.localizedDescription)")
+                    return
+                }
+            }
         }
     }
 
@@ -281,6 +309,8 @@ final class EventDraftViewModel: ObservableObject {
     func reset() {
         tallyObserverTask?.cancel()
         tallyObserverTask  = nil
+        hostJoinTask?.cancel()
+        hostJoinTask       = nil
         currentStep        = .datePicker
         posterImage        = nil
         posterKey          = nil

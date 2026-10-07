@@ -1,5 +1,31 @@
 {
-  "key1": "value1",
-  "key2": "value2",
-  "key3": "value3"
+  "Records": [
+    {
+      "eventName": "MODIFY",
+      "dynamodb": {
+        "NewImage": {
+          "fromUserID": {
+            "S": "CANDIDATE_USER_ID"
+          },
+          "targetRank": {
+            "N": "2"
+          },
+          "status": {
+            "S": "approved"
+          }
+        },
+        "OldImage": {
+          "fromUserID": {
+            "S": "CANDIDATE_USER_ID"
+          },
+          "targetRank": {
+            "N": "2"
+          },
+          "status": {
+            "S": "pending"
+          }
+        }
+      }
+    }
+  ]
 }

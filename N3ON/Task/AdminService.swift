@@ -3,9 +3,17 @@
 //
 // Admin curation actions for the bootstrap phase (see Data/CurationConfig.swift).
 //
-// Every write here is also authorised server-side by the `AdminUser` @auth rules
-// in schema.graphql — a non-admin call is rejected by AppSync on sync. The UI only
-// surfaces these where `AccessControlService.isAdmin()` is true.
+// Server-side enforcement is NOT uniform — check schema.graphql per model:
+//   • Event (setFeatured, forcePublish): enforced. Only the owner or `AdminUser`
+//     may update, so a non-admin call is rejected by AppSync on sync.
+//   • User (setDJRank, setCurated): NOT enforced. User's @auth also grants full
+//     CRUD to DJUser/VenueOwnerUser/UserGroup, so any signed-in user can make the
+//     same write. Closing this is the schema hardening proposal in
+//     docs/schema-auth-hardening.md (human-owned schema change).
+//   • EventDJLink (attachDJ): admin rule exists, but any owner can also create a
+//     link with a self-chosen coinContribution until joinEvent is the only writer.
+// The UI only surfaces these where `AccessControlService.isAdmin()` is true —
+// that is a UX gate, not a security boundary.
 //
 // These SUPERSEDE ranking rules during bootstrap; they do not remove or alter the
 // ranking system itself.

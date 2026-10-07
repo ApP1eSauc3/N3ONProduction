@@ -60,8 +60,9 @@ struct MessageRow: View {
     }
 
     @ViewBuilder private var messageContent: some View {
-        if message.content.hasPrefix("{\"type\":\"event_invite\"") {
-            EventInviteCard(content: message.content)
+        // Parse, never prefix-match — JSON key order is not guaranteed.
+        if let invite = EventInvitePayload.parse(message.content) {
+            EventInviteCard(invite: invite, isRecipient: !message.isCurrentUser)
         } else {
             textBubble
         }
@@ -101,25 +102,21 @@ struct MessageRow: View {
 
     // MARK: - Event invite card
 
-    /// Rendered in place of the text bubble when content is a JSON event invitation.
+    /// Rendered in place of the text bubble when content is an event invitation.
+    /// The recipient can accept, which joins them to the lineup via the
+    /// joinEvent Lambda (it verifies the invite server-side).
     private struct EventInviteCard: View {
-        let content: String
+        let invite: EventInvitePayload
+        let isRecipient: Bool
 
-        private var decoded: [String: String] {
-            guard let data = content.data(using: .utf8),
-                  let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String]
-            else { return [:] }
-            return dict
-        }
+        private enum JoinState: Equatable { case idle, joining, joined, failed(String) }
+        @State private var joinState: JoinState = .idle
 
-        private var eventName: String { decoded["eventName"] ?? "Event Invitation" }
-        private var venueName: String { decoded["venueName"] ?? "" }
         private var eventDate: String {
-            guard let iso = decoded["eventDate"],
-                  let date = ISO8601DateFormatter().date(from: iso)
-            else { return "" }
-            return date.formatted(date: .abbreviated, time: .omitted)
+            invite.date?.formatted(date: .abbreviated, time: .omitted) ?? ""
         }
+        private var eventName: String { invite.eventName.isEmpty ? "Event Invitation" : invite.eventName }
+        private var venueName: String { invite.venueName }
 
         var body: some View {
             VStack(alignment: .leading, spacing: 10) {
@@ -147,6 +144,8 @@ struct MessageRow: View {
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.6))
                 }
+
+                if isRecipient { acceptControl }
             }
             .padding(12)
             .background(
@@ -162,6 +161,57 @@ struct MessageRow: View {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color("neonPurpleBackground").opacity(0.3), lineWidth: 1)
             )
+        }
+
+        @ViewBuilder private var acceptControl: some View {
+            switch joinState {
+            case .joined:
+                Label("You're on the lineup", systemImage: "checkmark.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color("neonPurpleBackground"))
+            case .idle, .joining, .failed:
+                VStack(alignment: .leading, spacing: 4) {   // DESIGN §1.3 space1
+                    Button {
+                        Task { await accept() }
+                    } label: {
+                        HStack(spacing: 8) {               // DESIGN §1.3 space2
+                            if joinState == .joining {
+                                ProgressView().tint(Color("neonPurpleBackground"))
+                            }
+                            Text("Join lineup")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .foregroundStyle(Color("neonPurpleBackground"))
+                        .padding(.horizontal, 16)          // DESIGN §1.3 space4
+                        .padding(.vertical, 8)             // DESIGN §1.3 space2
+                        .background(Color("neonPurpleBackground").opacity(0.12))
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color("neonPurpleBackground").opacity(0.4), lineWidth: 1))
+                        .frame(minHeight: 44)              // HIG minimum tap target
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(joinState == .joining)
+
+                    if case .failed(let message) = joinState {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+            }
+        }
+
+        private func accept() async {
+            guard joinState != .joining else { return }
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()   // DESIGN §4 primary CTA
+            joinState = .joining
+            do {
+                try await EventService.joinLineup(eventID: invite.eventID)
+                withAnimation(.easeInOut(duration: 0.25)) { joinState = .joined }   // DESIGN §4 state transition
+            } catch {
+                joinState = .failed(error.localizedDescription)
+            }
         }
     }
 

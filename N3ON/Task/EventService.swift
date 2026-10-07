@@ -74,4 +74,39 @@ enum EventService {
     static func save(_ event: Event) async throws {
         try await Amplify.DataStore.save(event)
     }
+
+    // MARK: - Lineup (joinEvent Lambda)
+
+    /// Adds the signed-in DJ to an event's lineup via POST /events/join.
+    /// The Lambda verifies the caller is the host or holds the host's chat
+    /// invite, and stamps rankAtJoining / coinContribution server-side — the
+    /// client never writes EventDJLink. Idempotent: re-joining returns the
+    /// existing link. Returns the DJ's coin contribution to the tally.
+    @discardableResult
+    static func joinLineup(eventID: String) async throws -> JoinLineupResult {
+        let data: Data
+        do {
+            data = try await N3ONRESTClient.post(path: "/events/join", json: ["eventID": eventID])
+        } catch {
+            throw JoinLineupError.serverError(error.localizedDescription)
+        }
+        return try decodeJoin(data)
+    }
+
+    /// Decodes the Lambda envelope. Internal for unit tests.
+    static func decodeJoin(_ data: Data) throws -> JoinLineupResult {
+        guard let response = try? JSONDecoder().decode(JoinLineupResult.self, from: data) else {
+            throw JoinLineupError.serverError("Unexpected response")
+        }
+        guard response.success else { throw JoinLineupError(errorCode: response.errorCode) }
+        return response
+    }
+}
+
+struct JoinLineupResult: Decodable, Equatable {
+    let success: Bool
+    let errorCode: String?
+    let linkID: String?
+    let coinContribution: Int?
+    let alreadyJoined: Bool?
 }

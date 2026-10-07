@@ -4,9 +4,9 @@
 // (followed DJs sorted first, then all others). Tapping "Invite" opens or
 // creates a DJ↔DJ chat room and sends an event invitation message.
 //
-// Invitation message format (stored in Message.content):
-//   {"type":"event_invite","eventID":"...","eventName":"...","venueName":"...","eventDate":"<ISO8601>"}
-// MessageRow detects this prefix and renders an EventInviteCard instead of a text bubble.
+// Invitation message format (stored in Message.content) is defined once in
+// Data/EventInvitePayload.swift. MessageRow parses it and renders an
+// EventInviteCard (with Accept for the recipient) instead of a text bubble.
 
 import SwiftUI
 
@@ -162,15 +162,13 @@ struct EventInviteSheet: View {
         do {
             let room = try await ChatRoomService.openDJDirectRoom(userA: myUser, userB: dj)
 
-            let payload: [String: String] = [
-                "type":      "event_invite",
-                "eventID":   context.eventID,
-                "eventName": context.eventName,
-                "venueName": context.venueName,
-                "eventDate": ISO8601DateFormatter().string(from: context.eventDate)
-            ]
-            guard let jsonData   = try? JSONSerialization.data(withJSONObject: payload),
-                  let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+            let payload = EventInvitePayload(
+                eventID:   context.eventID,
+                eventName: context.eventName,
+                venueName: context.venueName,
+                eventDate: context.eventDate
+            )
+            guard let jsonString = payload.encodedContent() else { return }
 
             try await ChatRoomService.send(content: jsonString, in: room.id, from: myUser)
             invitedIDs.insert(dj.id)
