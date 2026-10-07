@@ -1,0 +1,30 @@
+{
+  "EndorsementStreamReadPolicy": {
+    "Type": "AWS::IAM::Policy",
+    "Properties": {
+      "PolicyName": "endorsement-request-stream-read",
+      "Roles": [{ "Ref": "LambdaExecutionRole" }],
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [{
+          "Effect": "Allow",
+          "Action": ["dynamodb:DescribeStream", "dynamodb:GetRecords", "dynamodb:GetShardIterator", "dynamodb:ListStreams"],
+          "Resource": { "Fn::ImportValue": { "Fn::Sub": "${apin3onGraphQLAPIIdOutput}:GetAtt:EndorsementRequestTable:StreamArn" } }
+        }]
+      }
+    }
+  },
+  "EndorsementStreamMapping": {
+    "Type": "AWS::Lambda::EventSourceMapping",
+    "DependsOn": ["EndorsementStreamReadPolicy"],
+    "Properties": {
+      "EventSourceArn": { "Fn::ImportValue": { "Fn::Sub": "${apin3onGraphQLAPIIdOutput}:GetAtt:EndorsementRequestTable:StreamArn" } },
+      "FunctionName": { "Ref": "LambdaFunction" },
+      "StartingPosition": "LATEST",
+      "BatchSize": 10,
+      "MaximumRetryAttempts": 5,
+      "BisectBatchOnFunctionError": true,
+      "FilterCriteria": { "Filters": [{ "Pattern": "{\"dynamodb\":{\"NewImage\":{\"status\":{\"S\":[\"approved\"]}}}}" }] }
+    }
+  }
+}
