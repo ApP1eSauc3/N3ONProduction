@@ -21,7 +21,7 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 | `joinEvent`, `purchaseTicket`, `rankPromotion` Lambdas | deployed **as stubs**; real code committed, not pushed | `amplify-meta.json`, `e72668d` |
 | GSIs `EventDJLink.byEvent`, `EndorsementRequest.byToUser` | ✅ already in schema | `schema.graphql` |
 | EndorsementRequest DynamoDB stream | ✅ `NEW_AND_OLD_IMAGES` (transformer default) | `build/stacks/EndorsementRequest.json` |
-| Group IAM roles / identity-pool role mapping | ❓ **unverified** — read was blocked in-session | run the commands in Phase 1 |
+| Group IAM roles / identity-pool role mapping | ✅ **dormant** (verified 2026-10-09) — app pool `2d4be7fc…` has no `RoleMappings`, classic flow off; every user gets `amplify-n3on-dev-4ad86-authRole`. But the roles still carry DynamoDB-full + S3-full (DJ/Venue) and DynamoDB-read (Customer), and trust a **different** pool `eec3d948…` with no `amr` condition | Liam's CLI output |
 | Total Cognito users | 1 (you; in `DJUser` + `AdminUser`) | `list-users` |
 
 ---
@@ -37,12 +37,15 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 
 ## Phase 1 — Security foundation
 
-- [ ] 👤 **Verify the group IAM roles first** — if `DJUserRole`/`VenueOwnerUserRole` really hold DynamoDB-full and users can assume them via the identity pool, every `@auth` rule is bypassable:
+- [x] ✅ 👤 Group IAM roles verified dormant for the app's identity pool (2026-10-09) — `@auth` hardening is meaningful.
+- [ ] 👤 Check whether identity pool `us-east-1:eec3d948-7a15-46e7-bc4e-40b1615cc802` (trusted by `DJUserRole`) still exists: `aws cognito-identity list-identity-pools --max-results 20 --region us-east-1`.
+- [ ] 👤 Detach the unused broad policies (`AmazonDynamoDBFullAccess`, `AmazonS3FullAccess` from DJUserRole/VenueOwnerUserRole; `AmazonDynamoDBReadOnlyAccess` from CustomerUserRole) — nothing in the app is issued these roles.
+- Original verification commands (note `--region us-east-1` on Cognito calls — the CLI default region isn't us-east-1):
   ```bash
   aws iam list-attached-role-policies --role-name DJUserRole
   aws iam list-role-policies          --role-name DJUserRole
   aws iam list-attached-role-policies --role-name VenueOwnerUserRole
-  aws cognito-identity get-identity-pool-roles --identity-pool-id "$(jq -r '.auth.n3on3dbadbe4.output.IdentityPoolId' amplify/backend/amplify-meta.json)"
+  aws cognito-identity get-identity-pool-roles --identity-pool-id us-east-1:2d4be7fc-b7c1-4936-b0d3-9012d2d5d73a --region us-east-1
   ```
 - [x] ✅ 🤖 Schema proposal revised — **the old `User`/`Ticket` rules would have broken production** (implicit `owner` is null on existing User rows and on Lambda-minted tickets). Now `ownerField: "id"` / `ownerField: "userID"`; `Message`/`ChatRoom` participant scoping added. Verified against the compiled resolvers.
 - [ ] 👤 Apply the proposal to `schema.graphql` — in the **same push** as the Lambdas (Phase 2 runbook).
@@ -114,6 +117,7 @@ Unchanged — FINANCIAL-FORMAT §15: venue calls (incl. ticketing exclusivity), 
 
 ## Changelog
 
+- **2026-10-09** — IAM verified: group roles over-broad but dormant (no role mapping, classic flow off, trust points at another pool `eec3d948…`). Detach + check that pool.
 - **2026-10-08 (later)** — Review fix: `CREATE_TICKET` no longer selects `owner` (the planned `ownerField: "userID"` removes it; new test validates against the reshaped schema). Added runbook step 4b, `TALLY_NOT_MET` gate. Lambda suite 45/45.
 - **2026-10-08** — Phases 0–2 client/Lambda work done on `fix/launch-phase-1-2` (`e72668d` + follow-up). Verified: Xcode suite 41/41, Lambda suite 41/41, no new compiler warnings (66 before and after). Corrected stale memory (deployed state, dead stats service, GROUP bug). Nothing deployed — runbook above.
 - **2026-10-07** — Checklist created from memory, FINANCIAL-FORMAT.md and docs/schema-auth-hardening.md.
