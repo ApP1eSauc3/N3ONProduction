@@ -38,7 +38,8 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 ## Phase 1 — Security foundation
 
 - [x] ✅ 👤 Group IAM roles verified dormant for the app's identity pool (2026-10-09) — `@auth` hardening is meaningful.
-- [ ] 👤 Check whether identity pool `us-east-1:eec3d948-7a15-46e7-bc4e-40b1615cc802` (trusted by `DJUserRole`) still exists: `aws cognito-identity list-identity-pools --max-results 20 --region us-east-1`.
+- [x] ✅ Identity pool `eec3d948…` (trusted by `DJUserRole`) no longer exists — the group roles are fully inert.
+- [ ] 👤 Optional: leftover pools `testAuthIdentityPool__staging` (`ab027bb7…`) and `userPoolManagement` (`b7c16895…`) — check `AllowUnauthenticatedIdentities`; delete if unused.
 - [ ] 👤 Detach the unused broad policies (`AmazonDynamoDBFullAccess`, `AmazonS3FullAccess` from DJUserRole/VenueOwnerUserRole; `AmazonDynamoDBReadOnlyAccess` from CustomerUserRole) — nothing in the app is issued these roles.
 - Original verification commands (note `--region us-east-1` on Cognito calls — the CLI default region isn't us-east-1):
   ```bash
@@ -117,7 +118,7 @@ Unchanged — FINANCIAL-FORMAT §15: venue calls (incl. ticketing exclusivity), 
 
 ## Changelog
 
-- **2026-10-09** — IAM verified: group roles over-broad but dormant (no role mapping, classic flow off, trust points at another pool `eec3d948…`). Detach + check that pool.
+- **2026-10-09** — Pool `eec3d948…` confirmed deleted → group roles inert. IAM verified: group roles over-broad but dormant (no role mapping, classic flow off, trust points at another pool `eec3d948…`). Detach + check that pool.
 - **2026-10-08 (later)** — Review fix: `CREATE_TICKET` no longer selects `owner` (the planned `ownerField: "userID"` removes it; new test validates against the reshaped schema). Added runbook step 4b, `TALLY_NOT_MET` gate. Lambda suite 45/45.
 - **2026-10-08** — Phases 0–2 client/Lambda work done on `fix/launch-phase-1-2` (`e72668d` + follow-up). Verified: Xcode suite 41/41, Lambda suite 41/41, no new compiler warnings (66 before and after). Corrected stale memory (deployed state, dead stats service, GROUP bug). Nothing deployed — runbook above.
 - **2026-10-07** — Checklist created from memory, FINANCIAL-FORMAT.md and docs/schema-auth-hardening.md.
