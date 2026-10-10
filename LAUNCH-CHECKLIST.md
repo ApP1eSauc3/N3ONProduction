@@ -39,7 +39,8 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 
 - [x] ✅ 👤 Group IAM roles verified dormant for the app's identity pool (2026-10-09) — `@auth` hardening is meaningful.
 - [x] ✅ Identity pool `eec3d948…` (trusted by `DJUserRole`) no longer exists — the group roles are fully inert.
-- [ ] 👤 Optional: leftover pools `testAuthIdentityPool__staging` (`ab027bb7…`) and `userPoolManagement` (`b7c16895…`) — check `AllowUnauthenticatedIdentities`; delete if unused.
+- [x] ✅ Leftover pools audited (2026-10-10): `userPoolManagement` has no guest access. `testAuthIdentityPool__staging` (old **n3onv2** project) allows guests, but its guest role only reads/lists `public/` + `protected/` of `imagestorage51704-staging` (**empty, 0 objects**) and sends events to one old Pinpoint app — no access to the live app.
+- [ ] 👤 Confirm `aws iam list-attached-role-policies --role-name amplify-n3onv2-staging-51704-unauthRole` is empty, then disable guest access on that pool (`update-identity-pool … --no-allow-unauthenticated-identities --region us-east-1`); retire the n3onv2 environment when convenient.
 - [ ] 👤 Detach the unused broad policies (`AmazonDynamoDBFullAccess`, `AmazonS3FullAccess` from DJUserRole/VenueOwnerUserRole; `AmazonDynamoDBReadOnlyAccess` from CustomerUserRole) — nothing in the app is issued these roles.
 - Original verification commands (note `--region us-east-1` on Cognito calls — the CLI default region isn't us-east-1):
   ```bash
@@ -118,6 +119,7 @@ Unchanged — FINANCIAL-FORMAT §15: venue calls (incl. ticketing exclusivity), 
 
 ## Changelog
 
+- **2026-10-10** — Old n3onv2 guest pool audited: scoped to an empty bucket + old Pinpoint app; no live-app exposure.
 - **2026-10-09** — Pool `eec3d948…` confirmed deleted → group roles inert. IAM verified: group roles over-broad but dormant (no role mapping, classic flow off, trust points at another pool `eec3d948…`). Detach + check that pool.
 - **2026-10-08 (later)** — Review fix: `CREATE_TICKET` no longer selects `owner` (the planned `ownerField: "userID"` removes it; new test validates against the reshaped schema). Added runbook step 4b, `TALLY_NOT_MET` gate. Lambda suite 45/45.
 - **2026-10-08** — Phases 0–2 client/Lambda work done on `fix/launch-phase-1-2` (`e72668d` + follow-up). Verified: Xcode suite 41/41, Lambda suite 41/41, no new compiler warnings (66 before and after). Corrected stale memory (deployed state, dead stats service, GROUP bug). Nothing deployed — runbook above.
