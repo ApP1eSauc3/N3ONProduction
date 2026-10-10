@@ -12,7 +12,6 @@ struct CustomMapView: UIViewRepresentable {
     // Annotation sources
     var venues: [Venue]
     var visibleDJPins: [DJMapPin]
-    var groupLocations: [GroupMemberLocation]
     var allEvents: [Event]
     var role: AppRole
 
@@ -47,11 +46,8 @@ struct CustomMapView: UIViewRepresentable {
             mapView.setRegion(region, animated: true)
         }
 
-        // Preserve group member annotations — remove everything else
-        let nonGroupAnnotations = mapView.annotations.filter {
-            !($0 is GroupMemberAnnotation) && !($0 is MKUserLocation)
-        }
-        mapView.removeAnnotations(nonGroupAnnotations)
+        let existingAnnotations = mapView.annotations.filter { !($0 is MKUserLocation) }
+        mapView.removeAnnotations(existingAnnotations)
 
         // Venue annotations
         let venueAnnotations = venues.map { venue -> VenueAnnotation in
@@ -69,10 +65,7 @@ struct CustomMapView: UIViewRepresentable {
             DJPinAnnotation(coordinate: dj.coordinate, djName: dj.djName, glowColor: dj.glowColor)
         }
 
-        // Group member annotations
-        let groupAnnotations = groupLocations.map { GroupMemberAnnotation(member: $0) }
-
-        let allAnnotations: [any MKAnnotation] = venueAnnotations + djAnnotations + groupAnnotations
+        let allAnnotations: [any MKAnnotation] = venueAnnotations + djAnnotations
         mapView.addAnnotations(allAnnotations)
     }
 
@@ -174,17 +167,6 @@ struct CustomMapView: UIViewRepresentable {
                 view.glyphText = "🎧"
                 view.canShowCallout = true
                 view.markerTintColor = djAnnotation.glowColor
-                return view
-            }
-
-            if let groupAnnotation = annotation as? GroupMemberAnnotation {
-                let identifier = "GroupMemberPin"
-                let view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
-                    ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
-                view.annotation = annotation
-                view.canShowCallout = true
-                view.markerTintColor = .systemGreen
-                view.glyphText = "📍"
                 return view
             }
 

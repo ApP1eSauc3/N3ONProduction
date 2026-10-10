@@ -27,7 +27,6 @@ struct MapView: View {
                 region: $viewModel.mapRegion,
                 venues: viewModel.venues,
                 visibleDJPins: viewModel.djPins,
-                groupLocations: [],
                 allEvents: viewModel.events,
                 role: viewModel.role,
                 onDoubleTap: handleDoubleTap,

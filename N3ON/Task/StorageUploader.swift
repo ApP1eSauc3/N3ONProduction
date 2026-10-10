@@ -12,7 +12,7 @@
 //
 // 3. All methods are now consistently async throws — no silent swallowing.
 //
-// ACCESS LEVEL CONVENTION (mirrored in StorageService.swift)
+// ACCESS LEVEL CONVENTION
 //   • .guest     — anything displayed to OTHER users: avatars, DJ audio,
 //                  event posters, venue imagery. (Upload still requires auth;
 //                  "guest" only means the read path is not identity-scoped.)
