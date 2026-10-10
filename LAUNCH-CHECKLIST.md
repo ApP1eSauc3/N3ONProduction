@@ -43,7 +43,7 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 - [x] ✅ 👤 Group IAM roles verified dormant for the app's identity pool (2026-10-09) — `@auth` hardening is meaningful.
 - [x] ✅ Identity pool `eec3d948…` (trusted by `DJUserRole`) no longer exists — the group roles are fully inert.
 - [x] ✅ Leftover pools audited (2026-10-10): `userPoolManagement` has no guest access. `testAuthIdentityPool__staging` (old **n3onv2** project) allows guests, but its guest role only reads/lists `public/` + `protected/` of `imagestorage51704-staging` (**empty, 0 objects**) and sends events to one old Pinpoint app — no access to the live app.
-- [ ] 👤 (attached policies confirmed empty 2026-10-10) Disable guest access on that pool (`update-identity-pool … --no-allow-unauthenticated-identities --region us-east-1`); retire the n3onv2 environment when convenient.
+- [x] ✅ 👤 Guest access disabled on `testAuthIdentityPool__staging` (2026-10-10). Side effect: `update-identity-pool` replaces the full config, so its user-pool provider link was also removed — the pool now issues no credentials (fine; unused). Retire the old n3onv2 Amplify app when convenient (never `d1oif2gjomnlld`).
 - [ ] 👤 Detach the unused broad policies (`AmazonDynamoDBFullAccess`, `AmazonS3FullAccess` from DJUserRole/VenueOwnerUserRole; `AmazonDynamoDBReadOnlyAccess` from CustomerUserRole) — nothing in the app is issued these roles.
 - Original verification commands (note `--region us-east-1` on Cognito calls — the CLI default region isn't us-east-1):
   ```bash
