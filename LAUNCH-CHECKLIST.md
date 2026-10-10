@@ -12,7 +12,10 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 
 ---
 
-## What is actually deployed (verified 2026-10-07/08)
+## What is actually deployed (verified 2026-10-07/10)
+
+**Live backend = Amplify project N3ON, env `dev`, app `d1oif2gjomnlld`** (from `amplifyconfiguration.json`). `n3onv2`/staging and the other Amplify apps are older iterations; the app does not use them.
+
 
 | Thing | State | Evidence |
 |---|---|---|
@@ -40,7 +43,7 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 - [x] ✅ 👤 Group IAM roles verified dormant for the app's identity pool (2026-10-09) — `@auth` hardening is meaningful.
 - [x] ✅ Identity pool `eec3d948…` (trusted by `DJUserRole`) no longer exists — the group roles are fully inert.
 - [x] ✅ Leftover pools audited (2026-10-10): `userPoolManagement` has no guest access. `testAuthIdentityPool__staging` (old **n3onv2** project) allows guests, but its guest role only reads/lists `public/` + `protected/` of `imagestorage51704-staging` (**empty, 0 objects**) and sends events to one old Pinpoint app — no access to the live app.
-- [ ] 👤 Confirm `aws iam list-attached-role-policies --role-name amplify-n3onv2-staging-51704-unauthRole` is empty, then disable guest access on that pool (`update-identity-pool … --no-allow-unauthenticated-identities --region us-east-1`); retire the n3onv2 environment when convenient.
+- [ ] 👤 (attached policies confirmed empty 2026-10-10) Disable guest access on that pool (`update-identity-pool … --no-allow-unauthenticated-identities --region us-east-1`); retire the n3onv2 environment when convenient.
 - [ ] 👤 Detach the unused broad policies (`AmazonDynamoDBFullAccess`, `AmazonS3FullAccess` from DJUserRole/VenueOwnerUserRole; `AmazonDynamoDBReadOnlyAccess` from CustomerUserRole) — nothing in the app is issued these roles.
 - Original verification commands (note `--region us-east-1` on Cognito calls — the CLI default region isn't us-east-1):
   ```bash
