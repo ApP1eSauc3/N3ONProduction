@@ -61,6 +61,7 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 - [x] ✅ 🤖 `ChatRoomService` writes `participantIDs` (creator always included; `send` copies the room's list onto each message; `getOrCreate` heals legacy rooms it can update). **No backfill needed:** the only Cognito user is you, you're `AdminUser`, and admin keeps read on every ChatRoom/Message — older rooms involve deleted test accounts. Revisit only if real users exist before the push.
 - [x] ✅ 🤖 **Sign-up was broken for every new user** (found prepping step 6). The pool signs in by email and requires `name`; the app sent the handle as the Cognito username and no `name`, so Cognito rejected every sign-up. Fixed in the app: email is the Cognito username, handle goes as `name` and stays `User.username`; login/reset ask for email. And the verification email carried a **dead link** (empty verification bucket, no website config) instead of a code — `CustomMessage` trigger now sends the 6-digit code.
 - [ ] 👤 `amplify push` (deploys only `n3on3dbadbe4CustomMessage`), rebuild, then the smoke test.
+- [ ] 🤖 **Handle uniqueness is enforced nowhere** (consequence of the sign-up fix: the handle is now the `name` attribute + `User.username`, neither unique). Two users can both be `@luna`; `EventDraftViewModel` matches payouts by `username`. Check `User` by username before `createInitialUserRecord`, and match payouts by ID.
 - [ ] 👤 Multi-account smoke test (list in the proposal's deploy checklist + Phase 2 runbook step 6).
 
 ## Phase 2 — Backend pipeline
