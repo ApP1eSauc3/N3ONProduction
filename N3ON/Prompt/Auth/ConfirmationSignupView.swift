@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct ConfirmationSignupView: View {
-    let username: String
+    let email: String
+    let handle: String
     @EnvironmentObject private var vm: AuthViewModel
 
     @State private var code: String = ""
@@ -78,7 +79,7 @@ struct ConfirmationSignupView: View {
                 .font(.system(.title2, design: .rounded, weight: .semibold))
                 .foregroundStyle(.white)
 
-            Text("We sent a verification code to the\nemail linked to \(username)")
+            Text("We sent a verification code to\n\(email)")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
@@ -196,11 +197,11 @@ struct ConfirmationSignupView: View {
     private func submitCode() {
         guard canSubmit else { return }
         isCodeFocused = false
-        Task { await vm.confirmCode(username: username, code: code) }
+        Task { await vm.confirmCode(email: email, handle: handle, code: code) }
     }
 
     private func sendResend() async {
-        await vm.resendCode(for: username)
+        await vm.resendCode(email: email)
         resendSent = true
         // Reset after 30s so they can request again if needed
         try? await Task.sleep(nanoseconds: 30_000_000_000)

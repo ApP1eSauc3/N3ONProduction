@@ -192,7 +192,7 @@ struct SignUpView: View {
         focusedField = nil
         Task {
             await vm.signUp(
-                username: username.trimmingCharacters(in: .whitespaces),
+                handle: username.trimmingCharacters(in: .whitespaces),
                 email: email.trimmingCharacters(in: .whitespaces),
                 password: password
             )

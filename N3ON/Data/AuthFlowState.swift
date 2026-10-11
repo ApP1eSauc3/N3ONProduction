@@ -13,15 +13,16 @@ enum AuthFlowState: Equatable {
     /// User has chosen to create a new account.
     case signUp
     /// Sign-up completed — waiting for the Cognito email confirmation code.
-    /// Carries the username so the confirmation screen can pass it back to the service.
-    case confirmCode(username: String)
-    /// User tapped "Forgot password?" — show email/username entry for reset.
+    /// Carries the email (the Cognito username — confirm/resend address it) and the
+    /// chosen handle (carried on to role selection for the User record).
+    case confirmCode(email: String, handle: String)
+    /// User tapped "Forgot password?" — show email entry for reset.
     case resetPassword
     /// Reset code sent — waiting for the code + new password to be submitted.
-    /// Carries the username so the confirmation screen can pass it back to the service.
-    case confirmReset(username: String)
+    /// Carries the email so the confirmation screen can pass it back to the service.
+    case confirmReset(email: String)
     /// Email confirmed — first-time user picks their role (DJ or music fan).
-    /// Carries the username for downstream User record creation.
+    /// Carries the handle for downstream User record creation.
     case roleSelection(username: String)
     /// Valid session confirmed — show the main app.
     case authenticated

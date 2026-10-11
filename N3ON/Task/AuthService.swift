@@ -32,11 +32,14 @@ enum AuthService {
         try? await Amplify.Auth.getCurrentUser().userId
     }
 
-    /// Cognito username of the active session. Used by the role-selection
-    /// recovery path when a signed-in user has no User record yet (reinstall,
-    /// second device, or an interrupted first run).
-    static func currentUsername() async throws -> String {
-        try await Amplify.Auth.getCurrentUser().username
+    /// The handle chosen at sign-up, read back from the Cognito `name` attribute.
+    /// Used by the role-selection recovery path when a signed-in user has no User
+    /// record yet (reinstall, second device, or an interrupted first run). The
+    /// Cognito *username* is not usable here: the pool signs in by email, so the
+    /// username is the user's sub.
+    static func currentHandle() async throws -> String? {
+        let attributes = try await Amplify.Auth.fetchUserAttributes()
+        return attributes.first { $0.key == .name }?.value
     }
 
     /// Returns the DataStore User model for the currently signed-in user, or nil
@@ -48,11 +51,11 @@ enum AuthService {
 
     // MARK: — Sign in
 
-    /// Authenticates with Cognito. Throws AuthError on failure.
+    /// Authenticates with Cognito by email. Throws AuthError on failure.
     /// On success the Hub emits `.signedIn` — callers should react to that event
     /// rather than polling after this call returns.
-    static func signIn(username: String, password: String) async throws {
-        let result = try await Amplify.Auth.signIn(username: username, password: password)
+    static func signIn(email: String, password: String) async throws {
+        let result = try await Amplify.Auth.signIn(username: cognitoUsername(email), password: password)
         guard result.isSignedIn else {
             throw AuthError.unknown("Sign in did not complete. Next step: \(result.nextStep)", nil)
         }
@@ -63,26 +66,44 @@ enum AuthService {
     /// Creates a new Cognito account. Returns `true` when a confirmation code was sent
     /// (the normal Cognito flow); returns `false` if the account was immediately confirmed
     /// (atypical — admin-created accounts, etc).
-    static func signUp(username: String, email: String, password: String) async throws -> Bool {
-        let options = AuthSignUpRequest.Options(
-            userAttributes: [AuthUserAttribute(.email, value: email)]
-        )
+    ///
+    /// The user pool signs in by email (`UsernameAttributes: [email]`) and requires
+    /// the `name` attribute, so the email is the Cognito username and the handle
+    /// travels as `name`. The handle itself lives on the User record (`User.username`).
+    static func signUp(handle: String, email: String, password: String) async throws -> Bool {
+        let request = signUpRequest(handle: handle, email: email)
         let result = try await Amplify.Auth.signUp(
-            username: username,
+            username: request.username,
             password: password,
-            options: options
+            options: AuthSignUpRequest.Options(userAttributes: request.attributes)
         )
         if case .confirmUser = result.nextStep { return true }
         return false
+    }
+
+    /// The Cognito username for an email: trimmed and lower-cased so the same
+    /// address always maps to one account however it was typed.
+    static func cognitoUsername(_ email: String) -> String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    /// The username and attributes sent to Cognito at sign-up. Pure, so the
+    /// mapping onto the pool's schema is unit-tested without a network call.
+    static func signUpRequest(handle: String, email: String) -> (username: String, attributes: [AuthUserAttribute]) {
+        let username = cognitoUsername(email)
+        return (username, [
+            AuthUserAttribute(.email, value: username),
+            AuthUserAttribute(.name, value: handle.trimmingCharacters(in: .whitespacesAndNewlines))
+        ])
     }
 
     // MARK: — Confirmation
 
     /// Submits the 6-digit code from the Cognito verification email. Throws on failure
     /// or if the confirmation did not reach the `.done` step.
-    static func confirmSignUp(for username: String, code: String) async throws {
+    static func confirmSignUp(email: String, code: String) async throws {
         let result = try await Amplify.Auth.confirmSignUp(
-            for: username,
+            for: cognitoUsername(email),
             confirmationCode: code
         )
         guard case .done = result.nextStep else {
@@ -91,22 +112,22 @@ enum AuthService {
     }
 
     /// Requests a new verification code. Use when the original code expires.
-    static func resendSignUpCode(for username: String) async throws {
-        _ = try await Amplify.Auth.resendSignUpCode(for: username)
+    static func resendSignUpCode(email: String) async throws {
+        _ = try await Amplify.Auth.resendSignUpCode(for: cognitoUsername(email))
     }
 
     // MARK: — Password reset
 
     /// Initiates Cognito's forgot-password flow. A verification code is sent to
-    /// the email address associated with the given username.
-    static func resetPassword(username: String) async throws {
-        _ = try await Amplify.Auth.resetPassword(for: username)
+    /// the given email address.
+    static func resetPassword(email: String) async throws {
+        _ = try await Amplify.Auth.resetPassword(for: cognitoUsername(email))
     }
 
     /// Completes the reset: submits the code and new password.
-    static func confirmReset(username: String, newPassword: String, code: String) async throws {
+    static func confirmReset(email: String, newPassword: String, code: String) async throws {
         try await Amplify.Auth.confirmResetPassword(
-            for: username,
+            for: cognitoUsername(email),
             with: newPassword,
             confirmationCode: code
         )

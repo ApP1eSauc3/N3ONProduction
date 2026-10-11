@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct ConfirmResetView: View {
-    let username: String
+    let email: String
     @EnvironmentObject private var vm: AuthViewModel
 
     @State private var code: String = ""
@@ -199,7 +199,7 @@ struct ConfirmResetView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         Task {
             await vm.confirmReset(
-                username: username,
+                email: email,
                 newPassword: newPassword,
                 code: code.trimmingCharacters(in: .whitespaces)
             )

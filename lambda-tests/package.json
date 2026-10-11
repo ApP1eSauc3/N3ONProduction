@@ -1,11 +1,11 @@
 {
   "name": "n3on-lambda-tests",
   "private": true,
-  "description": "Unit tests for amplify/backend/function/* — run before every amplify push",
+  "description": "Unit tests for amplify/backend/function/* \u2014 run before every amplify push",
   "scripts": {
-    "test": "npm run test:postconfirmation && npm run test:appsync",
-    "test:postconfirmation": "NODE_PATH=./stubs node --test postconfirmation.test.js",
-    "test:appsync": "NODE_PATH=./node_modules node --test rank.schema.test.js rank.test.js join.test.js ticket.test.js"
+    "test": "npm run test:triggers && npm run test:appsync",
+    "test:appsync": "NODE_PATH=./node_modules node --test rank.schema.test.js rank.test.js join.test.js ticket.test.js",
+    "test:triggers": "NODE_PATH=./stubs node --test postconfirmation.test.js custommessage.test.js"
   },
   "devDependencies": {
     "@aws-crypto/sha256-js": "^5.2.0",
