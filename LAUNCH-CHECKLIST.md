@@ -1,6 +1,6 @@
 # N3ON — Ordered Work Checklist
 
-**Last touched: 2026-10-11.** Read this first at the start of any session — it is the
+**Last touched: 2026-10-11 (deployed).** Read this first at the start of any session — it is the
 handover doc. Tick items as they land and add a dated line under "Changelog".
 
 Order is by dependency. 👤 = human-only (console, CLI login, phone, legal, human-owned
@@ -72,7 +72,7 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 - [x] ✅ 🤖 Client wired: `N3ONRESTClient`, `TicketService` (no client `userID`), `EventService.joinLineup`, host auto-joins own lineup, invite card **Join lineup** button. Fixed invite detection (prefix match broke on JSON key order).
 - [x] ✅ ~~Replace `EventInviteSheet` direct `EventDJLink` creation~~ — it never created links; joining didn't exist until now.
 - [ ] 👤 `approveVenue` Lambda — not created (new function needs `amplify add function`; ask Claude to write the handler after).
-- [ ] 👤 **Deploy** — see runbook below.
+- [x] ✅ 👤 **Deployed 2026-10-11** (runbook steps 1–5): root stack `UPDATE_COMPLETE` 03:13 UTC; all three Lambdas on nodejs22.x with real code; stack-owned stream mapping `0ba7e7e5…` (5 retries, bisect); live schema has `participantIDs`. Codegen was a no-op. **Next: step 6 smoke test.**
 - [x] ✅ 🤖 Server-side tally gate on **ticket sales**: `purchaseTicket` refuses with `TALLY_NOT_MET` when `TALLY_ENFORCED=true` (off by default = curated mode). Mirrors the client's `requiredTally` formula (tested). Set the env var on purchaseTicket when flipping to `.community`.
 - [x] ✅ 🤖 **Endorsement forgery closed (found 2026-10-11):** a candidate could create an `EndorsementRequest` already `status: "approved"` (create input allows it; the stream filter + Lambda accepted INSERTs), and get promoted with no endorser consent — rank 4 unlocks Create Event even in curated mode. `rankPromotion` now: approves only on a recipient `MODIFY`; resets pre-approved INSERTs to `pending`; rejects approvals that re-point `fromUserID`/`toUserID`/`targetRank`; counts only rows with `updatedAt != createdAt` (resolver-set, in no input type).
 - [ ] 🤖 Residual (before `.community`): a re-pointed approval could be counted by a concurrent invocation on another stream shard before it's rejected. Real fix: approve endorsements through a server endpoint (`amplify add function` 👤), not a DataStore update.
