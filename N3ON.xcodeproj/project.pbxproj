@@ -135,6 +135,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AGENTS.md,
+				CLAUDE.md,
 				Event.swift,
 			);
 			target = C5DAE7D62BFC7B220001E794 /* N3ON */;
@@ -143,6 +144,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AGENTS.md,
+				CLAUDE.md,
 			);
 			target = C5DAE7D62BFC7B220001E794 /* N3ON */;
 		};
@@ -150,6 +152,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AGENTS.md,
+				CLAUDE.md,
 			);
 			target = C5DAE7D62BFC7B220001E794 /* N3ON */;
 		};
@@ -157,12 +160,14 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AGENTS.md,
+				CLAUDE.md,
 			);
 			target = C5DAE7D62BFC7B220001E794 /* N3ON */;
 		};
 		AA00000100000000000000AA /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Admin/CLAUDE.md,
 				Auth/CLAUDE.md,
 				Chat/CLAUDE.md,
 				CLAUDE.md,
