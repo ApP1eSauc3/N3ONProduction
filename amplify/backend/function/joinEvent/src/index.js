@@ -17,8 +17,9 @@ Amplify Params - DO NOT EDIT *//**
  *   - the host sent the caller an event invite in their DJ↔DJ room. Invites are
  *     chat messages (EventInviteSheet) in the room named
  *     "dm-{sortedID1}-{sortedID2}" (ChatRoomService.openDJDirectRoom). The
- *     message's `owner` is stamped by the AppSync resolver from the sender's
- *     token — CreateMessageInput has no `owner` field — so it cannot be forged.
+ *     message's `senderID` cannot be forged: it is Message's @auth ownerField,
+ *     so the createMessage resolver rejects any senderID other than the
+ *     caller's own sub, and no client role may update a message afterwards.
  *
  * Idempotent: the link ID is derived from (eventID, djID), so a retry or a
  * double tap returns the existing link instead of double-counting the tally.
@@ -59,12 +60,6 @@ function dmRoomName(a, b) {
 /** Deterministic link ID — makes joins idempotent under retries/races. */
 function linkID(eventID, djID) {
   return `${eventID}_${djID}`;
-}
-
-/** Resolver-stamped owner is "sub::username" (or a bare sub on legacy rows). */
-function ownedBy(record, sub) {
-  const owner = record && record.owner;
-  return typeof owner === 'string' && (owner === sub || owner.startsWith(`${sub}::`));
 }
 
 // ── GraphQL documents ────────────────────────────────────────────────────────
@@ -110,7 +105,7 @@ const HOST_INVITES = /* GraphQL */ `
       limit: 100
       nextToken: $nextToken
     ) {
-      items { id chatRoomID content owner _deleted }
+      items { id senderID chatRoomID content _deleted }
       nextToken
     }
   }
@@ -169,7 +164,8 @@ async function hasInvite(hostID, djID, eventID) {
     (d) => d.messagesBySenderIDAndTimestamp,
   );
   for (const m of messages) {
-    if (m._deleted || !ownedBy(m, hostID)) continue;
+    // The index is keyed by senderID; re-check rather than trust the query shape.
+    if (m._deleted || m.senderID !== hostID) continue;
     let payload;
     try {
       payload = JSON.parse(m.content);

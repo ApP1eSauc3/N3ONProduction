@@ -14,6 +14,7 @@ extension ChatRoom {
     case lastMessage
     case lastMessageTimestamp
     case associatedEvent
+    case participantIDs
   }
   
   public static let keys = CodingKeys.self
@@ -23,8 +24,9 @@ extension ChatRoom {
     let chatRoom = ChatRoom.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read]),
-      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete])
+      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete]),
+      rule(allow: .owner, ownerField: "participantIDs", identityClaim: "cognito:username", provider: .userPools, operations: [.read, .update]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.read])
     ]
     
     model.listPluralName = "ChatRooms"
@@ -44,7 +46,8 @@ extension ChatRoom {
       .hasMany(chatRoom.messages, is: .optional, ofType: Message.self, associatedWith: Message.keys.chatRoomID),
       .field(chatRoom.lastMessage, is: .optional, ofType: .string),
       .field(chatRoom.lastMessageTimestamp, is: .optional, ofType: .dateTime),
-      .field(chatRoom.associatedEvent, is: .optional, ofType: .string)
+      .field(chatRoom.associatedEvent, is: .optional, ofType: .string),
+      .field(chatRoom.participantIDs, is: .optional, ofType: .embeddedCollection(of: String.self))
     )
     }
 }

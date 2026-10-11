@@ -12,6 +12,7 @@ extension Message {
     case timestamp
     case isRead
     case readBy
+    case participantIDs
     case createdAt
     case updatedAt
   }
@@ -23,8 +24,9 @@ extension Message {
     let message = Message.keys
     
     model.authRules = [
-      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read])
+      rule(allow: .owner, ownerField: "senderID", identityClaim: "cognito:username", provider: .userPools, operations: [.create]),
+      rule(allow: .owner, ownerField: "participantIDs", identityClaim: "cognito:username", provider: .userPools, operations: [.read]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.read])
     ]
     
     model.listPluralName = "Messages"
@@ -44,6 +46,7 @@ extension Message {
       .field(message.timestamp, is: .required, ofType: .dateTime),
       .field(message.isRead, is: .required, ofType: .bool),
       .field(message.readBy, is: .optional, ofType: .embeddedCollection(of: String.self)),
+      .field(message.participantIDs, is: .optional, ofType: .embeddedCollection(of: String.self)),
       .field(message.createdAt, is: .optional, isReadOnly: true, ofType: .dateTime),
       .field(message.updatedAt, is: .optional, isReadOnly: true, ofType: .dateTime)
     )

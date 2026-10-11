@@ -28,7 +28,7 @@ function world(o = {}) {
     eventDJLinksByDjIDAndCreatedAt: ({ djID, eventID }) => ({ data: { eventDJLinksByDjIDAndCreatedAt: {
       items: db.links.filter(l => l.djID === djID && l.eventID === eventID), nextToken: null } } }),
     messagesBySenderIDAndTimestamp: ({ senderID, eventID }) => ({ data: { messagesBySenderIDAndTimestamp: {
-      items: db.messages.filter(m => m.senderID === senderID && m.content.includes(eventID)), nextToken: null } } }),
+      items: db.messages.filter(m => (o.ignoreSenderKey || m.senderID === senderID) && m.content.includes(eventID)), nextToken: null } } }),
     getChatRoom: ({ id }) => ({ data: { getChatRoom: db.rooms[id] || null } }),
     createEventDJLink: ({ input }) => {
       if (o.createError) return { errors: [o.createError] };
@@ -57,7 +57,7 @@ test('host joins own pending event with rank-5 weight, server-computed', async (
 });
 
 test('invited DJ joins via host-owned invite in their dm room', async () => {
-  const { db } = world({ messages: [{ id: 'm1', senderID: 'host', chatRoomID: 'r1', content: invite('ev1'), owner: 'host::host', _deleted: null }] });
+  const { db } = world({ messages: [{ id: 'm1', senderID: 'host', chatRoomID: 'r1', content: invite('ev1'), _deleted: null }] });
   const r = await lambda.handler(req('dj2', { eventID: 'ev1' }));
   assert.strictEqual(r.statusCode, 200, r.body);
   assert.strictEqual(body(r).coinContribution, 7);
@@ -70,19 +70,26 @@ test('uninvited DJ is refused', async () => {
   assert.deepStrictEqual([r.statusCode, body(r).errorCode], [403, 'NOT_INVITED']);
 });
 
-test('spoofed invite (senderID=host but owned by attacker) is refused', async () => {
-  world({ messages: [{ id: 'm1', senderID: 'host', chatRoomID: 'r1', content: invite('ev1'), owner: 'dj2::dj2', _deleted: null }] });
+test('invite JSON posted by the invitee themself does not admit them', async () => {
+  // senderID is Message's @auth ownerField, so dj2 can only post as dj2 — even in the shared room.
+  world({ messages: [{ id: 'm1', senderID: 'dj2', chatRoomID: 'r1', content: invite('ev1'), _deleted: null }] });
+  assert.strictEqual(body(await lambda.handler(req('dj2', { eventID: 'ev1' }))).errorCode, 'NOT_INVITED');
+});
+
+test('senderID is re-checked even if the index returned a foreign message', async () => {
+  world({ ignoreSenderKey: true,
+    messages: [{ id: 'm1', senderID: 'dj2', chatRoomID: 'r1', content: invite('ev1'), _deleted: null }] });
   assert.strictEqual(body(await lambda.handler(req('dj2', { eventID: 'ev1' }))).errorCode, 'NOT_INVITED');
 });
 
 test('invite sent to a different DJ room does not admit the caller', async () => {
-  world({ messages: [{ id: 'm1', senderID: 'host', chatRoomID: 'rX', content: invite('ev1'), owner: 'host::host', _deleted: null }] });
+  world({ messages: [{ id: 'm1', senderID: 'host', chatRoomID: 'rX', content: invite('ev1'), _deleted: null }] });
   assert.strictEqual(body(await lambda.handler(req('dj2', { eventID: 'ev1' }))).errorCode, 'NOT_INVITED');
 });
 
 test('invite for a different event (eventID substring) is refused', async () => {
   world({ events: { ev10: { id: 'ev10', hostDJID: 'host', status: 'pending' } },
-    messages: [{ id: 'm1', senderID: 'host', chatRoomID: 'r1', content: invite('ev10'), owner: 'host::host', _deleted: null }] });
+    messages: [{ id: 'm1', senderID: 'host', chatRoomID: 'r1', content: invite('ev10'), _deleted: null }] });
   assert.strictEqual(body(await lambda.handler(req('dj2', { eventID: 'ev1' }))).errorCode, 'NOT_INVITED');
 });
 

@@ -24,7 +24,7 @@ extension VenueComplianceSubmission {
     
     model.authRules = [
       rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .read]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser"], provider: .userPools, operations: [.read, .update])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.read, .update])
     ]
     
     model.listPluralName = "VenueComplianceSubmissions"

@@ -21,6 +21,20 @@ Amplify Params - DO NOT EDIT *//**
  *   - endorsers are counted once each (duplicate requests don't stack).
  * Thresholds mirror EndorsementService.requiredEndorsements(forTargetRank:).
  *
+ * Only the recipient's update can approve. The candidate may create a request
+ * (with any status — CreateEndorsementRequestInput includes it) but holds no
+ * update right, and the recipient may update every field (DataStore sends the
+ * full model, so field-level @auth can't narrow it). So:
+ *   - an INSERT already marked approved is a forgery: reset to "pending" so the
+ *     recipient decides, and never counted;
+ *   - an approving update that changes fromUserID/toUserID/targetRank re-points
+ *     the endorsement at someone who never approved it: set to "rejected";
+ *   - at count time only rows the server has updated since creation count
+ *     (updatedAt != createdAt — both are resolver-set, absent from every input).
+ * Residual: a re-pointed record could be counted by a concurrent invocation on
+ * another stream shard before it is rejected. Closing that needs approval to go
+ * through a server endpoint instead of a DataStore update.
+ *
  * Writes go through AppSync (see appsync.js) so DataStore clients receive the
  * new rank via subscription.
  */
@@ -45,20 +59,30 @@ function attr(image, name) {
   return undefined;
 }
 
+/** Fields that say who endorses whom for what — approving must not change them. */
+const IDENTITY_FIELDS = ['fromUserID', 'toUserID', 'targetRank'];
+
+/** A missing OldImage counts as changed, so a malformed record is never trusted. */
+function identityChanged(img, old) {
+  return IDENTITY_FIELDS.some((f) => attr(img, f) !== attr(old, f));
+}
+
 /**
- * Returns the distinct (candidate, targetRank) pairs whose endorsement just
- * became approved. Ignores removals, soft deletes, and records that were
- * already approved before this change (re-saves of the same row).
+ * Returns the distinct (candidate, targetRank) pairs whose endorsement was just
+ * approved by an update. Ignores INSERTs (see suspectsFromStream), removals,
+ * soft deletes, updates that changed the endorsement's identity, and records
+ * that were already approved before this change (re-saves of the same row).
  */
 function approvalsFromStream(event) {
   const seen = new Map();
   for (const record of event.Records || []) {
-    if (record.eventName !== 'INSERT' && record.eventName !== 'MODIFY') continue;
+    if (record.eventName !== 'MODIFY') continue;
     const img = record.dynamodb && record.dynamodb.NewImage;
     const old = record.dynamodb && record.dynamodb.OldImage;
     if (attr(img, 'status') !== 'approved') continue;
     if (attr(img, '_deleted') === true) continue;
-    if (old && attr(old, 'status') === 'approved') continue;
+    if (identityChanged(img, old)) continue;
+    if (attr(old, 'status') === 'approved') continue;
 
     const candidateID = attr(img, 'fromUserID');
     const targetRank = attr(img, 'targetRank');
@@ -66,6 +90,27 @@ function approvalsFromStream(event) {
     seen.set(`${candidateID}#${targetRank}`, { candidateID, targetRank });
   }
   return [...seen.values()];
+}
+
+/**
+ * Returns approved records written by someone not entitled to approve them:
+ * created pre-approved (reset to pending) or re-pointed while approved (rejected).
+ */
+function suspectsFromStream(event) {
+  const suspects = new Map();
+  for (const record of event.Records || []) {
+    const img = record.dynamodb && record.dynamodb.NewImage;
+    const old = record.dynamodb && record.dynamodb.OldImage;
+    if (attr(img, 'status') !== 'approved' || attr(img, '_deleted') === true) continue;
+    const id = attr(img, 'id');
+    if (!id) continue;
+    if (record.eventName === 'INSERT') {
+      suspects.set(id, { id, resetTo: 'pending', reason: 'created pre-approved' });
+    } else if (record.eventName === 'MODIFY' && identityChanged(img, old)) {
+      suspects.set(id, { id, resetTo: 'rejected', reason: 'identity changed on approval' });
+    }
+  }
+  return [...suspects.values()];
 }
 
 // ── GraphQL documents ────────────────────────────────────────────────────────
@@ -93,9 +138,28 @@ const APPROVED_ENDORSEMENTS = /* GraphQL */ `
       limit: 100
       nextToken: $nextToken
     ) {
-      items { id toUserID _deleted }
+      items { id toUserID createdAt updatedAt _deleted }
       nextToken
     }
+  }
+`;
+
+// Every EndorsementRequest scalar + sync metadata, for the same subscription
+// reason as USER_FIELDS (the recipient's DataStore receives this update).
+const ENDORSEMENT_FIELDS = `
+  id fromUserID toUserID targetRank message status timestamp
+  createdAt updatedAt owner _version _deleted _lastChangedAt
+`;
+
+const GET_ENDORSEMENT = /* GraphQL */ `
+  query GetEndorsement($id: ID!) {
+    getEndorsementRequest(id: $id) { id status _version _deleted }
+  }
+`;
+
+const SET_ENDORSEMENT_STATUS = /* GraphQL */ `
+  mutation SetEndorsementStatus($input: UpdateEndorsementRequestInput!) {
+    updateEndorsementRequest(input: $input) { ${ENDORSEMENT_FIELDS} }
   }
 `;
 
@@ -122,6 +186,24 @@ async function getUser(id) {
   return user && !user._deleted ? user : null;
 }
 
+/**
+ * Approved by an update after creation — i.e. by the recipient or an admin.
+ * createdAt/updatedAt are set by the resolver and appear in no input type.
+ */
+function approvedByUpdate(request) {
+  return typeof request.createdAt === 'string'
+    && typeof request.updatedAt === 'string'
+    && request.updatedAt !== request.createdAt;
+}
+
+/** Resets a suspect record. Idempotent: skips one that has already moved on. */
+async function neutralize({ id, resetTo }) {
+  const current = (await graphql(GET_ENDORSEMENT, { id })).getEndorsementRequest;
+  if (!current || current._deleted || current.status !== 'approved') return { neutralized: false };
+  await graphql(SET_ENDORSEMENT_STATUS, { input: { id, status: resetTo, _version: current._version } });
+  return { neutralized: true };
+}
+
 async function eventIDsFor(djID) {
   const links = await graphqlAll(LINKS_BY_DJ, { djID }, (d) => d.eventDJLinksByDjIDAndCreatedAt);
   return new Set(links.filter((l) => !l._deleted).map((l) => l.eventID));
@@ -131,20 +213,32 @@ async function eventIDsFor(djID) {
  * Counts endorsers that are valid right now. Returns the count and the
  * reasons others were rejected (logged for support/debugging).
  */
-async function countValidEndorsers(candidateID, targetRank) {
+async function countValidEndorsers(candidateID, targetRank, excludedIDs = new Set()) {
   const approved = await graphqlAll(
     APPROVED_ENDORSEMENTS,
     { fromUserID: candidateID, targetRank },
     (d) => d.endorsementRequestsByFromUserIDAndTimestamp,
   );
+  const rejected = [];
+  const trusted = approved.filter((r) => {
+    if (r._deleted) return false;
+    if (excludedIDs.has(r.id)) {
+      rejected.push({ requestID: r.id, reason: 'suspect in this batch' });
+      return false;
+    }
+    if (!approvedByUpdate(r)) {
+      rejected.push({ requestID: r.id, reason: 'never updated after creation' });
+      return false;
+    }
+    return true;
+  });
   const endorserIDs = [
-    ...new Set(approved.filter((r) => !r._deleted).map((r) => r.toUserID)),
+    ...new Set(trusted.map((r) => r.toUserID)),
   ].filter((id) => id !== candidateID);
-  if (endorserIDs.length === 0) return { count: 0, rejected: [] };
+  if (endorserIDs.length === 0) return { count: 0, rejected };
 
   const candidateEvents = await eventIDsFor(candidateID);
   let count = 0;
-  const rejected = [];
   for (const endorserID of endorserIDs) {
     const endorser = await getUser(endorserID);
     if (!endorser || !endorser.isDJ) {
@@ -167,7 +261,7 @@ async function countValidEndorsers(candidateID, targetRank) {
 }
 
 /** Evaluates one candidate. Returns a result object (also used by tests). */
-async function evaluate({ candidateID, targetRank }) {
+async function evaluate({ candidateID, targetRank }, excludedIDs = new Set()) {
   if (targetRank < 1 || targetRank > MAX_RANK) {
     return { candidateID, targetRank, promoted: false, reason: 'target out of range' };
   }
@@ -181,7 +275,7 @@ async function evaluate({ candidateID, targetRank }) {
   }
 
   const required = requiredEndorsements(targetRank);
-  const { count, rejected } = await countValidEndorsers(candidateID, targetRank);
+  const { count, rejected } = await countValidEndorsers(candidateID, targetRank, excludedIDs);
   if (count < required) {
     return { candidateID, targetRank, promoted: false, reason: `${count}/${required} valid endorsements`, rejected };
   }
@@ -202,11 +296,25 @@ async function evaluate({ candidateID, targetRank }) {
  * @type {import('@types/aws-lambda').DynamoDBStreamHandler}
  */
 exports.handler = async (event) => {
-  const candidates = approvalsFromStream(event);
   const failures = [];
+  // Suspects first, and excluded from this batch's counting even if resetting
+  // them fails (the batch then retries, and neutralize() is idempotent).
+  const suspects = suspectsFromStream(event);
+  const excludedIDs = new Set(suspects.map((s) => s.id));
+  for (const s of suspects) {
+    try {
+      const { neutralized } = await neutralize(s);
+      console.warn(JSON.stringify({ msg: 'suspect endorsement', ...s, neutralized }));
+    } catch (err) {
+      console.error(JSON.stringify({ msg: 'neutralize failed', ...s, error: err.message }));
+      failures.push(err);
+    }
+  }
+
+  const candidates = approvalsFromStream(event);
   for (const c of candidates) {
     try {
-      const result = await evaluate(c);
+      const result = await evaluate(c, excludedIDs);
       console.log(JSON.stringify({ msg: 'rankPromotion', ...result }));
     } catch (err) {
       // A failed condition means someone else already changed the rank — the
@@ -229,6 +337,9 @@ exports.handler = async (event) => {
 
 // Exposed for unit tests only.
 exports._approvalsFromStream = approvalsFromStream;
+exports._suspectsFromStream = suspectsFromStream;
 exports._evaluate = evaluate;
 exports._requiredEndorsements = requiredEndorsements;
-exports._documents = { GET_USER, APPROVED_ENDORSEMENTS, LINKS_BY_DJ, SET_RANK };
+exports._documents = {
+  GET_USER, APPROVED_ENDORSEMENTS, LINKS_BY_DJ, SET_RANK, GET_ENDORSEMENT, SET_ENDORSEMENT_STATUS,
+};

@@ -35,7 +35,8 @@ extension User {
     let user = User.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.create, .update, .delete, .read]),
+      rule(allow: .owner, ownerField: "id", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .read, .update, .delete]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read]),
       rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.create, .update, .delete, .read])
     ]
     
