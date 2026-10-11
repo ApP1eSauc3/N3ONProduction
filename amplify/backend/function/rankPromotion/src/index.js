@@ -1,4 +1,9 @@
-/**
+/* Amplify Params - DO NOT EDIT
+	API_N3ON_GRAPHQLAPIENDPOINTOUTPUT
+	API_N3ON_GRAPHQLAPIIDOUTPUT
+	ENV
+	REGION
+Amplify Params - DO NOT EDIT *//**
  * rankPromotion — promotes a DJ one rank once enough valid endorsements exist.
  *
  * Trigger: DynamoDB stream on the EndorsementRequest @model table

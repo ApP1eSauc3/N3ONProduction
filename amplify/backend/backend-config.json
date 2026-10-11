@@ -107,7 +107,16 @@
     },
     "joinEvent": {
       "build": true,
-      "dependsOn": [],
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput"
+          ],
+          "category": "api",
+          "resourceName": "n3on"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
@@ -126,14 +135,8 @@
       "dependsOn": [
         {
           "attributes": [
-            "BucketName"
-          ],
-          "category": "storage",
-          "resourceName": "ProfileData"
-        },
-        {
-          "attributes": [
-            "GraphQLAPIIdOutput"
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput"
           ],
           "category": "api",
           "resourceName": "n3on"
@@ -144,6 +147,16 @@
     },
     "rankPromotion": {
       "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput"
+          ],
+          "category": "api",
+          "resourceName": "n3on"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     }

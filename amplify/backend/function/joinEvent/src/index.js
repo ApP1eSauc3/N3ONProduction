@@ -1,4 +1,9 @@
-/**
+/* Amplify Params - DO NOT EDIT
+	API_N3ON_GRAPHQLAPIENDPOINTOUTPUT
+	API_N3ON_GRAPHQLAPIIDOUTPUT
+	ENV
+	REGION
+Amplify Params - DO NOT EDIT *//**
  * joinEvent — POST /events/join  { "eventID": "..." }
  *
  * Adds the calling DJ to an event's lineup by creating an EventDJLink with a

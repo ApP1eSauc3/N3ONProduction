@@ -1,6 +1,6 @@
 # N3ON — Ordered Work Checklist
 
-**Last touched: 2026-10-08.** Read this first at the start of any session — it is the
+**Last touched: 2026-10-11.** Read this first at the start of any session — it is the
 handover doc. Tick items as they land and add a dated line under "Changelog".
 
 Order is by dependency. 👤 = human-only (console, CLI login, phone, legal, human-owned
@@ -32,9 +32,10 @@ Sources: project memory, `FINANCIAL-FORMAT.md` §12–16, `docs/schema-auth-hard
 ## Phase 0 — Clean the workbench
 
 - [x] ✅ 🤖 Profile header fix + MainView preview split onto `fix/profile-header-height` (`2a6e5f7`). Builds, 33/33 tests passed at the time.
-- [ ] 👤 `project.pbxproj` change (exclude `CLAUDE.md` files from the target) is still **uncommitted in the working tree** — human-owned file, needs your approval to commit.
-- [ ] 👤 Merge `docs/financial-format` → `main` (PR).
-- [ ] 👤 Push / PR `fix/profile-header-height` and `fix/launch-phase-1-2` (stacked: phase branch contains the header fix).
+- [ ] 👤 `project.pbxproj` change (exclude `CLAUDE.md` files from the target) — committed 2026-10-08 as `8f464c5` on its own branch `chore/exclude-claude-md-from-target`, **PR #27 open**. Not in `main` or `fix/launch-phase-1-2`. `project.pbxproj` is unchanged on both since its parent, so the 5-line edit applies cleanly. ⚠️ #27 is **not** pbxproj-only: it is stacked on `c0ebe2b` (2026-08-13 dead-code removal, 18 more files, ~13.1k deletions), which is not in `main` either but **is** in `fix/launch-phase-1-2` — so #27 and #28 both carry it. Remaining: review + merge #27 (or cherry-pick `8f464c5` onto the phase branch and close #27).
+- [x] ✅ 👤 Merge `docs/financial-format` → `main` — PR #29, merged 2026-10-10.
+- [x] ✅ 👤 `fix/profile-header-height` merged to `main` — PR #30, 2026-10-10.
+- [ ] 👤 `fix/launch-phase-1-2` pushed, **PR #28 open** (#30 was **squash**-merged, so #28's 10 commits still include the original header-fix commit `2a6e5f7`; the two files it touches are identical on `main` and this branch, so they add nothing to #28's diff).
 - [ ] 👤 Decide whether `docs/` stays gitignored. `docs/schema-auth-hardening.md` is the Phase 1 spec, revised 2026-10-08, and has **no version history**. Recommended: add `!docs/schema-auth-hardening.md` to `.gitignore` and commit it.
 - [ ] 👤 Decide the ticket floor: **$1** (memory) vs **$0.50, $0 on free events** (FINANCIAL-FORMAT §4).
 
@@ -122,7 +123,10 @@ Unchanged — FINANCIAL-FORMAT §15: venue calls (incl. ticketing exclusivity), 
 
 ## Changelog
 
-- **2026-10-10** — Old n3onv2 guest pool audited: scoped to an empty bucket + old Pinpoint app; no live-app exposure.
+- **2026-10-11** — Runbook step 4 **minimum** applied to `schema.graphql`: `Ticket` → `ownerField: "userID"` read-only (+ `AdminUser`), `EventDJLink` owner → `[read]`. The rest of `docs/schema-auth-hardening.md` (User/Venue/Post owner scoping, Message/ChatRoom `participantIDs`) is **not** applied yet. Step 4b green against this schema: `amplify api gql-compile` OK, Lambda suite 45/45 (6 PostConfirmation + 39 AppSync). Steps 2–4 committed to `fix/launch-phase-1-2`. Still not pushed to AWS — next is step 5.
+- **2026-10-10 (deploy prep)** — Runbook steps 2–3 done locally, not pushed. Step 2: all three functions have `api → n3on → [Query, Mutation]` (generated `API_N3ON_GRAPHQLAPI*` params present); `purchaseTicket` now has only logs + `appsync:GraphQL`, storage/DynamoDB access removed. Step 3: `deploy/rankPromotion-stream-trigger.json` merged into `rankPromotion-cloudformation-template.json` (insert-only; import name matches the compiled `EndorsementRequest` stack export; `cfn-lint` 1.57.2 zero errors, same 3 Amplify-generated warnings as before the merge). Don't re-run `amplify update function` on rankPromotion before the push without re-checking those two resources survive.
+- **2026-10-10 (later)** — Phase 0 re-verified against git/GitHub: #29 (`docs/financial-format`) and #30 (`fix/profile-header-height`) merged; #28 (`fix/launch-phase-1-2`) open; the "uncommitted" `pbxproj` change is actually `8f464c5` in open PR #27 (which also carries dead-code commit `c0ebe2b`). Header date corrected (was stuck at 10-08).
+- **2026-10-10** — Old n3onv2 guest pool audited: scoped to an empty bucket + old Pinpoint app; no live-app exposure. Guest access then disabled on `testAuthIdentityPool__staging` (also dropped its user-pool provider link — `update-identity-pool` replaces the full config).
 - **2026-10-09** — Pool `eec3d948…` confirmed deleted → group roles inert. IAM verified: group roles over-broad but dormant (no role mapping, classic flow off, trust points at another pool `eec3d948…`). Detach + check that pool.
 - **2026-10-08 (later)** — Review fix: `CREATE_TICKET` no longer selects `owner` (the planned `ownerField: "userID"` removes it; new test validates against the reshaped schema). Added runbook step 4b, `TALLY_NOT_MET` gate. Lambda suite 45/45.
 - **2026-10-08** — Phases 0–2 client/Lambda work done on `fix/launch-phase-1-2` (`e72668d` + follow-up). Verified: Xcode suite 41/41, Lambda suite 41/41, no new compiler warnings (66 before and after). Corrected stale memory (deployed state, dead stats service, GROUP bug). Nothing deployed — runbook above.

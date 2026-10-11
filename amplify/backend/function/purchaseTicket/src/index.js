@@ -1,4 +1,9 @@
-/**
+/* Amplify Params - DO NOT EDIT
+	API_N3ON_GRAPHQLAPIENDPOINTOUTPUT
+	API_N3ON_GRAPHQLAPIIDOUTPUT
+	ENV
+	REGION
+Amplify Params - DO NOT EDIT *//**
  * purchaseTicket — POST /tickets/purchase  { "eventID": "...", "quantity": 1 }
  *
  * The only path that mints Ticket rows. Price, stock and the buyer's identity

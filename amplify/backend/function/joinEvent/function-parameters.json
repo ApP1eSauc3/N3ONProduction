@@ -1,5 +1,12 @@
 {
-  "permissions": {},
+  "permissions": {
+    "api": {
+      "n3on": [
+        "Query",
+        "Mutation"
+      ]
+    }
+  },
   "lambdaLayers": [],
   "environmentVariableList": [
     {

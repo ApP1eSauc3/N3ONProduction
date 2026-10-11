@@ -269,8 +269,14 @@ type Event @model @auth(rules: [
 # TICKET
 # ─────────────────────────────────────────────
 type Ticket @model @auth(rules: [
-  { allow: owner },
-  { allow: groups, groups: ["VenueOwnerUser"], operations: [read] }
+  # Holder reads their own ticket — no client create/update/delete. Tickets are
+  # minted only by the purchaseTicket Lambda (adminRoles), which sets userID to the
+  # buyer's Cognito sub. ownerField "userID", not the implicit `owner`: owner is
+  # null on Lambda-minted tickets, so `{ allow: owner }` would hide them.
+  { allow: owner, ownerField: "userID", operations: [read] },
+  # Door staff scan tickets (group-wide read — not yet scoped to their own events)
+  { allow: groups, groups: ["VenueOwnerUser"], operations: [read] },
+  { allow: groups, groups: ["AdminUser"] }
 ]) {
   id: ID!
   # ✅ FIXED: added @index for efficient event and user ticket queries
@@ -344,8 +350,12 @@ type Attendance @model @auth(rules: [{ allow: owner }]) {
 type EventDJLink
   @model
   @auth(rules: [
-    # DJs create their own link when joining an event
-    { allow: owner, operations: [create, read, delete] },
+    # DJs read their own link. Links are created only by the joinEvent Lambda
+    # (adminRoles allow-listing via `amplify update function`) or an admin below —
+    # a client-side create would let a DJ self-report rankAtJoining/coinContribution.
+    # Keep this default-owner rule: joinEvent's CREATE_LINK selects `owner`, which
+    # only exists while a rule uses the implicit owner field.
+    { allow: owner, operations: [read] },
     # All authenticated users can read — needed to display tally in UI
     { allow: groups, groups: ["DJUser","VenueOwnerUser","UserGroup"], operations: [read] },
     # Lambda writes coinContribution and rankAtJoining via IAM
