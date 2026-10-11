@@ -70,3 +70,7 @@ AGENTS.md
 **/AGENTS.md
 .agent-config/
 **/.agent-config/
+
+# Python bytecode (financial_model.py)
+__pycache__/
+*.pyc
