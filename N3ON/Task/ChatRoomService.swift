@@ -38,7 +38,10 @@ struct ChatRoomService {
     }
 
     /// Creates the event chat room record for a newly-published event.
+    /// The creator is its first member: ChatRoom @auth gives the creator no read,
+    /// so a room without them in `participantIDs` would be invisible to them.
     static func createEventChatRoom(eventID: String) async throws {
+        let creatorID = try await AuthService.currentUserId()
         let now = Temporal.DateTime.now()
         let chatRoom = ChatRoom(
             id: UUID().uuidString,
@@ -47,7 +50,8 @@ struct ChatRoomService {
             updatedAt: now,
             lastMessage: "",
             lastMessageTimestamp: now,
-            associatedEvent: eventID
+            associatedEvent: eventID,
+            participantIDs: [creatorID]
         )
         try await Amplify.DataStore.save(chatRoom)
     }
@@ -77,10 +81,16 @@ struct ChatRoomService {
         try await send(message: message)
     }
 
-    /// Saves a message and updates the room's last-message metadata atomically.
+    /// Saves a message and updates the room's last-message metadata.
+    /// The room's members are copied onto the message — `Message.participantIDs`
+    /// is its read scope, so a message saved without them reaches nobody.
     static func send(message: Message) async throws {
+        guard var room = try await Amplify.DataStore.query(ChatRoom.self, byId: message.chatRoomID)
+        else { throw ChatError.roomNotFound }
+        var message = message
+        // The sender is always included so they can read their own message back.
+        message.participantIDs = memberIDs(room.participantIDs, adding: [message.sender?.id].compactMap { $0 })
         try await Amplify.DataStore.save(message)
-        guard var room = try await Amplify.DataStore.query(ChatRoom.self, byId: message.chatRoomID) else { return }
         room.lastMessage = message.content
         room.lastMessageTimestamp = message.timestamp
         try await Amplify.DataStore.save(room)
@@ -143,8 +153,19 @@ struct ChatRoomService {
         participants: [User],
         associatedEvent: String?
     ) async throws -> ChatRoom {
-        if let existing = try await Amplify.DataStore
+        // The caller is always a member — the creator rule on ChatRoom has no read.
+        let callerID = try await AuthService.currentUserId()
+        let members = memberIDs(nil, adding: participants.map(\.id) + [callerID])
+
+        if var existing = try await Amplify.DataStore
             .query(ChatRoom.self, where: ChatRoom.keys.name == name).first {
+            // Rooms created before participantIDs existed (or missing a member):
+            // add the members. Non-fatal — only a creator or member may update.
+            let healed = memberIDs(existing.participantIDs, adding: members.compactMap { $0 })
+            if Set(healed) != Set(existing.participantIDs ?? []) {
+                existing.participantIDs = healed
+                _ = try? await Amplify.DataStore.save(existing)
+            }
             return existing
         }
         let now = Temporal.DateTime(Date(), timeZone: .current)
@@ -155,13 +176,19 @@ struct ChatRoomService {
             updatedAt: now,
             lastMessage: "",
             lastMessageTimestamp: now,
-            associatedEvent: associatedEvent
+            associatedEvent: associatedEvent,
+            participantIDs: members
         )
         try await Amplify.DataStore.save(room)
         for u in participants {
             try await Amplify.DataStore.save(UserChatRooms(user: u, chatRoom: room))
         }
         return (try? await Amplify.DataStore.query(ChatRoom.self, byId: room.id)) ?? room
+    }
+
+    /// Sorted, de-duplicated member IDs (Cognito subs) in the generated `[String?]` shape.
+    static func memberIDs(_ existing: [String?]?, adding extra: [String]) -> [String?] {
+        Set((existing ?? []).compactMap { $0 } + extra).sorted()
     }
 }
 

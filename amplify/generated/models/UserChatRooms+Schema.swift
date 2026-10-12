@@ -19,10 +19,12 @@ extension UserChatRooms {
     let userChatRooms = UserChatRooms.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.create, .update, .delete, .read]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.create, .update, .delete, .read]),
+      rule(allow: .owner, ownerField: "id", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .read, .update, .delete]),
       rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser", "DJUser", "UserGroup"], provider: .userPools, operations: [.read]),
-      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.create, .update, .delete, .read]),
+      rule(allow: .owner, ownerField: "owner", identityClaim: "cognito:username", provider: .userPools, operations: [.create, .update, .delete]),
+      rule(allow: .owner, ownerField: "participantIDs", identityClaim: "cognito:username", provider: .userPools, operations: [.read, .update]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.read])
     ]
     
     model.listPluralName = "UserChatRooms"

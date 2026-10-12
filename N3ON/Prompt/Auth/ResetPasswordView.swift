@@ -1,6 +1,6 @@
 // ResetPasswordView.swift
 // N3ON — Prompt layer
-// Step 1 of password reset: user enters their username to receive a code.
+// Step 1 of password reset: user enters their email to receive a code.
 // Design follows the LoginView pattern: purple hero zone → neon dock line → black form.
 
 import SwiftUI
@@ -8,11 +8,11 @@ import SwiftUI
 struct ResetPasswordView: View {
     @EnvironmentObject private var vm: AuthViewModel
 
-    @State private var username: String = ""
+    @State private var email: String = ""
     @FocusState private var isFocused: Bool
 
     private var canSubmit: Bool {
-        !username.trimmingCharacters(in: .whitespaces).isEmpty
+        email.contains("@")
     }
 
     var body: some View {
@@ -64,7 +64,7 @@ struct ResetPasswordView: View {
             Text("Reset Password")
                 .font(.system(.title2, design: .rounded, weight: .bold))
                 .foregroundStyle(.white)
-            Text("Enter your username and we'll send a code to your email.")
+            Text("Enter your email and we'll send you a reset code.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.5))
                 .multilineTextAlignment(.center)
@@ -78,15 +78,17 @@ struct ResetPasswordView: View {
     private var formSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("USERNAME")
+                Text("EMAIL")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color("neonPurpleBackground"))
                     .tracking(1.5)
-                TextField("", text: $username, prompt:
-                    Text("Enter your username").foregroundColor(.white.opacity(0.3))
+                TextField("", text: $email, prompt:
+                    Text("Enter your email").foregroundColor(.white.opacity(0.3))
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
+                .keyboardType(.emailAddress)
+                .textContentType(.username)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .focused($isFocused)
@@ -148,6 +150,6 @@ struct ResetPasswordView: View {
         guard canSubmit else { return }
         isFocused = false
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        Task { await vm.requestReset(username: username.trimmingCharacters(in: .whitespaces)) }
+        Task { await vm.requestReset(email: email.trimmingCharacters(in: .whitespaces)) }
     }
 }

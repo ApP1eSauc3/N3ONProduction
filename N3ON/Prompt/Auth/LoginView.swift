@@ -9,11 +9,11 @@ import SwiftUI
 struct LoginView: View {
     @EnvironmentObject private var vm: AuthViewModel
 
-    @State private var username: String = ""
+    @State private var email: String = ""
     @State private var password: String = ""
     @FocusState private var focusedField: Field?
 
-    private enum Field { case username, password }
+    private enum Field { case email, password }
 
     var body: some View {
         GeometryReader { geo in
@@ -79,15 +79,17 @@ struct LoginView: View {
 
     private var formSection: some View {
         VStack(alignment: .leading, spacing: 20) {
-            fieldGroup(label: "USERNAME") {
-                TextField("", text: $username, prompt:
-                    Text("Enter your username").foregroundColor(.white.opacity(0.3))
+            fieldGroup(label: "EMAIL") {
+                TextField("", text: $email, prompt:
+                    Text("Enter your email").foregroundColor(.white.opacity(0.3))
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
+                .keyboardType(.emailAddress)
+                .textContentType(.username)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
-                .focused($focusedField, equals: .username)
+                .focused($focusedField, equals: .email)
                 .submitLabel(.next)
                 .onSubmit { focusedField = .password }
                 .padding(12)
@@ -167,15 +169,14 @@ struct LoginView: View {
     // MARK: — Helpers
 
     private var canSubmit: Bool {
-        !username.trimmingCharacters(in: .whitespaces).isEmpty &&
+        email.contains("@") &&
         !password.isEmpty
     }
 
     private func submitLogin() {
         guard canSubmit else { return }
         focusedField = nil
-        Task { await vm.signIn(username: username.trimmingCharacters(in: .whitespaces),
-                               password: password) }
+        Task { await vm.signIn(email: email, password: password) }
     }
 
     private func fieldGroup<Content: View>(

@@ -53,7 +53,17 @@
 type User
   @model
   @auth(rules: [
-    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"] },
+    # Owner manages their own record only. ownerField "id": User.id IS the Cognito sub
+    # (AuthService.createInitialUserRecord sets id = currentUserId()), so existing rows
+    # are covered without a backfill — they have no implicit `owner` value.
+    # delete stays: AuthService.deleteAccount() deletes this record before the Cognito user.
+    # Accepted bootstrap residual: owner-update covers every field, so a user can still set
+    # their OWN djRank / isCurated / coinBalance. Field-level @auth can't close that under
+    # DataStore (amplify-swift sends every field on update, and the resolver rejects any
+    # restricted key present). Fix before .community: move those fields to a server-written model.
+    { allow: owner, ownerField: "id", operations: [create, read, update, delete] },
+    # Everyone else: read-only (profiles are public inside the app)
+    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] },
     # Admin (bootstrap curation): seed djRank + toggle isCurated on any user
     { allow: groups, groups: ["AdminUser"] }
   ]) {
@@ -103,8 +113,17 @@ type User
 type Venue
   @model
   @auth(rules: [
-    { allow: groups, groups: ["VenueOwnerUser"], operations: [create, read, update, delete] },
-    { allow: groups, groups: ["DJUser","UserGroup"], operations: [read] }
+    # Venue owners register venues. Create stays group-based: rules OR together, so
+    # "in VenueOwnerUser AND ownerID == me" can't be expressed, and an owner-scoped create
+    # would open registration to every signed-in user.
+    { allow: groups, groups: ["VenueOwnerUser"], operations: [create, read] },
+    # Only the venue's own owner edits/deletes it — ownerID holds the creator's Cognito sub
+    # (VenueService.create sets owner = getCurrentUserModel()).
+    # Accepted bootstrap residual: the owner can still set their own approvalStatus.
+    { allow: owner, ownerField: "ownerID", operations: [read, update, delete] },
+    { allow: groups, groups: ["DJUser","UserGroup"], operations: [read] },
+    # Admin (bootstrap): approve and moderate venues
+    { allow: groups, groups: ["AdminUser"] }
   ]) {
   id: ID!
   name: String!
@@ -164,11 +183,17 @@ type Review
 # ─────────────────────────────────────────────
 # CHAT ROOM
 # ─────────────────────────────────────────────
-type ChatRoom 
-  @model 
+type ChatRoom
+  @model
   @auth(rules: [
-    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] },
-    { allow: owner, operations: [create, update, delete] }
+    # Creator (implicit owner, stamped from the token — not in any input type)
+    { allow: owner, operations: [create, update, delete] },
+    # Members read the room and update lastMessage on send. Scopes DataStore sync to the
+    # user's own rooms instead of every room on the platform. ChatRoomService always
+    # includes the creator, since the creator rule above has no read.
+    # Accepted residual: a member can edit participantIDs (add/remove members).
+    { allow: owner, ownerField: "participantIDs", operations: [read, update] },
+    { allow: groups, groups: ["AdminUser"], operations: [read] }
   ]) {
   id: ID!
   name: String!
@@ -180,6 +205,8 @@ type ChatRoom
   lastMessageTimestamp: AWSDateTime
   # ✅ FIXED: added @index so event-specific rooms are queryable efficiently
   associatedEvent: ID @index(name: "byEvent")
+  # Cognito subs (User.id) of every member, creator included. Read scope for the room.
+  participantIDs: [String]
 }
 
 # ─────────────────────────────────────────────
@@ -188,8 +215,13 @@ type ChatRoom
 type Message 
   @model 
   @auth(rules: [
-    { allow: owner, operations: [create, update, delete] },
-    { allow: groups, groups: ["VenueOwnerUser","DJUser","UserGroup"], operations: [read] }
+    # Sender creates only. ownerField "senderID": the create is rejected unless senderID is
+    # the caller's own sub, so nobody can post as someone else — joinEvent's invite check
+    # relies on this. No update/delete: the client never edits or deletes its own messages.
+    { allow: owner, ownerField: "senderID", operations: [create] },
+    # Room members read — participantIDs is copied from the room at send time.
+    { allow: owner, ownerField: "participantIDs", operations: [read] },
+    { allow: groups, groups: ["AdminUser"], operations: [read] }
   ]) {
   id: ID!
   senderID: ID! @index(name: "bySender", sortKeyFields: ["timestamp"])
@@ -199,6 +231,8 @@ type Message
   timestamp: AWSDateTime!
   isRead: Boolean!
   readBy: [String]
+  # Copied from ChatRoom.participantIDs by ChatRoomService.send — read scope for the message.
+  participantIDs: [String]
 }
 
 # ─────────────────────────────────────────────
@@ -207,8 +241,10 @@ type Message
 type Post
   @model
   @auth(rules: [
-    { allow: groups, groups: ["DJUser","UserGroup","VenueOwnerUser"] },
-    { allow: owner }
+    # Post UI was removed (no Swift references). Locked to its owner + admin until the
+    # model is deleted in a later push (deleting drops the table — check it first).
+    { allow: owner, ownerField: "ownerID" },
+    { allow: groups, groups: ["AdminUser"] }
   ]) {
   id: ID!
   # IMPORTANT: store S3 storage KEYS here, not signed URLs.
@@ -269,8 +305,14 @@ type Event @model @auth(rules: [
 # TICKET
 # ─────────────────────────────────────────────
 type Ticket @model @auth(rules: [
-  { allow: owner },
-  { allow: groups, groups: ["VenueOwnerUser"], operations: [read] }
+  # Holder reads their own ticket — no client create/update/delete. Tickets are
+  # minted only by the purchaseTicket Lambda (adminRoles), which sets userID to the
+  # buyer's Cognito sub. ownerField "userID", not the implicit `owner`: owner is
+  # null on Lambda-minted tickets, so `{ allow: owner }` would hide them.
+  { allow: owner, ownerField: "userID", operations: [read] },
+  # Door staff scan tickets (group-wide read — not yet scoped to their own events)
+  { allow: groups, groups: ["VenueOwnerUser"], operations: [read] },
+  { allow: groups, groups: ["AdminUser"] }
 ]) {
   id: ID!
   # ✅ FIXED: added @index for efficient event and user ticket queries
@@ -344,8 +386,12 @@ type Attendance @model @auth(rules: [{ allow: owner }]) {
 type EventDJLink
   @model
   @auth(rules: [
-    # DJs create their own link when joining an event
-    { allow: owner, operations: [create, read, delete] },
+    # DJs read their own link. Links are created only by the joinEvent Lambda
+    # (adminRoles allow-listing via `amplify update function`) or an admin below —
+    # a client-side create would let a DJ self-report rankAtJoining/coinContribution.
+    # Keep this default-owner rule: joinEvent's CREATE_LINK selects `owner`, which
+    # only exists while a rule uses the implicit owner field.
+    { allow: owner, operations: [read] },
     # All authenticated users can read — needed to display tally in UI
     { allow: groups, groups: ["DJUser","VenueOwnerUser","UserGroup"], operations: [read] },
     # Lambda writes coinContribution and rankAtJoining via IAM
@@ -435,8 +481,9 @@ type VenueComplianceSubmission
   @model
   @auth(rules: [
     { allow: owner, operations: [create, read] },
-    # Admins need to review and approve compliance submissions
-    { allow: groups, groups: ["VenueOwnerUser"], operations: [read, update] }
+    # Admins review and approve. (Was VenueOwnerUser — the submitters themselves, who
+    # could then approve their own compliance.)
+    { allow: groups, groups: ["AdminUser"], operations: [read, update] }
   ]) {
   id: ID!
   venueID: ID! @index(name: "byVenue", sortKeyFields: ["submittedAt"])

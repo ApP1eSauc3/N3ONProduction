@@ -73,8 +73,8 @@ final class AuthViewModel: ObservableObject {
                 } else {
                     // No pending role data on this device — re-ask instead of
                     // authenticating a user who has no profile record.
-                    let username = (try? await AuthService.currentUsername()) ?? ""
-                    flowState = .roleSelection(username: username)
+                    let handle = try? await AuthService.currentHandle()
+                    flowState = .roleSelection(username: handle ?? "")
                 }
             }
         } catch {
@@ -126,45 +126,49 @@ final class AuthViewModel: ObservableObject {
 
     // MARK: — Auth actions
 
-    func signIn(username: String, password: String) async {
+    func signIn(email: String, password: String) async {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            try await AuthService.signIn(username: username, password: password)
+            try await AuthService.signIn(email: email, password: password)
             // Hub .signedIn event will trigger loadSession() → flowState = .authenticated
         } catch {
             errorMessage = authErrorMessage(from: error)
         }
     }
 
-    func signUp(username: String, email: String, password: String) async {
+    /// `handle` is the public @username (stored on the User record); `email` is
+    /// what the account signs in with.
+    func signUp(handle: String, email: String, password: String) async {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
             let needsConfirmation = try await AuthService.signUp(
-                username: username,
+                handle: handle,
                 email: email,
                 password: password
             )
-            flowState = needsConfirmation ? .confirmCode(username: username) : .login
+            flowState = needsConfirmation
+                ? .confirmCode(email: AuthService.cognitoUsername(email), handle: handle)
+                : .roleSelection(username: handle)
         } catch {
             errorMessage = authErrorMessage(from: error)
         }
     }
 
-    func confirmCode(username: String, code: String) async {
+    func confirmCode(email: String, handle: String, code: String) async {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            try await AuthService.confirmSignUp(for: username, code: code)
+            try await AuthService.confirmSignUp(email: email, code: code)
             // First-time user — let them pick their role before signing in.
-            flowState = .roleSelection(username: username)
+            flowState = .roleSelection(username: handle)
         } catch {
             errorMessage = authErrorMessage(from: error)
         }
@@ -198,39 +202,39 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func requestReset(username: String) async {
+    func requestReset(email: String) async {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            try await AuthService.resetPassword(username: username)
-            flowState = .confirmReset(username: username)
+            try await AuthService.resetPassword(email: email)
+            flowState = .confirmReset(email: email)
         } catch {
             errorMessage = authErrorMessage(from: error)
         }
     }
 
-    func confirmReset(username: String, newPassword: String, code: String) async {
+    func confirmReset(email: String, newPassword: String, code: String) async {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            try await AuthService.confirmReset(username: username, newPassword: newPassword, code: code)
+            try await AuthService.confirmReset(email: email, newPassword: newPassword, code: code)
             flowState = .login
         } catch {
             errorMessage = authErrorMessage(from: error)
         }
     }
 
-    func resendCode(for username: String) async {
+    func resendCode(email: String) async {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            try await AuthService.resendSignUpCode(for: username)
+            try await AuthService.resendSignUpCode(email: email)
         } catch {
             errorMessage = authErrorMessage(from: error)
         }

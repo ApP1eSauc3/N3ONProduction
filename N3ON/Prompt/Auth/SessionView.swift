@@ -37,14 +37,14 @@ struct SessionView: View {
         case .signUp:
             SignUpView()
                 .environmentObject(vm)
-        case .confirmCode(let username):
-            ConfirmationSignupView(username: username)
+        case .confirmCode(let email, let handle):
+            ConfirmationSignupView(email: email, handle: handle)
                 .environmentObject(vm)
         case .resetPassword:
             ResetPasswordView()
                 .environmentObject(vm)
-        case .confirmReset(let username):
-            ConfirmResetView(username: username)
+        case .confirmReset(let email):
+            ConfirmResetView(email: email)
                 .environmentObject(vm)
         case .roleSelection(let username):
             RoleSelectionView(username: username)

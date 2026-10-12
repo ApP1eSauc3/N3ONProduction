@@ -31,8 +31,10 @@ extension Venue {
     let venue = Venue.keys
     
     model.authRules = [
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser"], provider: .userPools, operations: [.create, .read, .update, .delete]),
-      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "UserGroup"], provider: .userPools, operations: [.read])
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["VenueOwnerUser"], provider: .userPools, operations: [.create, .read]),
+      rule(allow: .owner, ownerField: "ownerID", identityClaim: "cognito:username", provider: .userPools, operations: [.read, .update, .delete]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["DJUser", "UserGroup"], provider: .userPools, operations: [.read]),
+      rule(allow: .groups, groupClaim: "cognito:groups", groups: ["AdminUser"], provider: .userPools, operations: [.create, .update, .delete, .read])
     ]
     
     model.listPluralName = "Venues"

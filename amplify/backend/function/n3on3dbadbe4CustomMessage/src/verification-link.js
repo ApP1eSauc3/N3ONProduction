@@ -1,45 +1,29 @@
 /**
+ * Sign-up verification email — sends the 6-digit code the app's confirmation
+ * screen asks for (ConfirmationSignupView → AuthService.confirmSignUp).
+ *
+ * This module used to replace the code with a link to an S3 static-site
+ * "verification bucket" (`n3on3dbadbe4verificationbucket-dev`). That bucket has
+ * no website configuration and no objects, so the link was dead and the code
+ * only appeared as a query parameter inside it. The module name is kept because
+ * the trigger's MODULES env var (managed by the Amplify CLI) refers to it.
+ *
+ * `codeParameter` is Cognito's `{####}` placeholder; Cognito substitutes the
+ * real code after this trigger returns and rejects a message that omits it.
+ *
  * @type {import('@types/aws-lambda').CustomMessageTriggerHandler}
  */
+const CODE_TRIGGERS = new Set(['CustomMessage_SignUp', 'CustomMessage_ResendCode']);
+
 exports.handler = async (event) => {
-  // Define the URL that you want the user to be directed to after verification is complete
-  if (event.triggerSource === 'CustomMessage_SignUp') {
-    const { codeParameter } = event.request;
-    const { region, userName } = event;
-    const { clientId } = event.callerContext;
-    const redirectUrl = `${process.env.REDIRECTURL}/?username=${userName}`;
-    const resourcePrefix = process.env.RESOURCENAME.split('CustomMessage')[0];
+  if (!CODE_TRIGGERS.has(event.triggerSource)) return event;
 
-    const hyphenRegions = [
-      'us-east-1',
-      'us-west-1',
-      'us-west-2',
-      'ap-southeast-1',
-      'ap-southeast-2',
-      'ap-northeast-1',
-      'eu-west-1',
-      'sa-east-1',
-    ];
-
-    const separator = hyphenRegions.includes(region) ? '-' : '.';
-
-    const payload = Buffer.from(
-      JSON.stringify({
-        userName,
-        redirectUrl,
-        region,
-        clientId,
-      }),
-    ).toString('base64');
-    // eslint-disable-next-line spellcheck/spell-checker
-    const bucketUrl = `http://${resourcePrefix}verificationbucket-${process.env.ENV}.s3-website${separator}${region}.amazonaws.com`;
-    const url = `${bucketUrl}/?data=${payload}&code=${codeParameter}`;
-    const message = `${process.env.EMAILMESSAGE}. \n ${url}`;
-    event.response.smsMessage = message;
-    event.response.emailSubject = process.env.EMAILSUBJECT;
-    event.response.emailMessage = message;
-    console.log('event.response', event.response);
-  }
-
+  const { codeParameter } = event.request;
+  event.response.emailSubject = 'Your N3ON verification code';
+  event.response.emailMessage =
+    `Thanks for signing up for N3ON. Your verification code is ${codeParameter}. ` +
+    'Enter it in the app to finish creating your account. ' +
+    "If you didn't sign up, you can ignore this email.";
+  event.response.smsMessage = `Your N3ON verification code is ${codeParameter}`;
   return event;
 };

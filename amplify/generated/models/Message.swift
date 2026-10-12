@@ -10,6 +10,7 @@ public struct Message: Model {
   public var timestamp: Temporal.DateTime
   public var isRead: Bool
   public var readBy: [String?]?
+  public var participantIDs: [String?]?
   public var createdAt: Temporal.DateTime?
   public var updatedAt: Temporal.DateTime?
   
@@ -19,7 +20,8 @@ public struct Message: Model {
       content: String,
       timestamp: Temporal.DateTime,
       isRead: Bool,
-      readBy: [String?]? = nil) {
+      readBy: [String?]? = nil,
+      participantIDs: [String?]? = nil) {
     self.init(id: id,
       sender: sender,
       chatRoomID: chatRoomID,
@@ -27,6 +29,7 @@ public struct Message: Model {
       timestamp: timestamp,
       isRead: isRead,
       readBy: readBy,
+      participantIDs: participantIDs,
       createdAt: nil,
       updatedAt: nil)
   }
@@ -37,6 +40,7 @@ public struct Message: Model {
       timestamp: Temporal.DateTime,
       isRead: Bool,
       readBy: [String?]? = nil,
+      participantIDs: [String?]? = nil,
       createdAt: Temporal.DateTime? = nil,
       updatedAt: Temporal.DateTime? = nil) {
       self.id = id
@@ -46,6 +50,7 @@ public struct Message: Model {
       self.timestamp = timestamp
       self.isRead = isRead
       self.readBy = readBy
+      self.participantIDs = participantIDs
       self.createdAt = createdAt
       self.updatedAt = updatedAt
   }

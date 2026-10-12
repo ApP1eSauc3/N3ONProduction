@@ -24,15 +24,15 @@ final class N3ONAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
         return true
     }
 
-    // Called when APNs issues a device token after `registerForRemoteNotifications`.
-    // TODO: When Amplify Pinpoint is configured, forward the token:
-    //   Amplify.Notifications.Push.registerDevice(apnsToken: deviceToken)
+    // Called when APNs issues a device token after `registerForRemoteNotifications`
+    // (not yet called anywhere — remote push is not built; see the provider
+    // decision in Task/PushNotificationService.swift). The token is a delivery
+    // credential for this device: never log it.
     func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        let tokenString = deviceToken.map { String(format: "%02x", $0) }.joined()
-        print("[N3ON] APNs device token: \(tokenString)")
+        _ = deviceToken
     }
 
     func application(

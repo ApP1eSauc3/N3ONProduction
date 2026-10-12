@@ -15,6 +15,14 @@
     },
     "s3Key": {
       "Type": "String"
+    },
+    "apin3onGraphQLAPIIdOutput": {
+      "Type": "String",
+      "Default": "apin3onGraphQLAPIIdOutput"
+    },
+    "apin3onGraphQLAPIEndpointOutput": {
+      "Type": "String",
+      "Default": "apin3onGraphQLAPIEndpointOutput"
     }
   },
   "Conditions": {
@@ -69,6 +77,12 @@
             },
             "REGION": {
               "Ref": "AWS::Region"
+            },
+            "API_N3ON_GRAPHQLAPIIDOUTPUT": {
+              "Ref": "apin3onGraphQLAPIIdOutput"
+            },
+            "API_N3ON_GRAPHQLAPIENDPOINTOUTPUT": {
+              "Ref": "apin3onGraphQLAPIEndpointOutput"
             }
           }
         },
@@ -160,6 +174,130 @@
                   }
                 ]
               }
+            }
+          ]
+        }
+      }
+    },
+    "AmplifyResourcesPolicy": {
+      "DependsOn": [
+        "LambdaExecutionRole"
+      ],
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "amplify-lambda-execution-policy",
+        "Roles": [
+          {
+            "Ref": "LambdaExecutionRole"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "appsync:GraphQL"
+              ],
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:appsync:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":apis/",
+                      {
+                        "Ref": "apin3onGraphQLAPIIdOutput"
+                      },
+                      "/types/Query/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:appsync:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":apis/",
+                      {
+                        "Ref": "apin3onGraphQLAPIIdOutput"
+                      },
+                      "/types/Mutation/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "EndorsementStreamReadPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "endorsement-request-stream-read",
+        "Roles": [
+          {
+            "Ref": "LambdaExecutionRole"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:DescribeStream",
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+                "dynamodb:ListStreams"
+              ],
+              "Resource": {
+                "Fn::ImportValue": {
+                  "Fn::Sub": "${apin3onGraphQLAPIIdOutput}:GetAtt:EndorsementRequestTable:StreamArn"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "EndorsementStreamMapping": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "DependsOn": [
+        "EndorsementStreamReadPolicy"
+      ],
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::ImportValue": {
+            "Fn::Sub": "${apin3onGraphQLAPIIdOutput}:GetAtt:EndorsementRequestTable:StreamArn"
+          }
+        },
+        "FunctionName": {
+          "Ref": "LambdaFunction"
+        },
+        "StartingPosition": "LATEST",
+        "BatchSize": 10,
+        "MaximumRetryAttempts": 5,
+        "BisectBatchOnFunctionError": true,
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": "{\"dynamodb\":{\"NewImage\":{\"status\":{\"S\":[\"approved\"]}}}}"
             }
           ]
         }

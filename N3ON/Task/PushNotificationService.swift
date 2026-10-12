@@ -2,14 +2,19 @@
 // N3ON — Task layer
 //
 // Manages notification permissions and local event-reminder scheduling.
-// Remote push (APNs via Amplify Pinpoint) requires `amplify add notifications` — see AGENTS.md.
-// Until Pinpoint is configured, all push surfaces use local UNUserNotificationCenter.
+// All notifications today are LOCAL (UNUserNotificationCenter). Remote push is
+// not built.
 //
-// Remote push setup checklist:
-//   1. amplify add notifications → configure Pinpoint channel
-//   2. Add AWSPinpointPushNotificationsPlugin to Podfile
-//   3. Register plugin in N3ONApp.configureAmplify()
-//   4. Call Amplify.Notifications.Push.registerDevice(apnsToken:) in AppDelegate.didRegisterForRemoteNotifications
+// Do NOT build remote push on Amplify's push category: it is Pinpoint-backed
+// (AWSPinpointPushNotificationsPlugin is the only provider, verified up to
+// amplify-swift 2.62.0), and Amazon Pinpoint reaches end of support on
+// 2026-10-30 — its endpoints/segments/campaigns go away. Amplify's migration
+// guide points at Amazon Connect Customer Profiles, which has no Swift push
+// plugin yet. Provider decision is open (LAUNCH-CHECKLIST.md, Phase 5):
+//   • direct APNs from a Lambda (device tokens stored per user) — fewest moving parts
+//   • Amazon SNS mobile push
+//   • AWS End User Messaging push APIs (the retained, non-endpoint part of Pinpoint)
+// Any option needs an APNs .p8 key and a server-side token store.
 
 import Foundation
 import UserNotifications

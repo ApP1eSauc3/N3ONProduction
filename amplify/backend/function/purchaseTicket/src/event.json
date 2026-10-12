@@ -1,11 +1,13 @@
 {
   "httpMethod": "POST",
-  "path": "/item",
-  "queryStringParameters": {
-    "limit": "10"
-  },
+  "path": "/tickets/purchase",
   "headers": {
     "Content-Type": "application/json"
   },
-  "body": "{\"msg\":\"Hello from the event.json body\"}"
+  "requestContext": {
+    "identity": {
+      "cognitoAuthenticationProvider": "cognito-idp.us-east-1.amazonaws.com/us-east-1_iyrHSJMg4,cognito-idp.us-east-1.amazonaws.com/us-east-1_iyrHSJMg4:CognitoSignIn:00000000-0000-0000-0000-000000000000"
+    }
+  },
+  "body": "{\"eventID\": \"REPLACE_WITH_EVENT_ID\", \"quantity\": 1}"
 }
