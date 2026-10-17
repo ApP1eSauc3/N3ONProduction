@@ -15,10 +15,22 @@ final class MapViewModel: NSObject, ObservableObject {
     @Published var djRank: Int? = nil
     @Published var currentUser: User?
     @Published var isAdmin = false
-    @Published var mapRegion = MKCoordinateRegion(
+    /// Where the map starts before a location fix (Brisbane CBD).
+    let initialRegion = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: -27.4698, longitude: 153.0251),
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
     )
+
+    /// A one-off instruction to move the map. The map applies each request once
+    /// (by `id`) and otherwise leaves the camera wherever the user panned it —
+    /// a continuously bound region snapped the map back to the user's location
+    /// on every location update.
+    struct CameraRequest: Equatable {
+        let id = UUID()
+        let region: MKCoordinateRegion
+        static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+    }
+    @Published private(set) var cameraRequest: CameraRequest?
     @Published var isLoading = false
     @Published var userLocation: CLLocation?
     @Published var userCity: String?
@@ -76,11 +88,13 @@ final class MapViewModel: NSObject, ObservableObject {
 
     // MARK: - Location helpers
 
+    /// Moves the map once. Called on the first location fix and by the
+    /// locate-me button — never on routine location updates.
     func zoomToLocation(_ coordinate: CLLocationCoordinate2D) {
-        mapRegion = MKCoordinateRegion(
+        cameraRequest = CameraRequest(region: MKCoordinateRegion(
             center: coordinate,
             span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-        )
+        ))
     }
 
     func zoomToUserLocation() {

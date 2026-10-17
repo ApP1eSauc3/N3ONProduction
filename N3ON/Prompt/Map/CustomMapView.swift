@@ -7,7 +7,11 @@ import SwiftUI
 import MapKit
 
 struct CustomMapView: UIViewRepresentable {
-    @Binding var region: MKCoordinateRegion
+    /// Starting camera, applied once in makeUIView.
+    var initialRegion: MKCoordinateRegion
+    /// One-off camera moves (first location fix, locate-me button). Each is
+    /// applied once; otherwise the camera stays wherever the user put it.
+    var cameraRequest: MapViewModel.CameraRequest?
 
     // Annotation sources
     var venues: [Venue]
@@ -16,7 +20,6 @@ struct CustomMapView: UIViewRepresentable {
     var role: AppRole
 
     // Event handlers
-    var onDoubleTap: (CLLocationCoordinate2D) -> Void
     var onVenueTap: (Venue) -> Void
     /// Called when a venue pin is tapped in the `.regular` role —
     /// receives the first upcoming event at that venue for ticket purchase.
@@ -26,6 +29,7 @@ struct CustomMapView: UIViewRepresentable {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
         mapView.overrideUserInterfaceStyle = .dark
+        mapView.setRegion(initialRegion, animated: false)
 
         let doubleTapRecognizer = UITapGestureRecognizer(
             target: context.coordinator,
@@ -38,12 +42,12 @@ struct CustomMapView: UIViewRepresentable {
     }
 
     func updateUIView(_ mapView: MKMapView, context: Context) {
-        // Update region only when it has actually changed
-        if mapView.region.center.latitude != region.center.latitude ||
-           mapView.region.center.longitude != region.center.longitude ||
-           mapView.region.span.latitudeDelta != region.span.latitudeDelta ||
-           mapView.region.span.longitudeDelta != region.span.longitudeDelta {
-            mapView.setRegion(region, animated: true)
+        // Apply a camera request exactly once. Re-applying a stored region on
+        // every SwiftUI update fought the user's panning (it snapped back each
+        // time a location update re-rendered the map).
+        if let request = cameraRequest, request.id != context.coordinator.appliedCameraRequestID {
+            context.coordinator.appliedCameraRequestID = request.id
+            mapView.setRegion(request.region, animated: true)
         }
 
         let existingAnnotations = mapView.annotations.filter { !($0 is MKUserLocation) }
@@ -111,6 +115,7 @@ struct CustomMapView: UIViewRepresentable {
 
     class Coordinator: NSObject, MKMapViewDelegate {
         var parent: CustomMapView
+        var appliedCameraRequestID: UUID?
 
         init(_ parent: CustomMapView) {
             self.parent = parent
@@ -120,7 +125,12 @@ struct CustomMapView: UIViewRepresentable {
             guard let mapView = gesture.view as? MKMapView else { return }
             let touchPoint = gesture.location(in: mapView)
             let coordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
-            parent.onDoubleTap(coordinate)
+            // Zoom in 2× on the tapped point, from the map's current zoom.
+            let span = MKCoordinateSpan(
+                latitudeDelta: mapView.region.span.latitudeDelta * 0.5,
+                longitudeDelta: mapView.region.span.longitudeDelta * 0.5
+            )
+            mapView.setRegion(MKCoordinateRegion(center: coordinate, span: span), animated: true)
         }
 
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {

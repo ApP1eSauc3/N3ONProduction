@@ -24,12 +24,12 @@ struct MapView: View {
             Color.black.ignoresSafeArea()
 
             CustomMapView(
-                region: $viewModel.mapRegion,
+                initialRegion: viewModel.initialRegion,
+                cameraRequest: viewModel.cameraRequest,
                 venues: viewModel.venues,
                 visibleDJPins: viewModel.djPins,
                 allEvents: viewModel.events,
                 role: viewModel.role,
-                onDoubleTap: handleDoubleTap,
                 onVenueTap: { venue in selectedVenue = venue },
                 onEventTap: { event in ticketEvent = event }
             )
@@ -179,16 +179,6 @@ struct MapView: View {
         // Regular role: show event detail for ticket purchase
         .sheet(item: $ticketEvent) { event in
             EventDetailView(vm: EventViewModel(event: event))
-        }
-    }
-
-    private func handleDoubleTap(_ coordinate: CLLocationCoordinate2D) {
-        let newSpan = MKCoordinateSpan(
-            latitudeDelta: viewModel.mapRegion.span.latitudeDelta * 0.5,
-            longitudeDelta: viewModel.mapRegion.span.longitudeDelta * 0.5
-        )
-        withAnimation(.easeInOut(duration: 0.3)) {
-            viewModel.mapRegion = MKCoordinateRegion(center: coordinate, span: newSpan)
         }
     }
 }
