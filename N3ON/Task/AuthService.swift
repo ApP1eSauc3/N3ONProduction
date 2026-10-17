@@ -116,6 +116,20 @@ enum AuthService {
         _ = try await Amplify.Auth.resendSignUpCode(for: cognitoUsername(email))
     }
 
+    // MARK: — Password rules
+
+    /// Why Cognito would reject `password`, or nil if it's acceptable. The pool
+    /// requires 8+ characters, and Cognito's own pattern `^[\S]+.*[\S]+$`
+    /// forbids a leading or trailing space — checked here so the user gets a
+    /// plain message instead of the raw AWS validation error.
+    static func passwordProblem(_ password: String) -> String? {
+        if password.count < 8 { return "Use at least 8 characters." }
+        if password.first?.isWhitespace == true || password.last?.isWhitespace == true {
+            return "Your password can't start or end with a space."
+        }
+        return nil
+    }
+
     // MARK: — Password reset
 
     /// Initiates Cognito's forgot-password flow. A verification code is sent to

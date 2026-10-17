@@ -19,7 +19,7 @@ struct ConfirmResetView: View {
     private var passwordsMatch: Bool { newPassword == confirmPassword }
     private var canSubmit: Bool {
         !code.trimmingCharacters(in: .whitespaces).isEmpty &&
-        newPassword.count >= 8 &&
+        AuthService.passwordProblem(newPassword) == nil &&
         passwordsMatch
     }
 
@@ -138,6 +138,12 @@ struct ConfirmResetView: View {
                             lineWidth: 1
                         )
                 )
+            }
+
+            if !newPassword.isEmpty, let problem = AuthService.passwordProblem(newPassword) {
+                Text(problem)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.7))
             }
 
             if !confirmPassword.isEmpty && !passwordsMatch {

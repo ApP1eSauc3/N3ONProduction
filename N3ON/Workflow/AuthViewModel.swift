@@ -262,6 +262,11 @@ final class AuthViewModel: ObservableObject {
     // MARK: — Error formatting
 
     private func authErrorMessage(from error: Error) -> String {
+        // Cognito's raw password-pattern failure → plain English.
+        let raw = (error as? AuthError)?.errorDescription ?? error.localizedDescription
+        if raw.contains("Value at 'password' failed to satisfy constraint") {
+            return "Your password can't start or end with a space."
+        }
         if let authError = error as? AuthError {
             switch authError {
             case .notAuthorized(let description, _, _):

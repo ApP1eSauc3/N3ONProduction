@@ -31,3 +31,12 @@ final class AuthServiceSignUpTests: XCTestCase {
         XCTAssertEqual(request.attributes.first { $0.key == .email }?.value, "a@example.com")
     }
 }
+
+final class PasswordRuleTests: XCTestCase {
+    func testCognitoPasswordPatternIsCheckedLocally() {
+        XCTAssertNil(AuthService.passwordProblem("correct horse"))       // inner space is fine
+        XCTAssertNotNil(AuthService.passwordProblem("short"))
+        XCTAssertNotNil(AuthService.passwordProblem("trailing1 "))
+        XCTAssertNotNil(AuthService.passwordProblem(" leading12"))
+    }
+}
