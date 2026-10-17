@@ -59,7 +59,10 @@ final class MapViewModel: NSObject, ObservableObject {
         defer { isLoading = false }
 
         currentUserID = await AuthService.currentUserIdOrNil()
-        role = await AccessControlService.currentUserRole()
+        // DJ status lives on the User record (isDJ), not in a Cognito group —
+        // reading the group alone hid chat and Create Event from new DJs.
+        let me = try? await AuthService.getCurrentUserModel()
+        role = await AccessControlService.role(for: me)
         isAdmin = await AccessControlService.isAdmin()
         guard !Task.isCancelled else { return }
 

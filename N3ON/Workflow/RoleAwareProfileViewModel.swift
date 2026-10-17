@@ -37,7 +37,7 @@ final class RoleAwareProfileViewModel: ObservableObject {
                 avatarState = .remote(avatarKey: model.avatarKey ?? "default-avatar")
                 currentUser = model
                 // Venue is Cognito-only; DJ vs Regular is authoritative in User.isDJ
-                role = cognitoRole == .venue ? .venue : (model.isDJ ? .dj : .regular)
+                role = await AccessControlService.role(for: model)
             }
         } catch {
             role = cognitoRole

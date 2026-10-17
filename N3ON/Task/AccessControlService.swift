@@ -17,6 +17,16 @@ struct AccessControlService {
         return .regular
     }
 
+    /// The role the app should treat this user as. Venue comes from the Cognito
+    /// group (admin-assigned); DJ vs regular comes from `User.isDJ`, because
+    /// every self-service sign-up lands in `UserGroup` — a DJ is never in the
+    /// `DJUser` group unless an admin adds them. Use this, not
+    /// `currentUserRole()`, anywhere DJ features are gated.
+    static func role(for user: User?) async -> AppRole {
+        if await currentUserRole() == .venue { return .venue }
+        return user?.isDJ == true ? .dj : .regular
+    }
+
     /// True when the signed-in user belongs to the `AdminUser` Cognito group.
     /// Admin is an **orthogonal capability**, not an `AppRole` — an admin who is
     /// also a DJ/regular keeps their normal role and UI. Bootstrap/curation gates

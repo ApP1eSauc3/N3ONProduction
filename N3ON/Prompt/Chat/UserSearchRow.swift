@@ -11,7 +11,7 @@ struct UserSearchRow: View {
     let user: UserSummary
     let isAdded: Bool
     let onAdd: () -> Void
-    let onMessage: () -> Void  // ✅ Add this line
+    let onMessage: () -> Void
 
     var body: some View {
         HStack(spacing: 10) {
@@ -23,26 +23,29 @@ struct UserSearchRow: View {
             )
 
             Text(user.username)
+                .font(.subheadline)
+                .foregroundStyle(.white)
             Spacer()
 
             if user.isDJ {
-                if !isAdded {
-                    Button("Follow", action: onAdd)
-                        .font(.caption)
-                        .padding(6)
-                        .background(Color.blue.opacity(0.2))
-                        .cornerRadius(6)
-                } else {
-                    Text("Added")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
+                // Buttons in a List row need .borderless, or a tap anywhere on
+                // the row fires every button in it.
+                Button(isAdded ? "Following" : "Follow", action: onAdd)
+                    .buttonStyle(.borderless)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(isAdded ? .white.opacity(0.5) : Color("neonPurpleBackground"))
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                    .disabled(isAdded)
 
-                Button("Message", action: onMessage)  // ✅ New button
-                    .font(.caption)
-                    .padding(6)
-                    .background(Color.purple.opacity(0.2))
-                    .cornerRadius(6)
+                Button("Message", action: onMessage)
+                    .buttonStyle(.borderless)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                    .background(Color("neonPurpleBackground").opacity(0.85))
+                    .clipShape(Capsule())
             }
         }
         .padding(.vertical, 4)
