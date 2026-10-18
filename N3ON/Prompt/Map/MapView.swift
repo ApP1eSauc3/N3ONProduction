@@ -34,22 +34,27 @@ struct MapView: View {
                 onEventTap: { event in ticketEvent = event }
             )
             .ignoresSafeArea(.container, edges: [.top])
-            // Swipe left anywhere on the map to open the chat panel.
-            // Swipe right while panel is open to close it.
-            .gesture(
-                DragGesture(minimumDistance: 40, coordinateSpace: .local)
-                    .onEnded { value in
-                        let horizontal = value.translation.width
-                        let vertical   = abs(value.translation.height)
-                        guard vertical < 80 else { return } // ignore diagonal
-                        if !showChatPanel && horizontal < -50 {
-                            showChatPanel = true
-                            unreadVM.reset()
-                        } else if showChatPanel && horizontal > 50 {
-                            showChatPanel = false
-                        }
-                    }
-            )
+
+            // Swipe in from the right edge to open the chat panel. A gesture on
+            // the map itself never fired reliably — MKMapView's own pan
+            // recogniser takes the drag — so a thin edge strip catches it
+            // instead (the panel closes itself: button or swipe right).
+            if viewModel.role != .regular && !showChatPanel {
+                Color.clear
+                    .frame(width: 24)
+                    .frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 15, coordinateSpace: .local)
+                            .onEnded { value in
+                                guard value.translation.width < -40,
+                                      abs(value.translation.height) < 80 else { return }
+                                showChatPanel = true
+                                unreadVM.reset()
+                            }
+                    )
+                    .accessibilityHidden(true)   // the chat button is the accessible path
+            }
 
             // Floating controls
             VStack {
