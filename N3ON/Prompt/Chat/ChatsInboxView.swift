@@ -11,7 +11,6 @@ import SwiftUI
 struct ChatsInboxView: View {
     @StateObject private var vm = ChatsInboxVM()
     @State private var openVM: ChatViewModel?
-    @State private var showChat = false
 
     var body: some View {
         ZStack {
@@ -41,8 +40,10 @@ struct ChatsInboxView: View {
             }
         }
         .task { vm.start() }
-        .sheet(isPresented: $showChat) {
-            if let openVM { ChatView(viewModel: openVM) }
+        // sheet(item:) — with sheet(isPresented:) the first frame could render
+        // before openVM was set, showing an empty white sheet.
+        .sheet(item: $openVM) { chatVM in
+            NavigationStack { ChatView(viewModel: chatVM) }
         }
         .navigationTitle("Chats")
         .navigationBarTitleDisplayMode(.inline)
@@ -90,7 +91,6 @@ struct ChatsInboxView: View {
     private func open(_ s: ChatSummary) {
         guard let me = vm.me else { return }
         openVM = ChatViewModel(chatRoomID: s.id, currentUserID: me)
-        showChat = true
     }
 }
 

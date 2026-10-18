@@ -35,6 +35,8 @@ struct MessageRow: View {
                     .transition(.opacity)
             }
         }
+        // Full width, so incoming messages sit left and yours sit right.
+        .frame(maxWidth: .infinity, alignment: message.isCurrentUser ? .trailing : .leading)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .id(message.id)

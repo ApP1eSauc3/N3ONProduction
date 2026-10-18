@@ -58,6 +58,26 @@ struct ChatRoomService {
 
     // MARK: - Messages
 
+    static func room(byId id: String) async throws -> ChatRoom? {
+        try await Amplify.DataStore.query(ChatRoom.self, byId: id)
+    }
+
+    /// messageID → senderID for the room, resolved by querying on the stored
+    /// `senderID` column for each candidate sender. `Message.sender` is a
+    /// belongsTo that DataStore leaves nil when the sender's User row isn't in
+    /// the local store yet — the column itself is always there.
+    static func senderIDs(in roomID: String, candidates: [String]) async -> [String: String] {
+        var map: [String: String] = [:]
+        for candidate in Set(candidates) {
+            let sent = (try? await Amplify.DataStore.query(
+                Message.self,
+                where: Message.keys.chatRoomID == roomID && Message.keys.sender == candidate
+            )) ?? []
+            for m in sent { map[m.id] = candidate }
+        }
+        return map
+    }
+
     /// All messages in a room, sorted oldest-first.
     static func messages(for roomID: String) async throws -> [Message] {
         let results = try await Amplify.DataStore.query(

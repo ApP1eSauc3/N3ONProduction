@@ -22,6 +22,14 @@ final class ChatViewModel: ObservableObject {
     let chatRoomID: String
     private var currentUser: User?
 
+    // Sender resolution. `Message.sender` is a belongsTo that DataStore leaves
+    // nil until the sender's User row is in the local store, which showed the
+    // other person as "Unknown" and could misplace a message's side. The stored
+    // senderID column is always present, so it's resolved from that instead.
+    private var memberIDs: [String] = []
+    private var senderByMessage: [String: String] = [:]
+    private var names: [String: String] = [:]
+
     // Structured concurrency: one child task owns the observation stream.
     // Cancelled automatically when this VM is deallocated.
     private var observationTask: Task<Void, Never>?
@@ -41,6 +49,10 @@ final class ChatViewModel: ObservableObject {
 
         do {
             let raw = try await ChatRoomService.messages(for: chatRoomID)
+            let room = try? await ChatRoomService.room(byId: chatRoomID)
+            memberIDs = Array(Set((room?.participantIDs ?? []).compactMap { $0 } + [currentUserID]))
+            senderByMessage = await ChatRoomService.senderIDs(in: chatRoomID, candidates: memberIDs)
+            await resolveNames(for: memberIDs)
             messages = raw.map(toChatMessage)
             participants = try await ChatRoomService.participants(for: chatRoomID, excludingID: currentUserID)
         } catch {
@@ -124,16 +136,16 @@ final class ChatViewModel: ObservableObject {
                     // Only handle creates for this room from other participants
                     guard change.mutationType == MutationEvent.MutationType.create.rawValue,
                           let incoming = try? change.decodeModel(as: Message.self),
-                          incoming.chatRoomID == self.chatRoomID,
-                          (incoming.sender?.id ?? "") != self.currentUserID
+                          incoming.chatRoomID == self.chatRoomID
                     else { continue }
 
-                    await MainActor.run { [weak self] in
-                        guard let self else { return }
-                        // De-duplicate: optimistic insert may already hold this id
-                        guard !self.messages.contains(where: { $0.id == incoming.id }) else { return }
-                        self.messages.append(self.toChatMessage(incoming))
-                    }
+                    let senderID = await self.resolveSender(of: incoming)
+                    guard senderID != self.currentUserID else { continue }
+                    await self.resolveNames(for: [senderID])
+
+                    // De-duplicate: optimistic insert may already hold this id
+                    guard !self.messages.contains(where: { $0.id == incoming.id }) else { continue }
+                    self.messages.append(self.toChatMessage(incoming))
                 }
             } catch {
                 // Stream ended — DataStore offline or session signed out.
@@ -143,14 +155,31 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func toChatMessage(_ m: Message) -> ChatMessage {
-        ChatMessage(
+        let senderID = m.sender?.id ?? senderByMessage[m.id] ?? ""
+        return ChatMessage(
             id: m.id,
-            sender: m.sender?.username ?? "Unknown",
+            sender: m.sender?.username ?? names[senderID] ?? "DJ",
             content: m.content,
             timestamp: m.timestamp.foundationDate ?? Date(),
-            isCurrentUser: (m.sender?.id ?? "") == currentUserID,
+            isCurrentUser: senderID == currentUserID,
             deliveryStatus: m.isRead ? .read : .delivered
         )
+    }
+
+    /// The sender of a live message — from the association if loaded, else
+    /// from the stored senderID column.
+    private func resolveSender(of m: Message) async -> String {
+        if let id = m.sender?.id { return id }
+        if let known = senderByMessage[m.id] { return known }
+        let fresh = await ChatRoomService.senderIDs(in: chatRoomID, candidates: memberIDs)
+        senderByMessage.merge(fresh) { _, new in new }
+        return fresh[m.id] ?? ""
+    }
+
+    private func resolveNames(for ids: [String]) async {
+        for id in ids where !id.isEmpty && names[id] == nil {
+            if let user = await UserService.fetchAnywhere(byId: id) { names[id] = user.username }
+        }
     }
 
     private func updateStatus(id: String, to status: ChatMessage.DeliveryStatus) {

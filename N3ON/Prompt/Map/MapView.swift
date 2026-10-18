@@ -117,6 +117,7 @@ struct MapView: View {
                                     .shadow(color: .black.opacity(0.3), radius: 5)
                             }
                     }
+                    .accessibilityLabel("Create event")
                     .padding(.top, viewModel.role != .regular ? 12 : 60)
                     .padding(.trailing, 20)
                 }
