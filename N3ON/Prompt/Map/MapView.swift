@@ -156,7 +156,7 @@ struct MapView: View {
             // Chat panel slides in from the right edge.
             // Only rendered when the role has chat access.
             if viewModel.role != .regular {
-                ChatPanelView()
+                ChatPanelView(onClose: { showChatPanel = false })
                     .offset(x: showChatPanel ? 0 : UIScreen.main.bounds.width)
                     .animation(.spring(response: 0.35, dampingFraction: 0.7), value: showChatPanel)
             }
