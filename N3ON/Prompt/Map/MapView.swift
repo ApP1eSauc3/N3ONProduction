@@ -12,6 +12,7 @@ struct MapView: View {
     @EnvironmentObject var viewModel: MapViewModel
     @StateObject private var unreadVM = UnreadCounterVM()
     @State private var showChatPanel = false
+    @State private var showCreateEvent = false
     @State private var showSearch = false
     @State private var selectedVenue: Venue?
     /// User role: holds the event to purchase tickets for.
@@ -105,8 +106,14 @@ struct MapView: View {
 
                 // DJ event creation — Rank ≥ 4, OR an admin-curated DJ during
                 // bootstrap (capability layer; see CurationService.canCreateEvent)
+                // A Button, not a NavigationLink: the map isn't inside a
+                // NavigationStack, so a link here had nothing to push onto and
+                // silently did nothing.
                 if viewModel.role == .dj, viewModel.canCreateEvent {
-                    NavigationLink(destination: EventCreationFlowView()) {
+                    Button {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        showCreateEvent = true
+                    } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 22))
                             .foregroundColor(.white)
@@ -171,6 +178,9 @@ struct MapView: View {
             await unreadVM.start()
             await viewModel.loadMapData()
         }
+        .fullScreenCover(isPresented: $showCreateEvent) {
+            EventCreationCover()
+        }
         .sheet(isPresented: $showSearch) {
             MapSearchView()
         }
@@ -185,6 +195,33 @@ struct MapView: View {
         // Regular role: show event detail for ticket purchase
         .sheet(item: $ticketEvent) { event in
             EventDetailView(vm: EventViewModel(event: event))
+        }
+    }
+}
+
+/// Event creation presented from the map: its own NavigationStack and draft,
+/// plus a close button (the profile entry point pushes it instead).
+private struct EventCreationCover: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var draft = EventDraftViewModel()
+
+    var body: some View {
+        NavigationStack {
+            EventCreationFlowView()
+                .environmentObject(draft)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Close")
+                    }
+                }
         }
     }
 }
