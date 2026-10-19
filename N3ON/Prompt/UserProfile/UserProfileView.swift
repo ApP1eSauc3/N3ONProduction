@@ -31,7 +31,6 @@ struct UserProfileView: View {
     @State private var showRoleSwitchConfirm = false
     @State private var showDeleteConfirm = false
     /// Measured height of the static header — used as transparent spacer in ScrollView.
-    @State private var headerHeight: CGFloat = 280
 
     var body: some View {
         NavigationStack {
@@ -64,36 +63,26 @@ struct UserProfileView: View {
                 .ignoresSafeArea(edges: .top)
                 .zIndex(0)
 
-                // ── Static header — lives BEHIND the scroll view ───────────────
-                // ScrollView (zIndex 1) slides the black content card over this
-                // as the user scrolls, hiding the header naturally.
-                ProfileHeaderView(
-                    vm: vm,
-                    showImagePicker: $showImagePicker,
-                    showDJProfilePreview: $showDJProfilePreview,
-                    showRoleSwitchConfirm: $showRoleSwitchConfirm,
-                    showBecomeDJSheet: $showBecomeDJSheet
-                )
-                    .padding(.top, 16)    // DESIGN §5.1 header top padding
-                    .padding(.bottom, 32) // DESIGN §5.1 header bottom padding
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        GeometryReader { g in
-                            Color.clear.preference(key: HeaderHeightKey.self, value: g.size.height)
-                        }
-                    )
-                    .zIndex(0)
-
-                // ── Scrollable content — covers the header as you scroll ────────
+                // ── Scrollable content, header first ───────────────────────────
+                // The header used to sit BEHIND the ScrollView with a transparent
+                // spacer meant to pass taps through to it — but the scroll view
+                // captures every touch in its bounds, so the avatar, camera badge
+                // and public-profile button never responded on device (and the
+                // measured spacer left a large black gap). It now scrolls with
+                // the content; the purple backdrop above stays fixed.
                 ScrollView {
                     VStack(spacing: 0) {
 
-                        // Transparent gap reveals the static header beneath.
-                        // allowsHitTesting(false) passes taps through to header buttons.
-                        // Pull-to-reveal QR tracker lives here.
-                        Color.clear
-                            .frame(height: headerHeight)
-                            .allowsHitTesting(false)
+                        ProfileHeaderView(
+                            vm: vm,
+                            showImagePicker: $showImagePicker,
+                            showDJProfilePreview: $showDJProfilePreview,
+                            showRoleSwitchConfirm: $showRoleSwitchConfirm,
+                            showBecomeDJSheet: $showBecomeDJSheet
+                        )
+                            .padding(.top, 16)    // DESIGN §5.1 header top padding
+                            .padding(.bottom, 32) // DESIGN §5.1 header bottom padding
+                            .frame(maxWidth: .infinity)
                             .background(
                                 GeometryReader { g in
                                     Color.clear.preference(
@@ -152,12 +141,6 @@ struct UserProfileView: View {
                     ))
                 }
             } // ZStack
-            // Scoped to the ZStack (not the ScrollView) — ProfileHeaderView, the
-            // HeaderHeightKey emitter, is a ZStack sibling of the ScrollView, so
-            // this must sit above both to see the preference bubble up.
-            .onPreferenceChange(HeaderHeightKey.self) { h in
-                headerHeight = h
-            }
             } // GeometryReader
             .task { await vm.load() }
             .task(id: vm.username) {
@@ -254,15 +237,6 @@ private struct ProfileScrollOffsetKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = nextValue()
-    }
-}
-
-/// Measures the rendered height of the static header so the ScrollView
-/// transparent spacer stays in sync when role or content changes.
-private struct HeaderHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
     }
 }
 

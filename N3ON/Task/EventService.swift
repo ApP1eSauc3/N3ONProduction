@@ -71,6 +71,21 @@ enum EventService {
     }
 
     // Upserts an event record.
+    /// Events the signed-in user organises or plays: hosted events plus any
+    /// event they hold a lineup link for. De-duplicated, soonest first.
+    static func myEvents() async throws -> [Event] {
+        let me = try await AuthService.currentUserId()
+        var byID: [String: Event] = [:]
+        for event in try await fetchEvents(forHostDJID: me) { byID[event.id] = event }
+        let links = try await Amplify.DataStore.query(EventDJLink.self, where: EventDJLink.keys.djID == me)
+        for link in links {
+            guard let eventID = link.event?.id, byID[eventID] == nil,
+                  let event = try await fetchEvent(byId: eventID) else { continue }
+            byID[eventID] = event
+        }
+        return byID.values.sorted { $0.eventDate.foundationDate < $1.eventDate.foundationDate }
+    }
+
     static func save(_ event: Event) async throws {
         try await Amplify.DataStore.save(event)
     }

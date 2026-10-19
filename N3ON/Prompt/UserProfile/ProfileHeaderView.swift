@@ -26,22 +26,32 @@ struct ProfileHeaderView: View {
                     // DESIGN §3.4 avatar size — 110pt. Spec is 96pt (24.6% of 390w). Change the `size:` arg above.
                     .onTapGesture {
                         guard vm.role == .dj else { return }
-                        showImagePicker.toggle()
+                        showImagePicker = true
                     }
 
                 if vm.role == .dj {
-                    Image(systemName: "camera")
-                        .symbolVariant(.circle.fill)
-                        .font(.system(size: 20, weight: .medium)) // DESIGN §1.7 badge icon size — 20pt
-                        .foregroundStyle(.white)
-                        .padding(8)  // DESIGN §1.3 badge padding — 8pt (space2). Increase for larger tap target.
-                        .background(
-                            Circle()
-                                .fill(Color("neonPurpleBackground"))
-                                .shadow(color: Color("neonPurpleBackground").opacity(0.8), radius: 8) // DESIGN §3.1 badge glow
-                        )
-                        .offset(x: 4, y: 4)  // DESIGN §5.1 camera badge offset — adjust if avatar size changes
-                        .allowsHitTesting(false)
+                    // A real button: part of the badge sits outside the avatar,
+                    // so relying on the avatar's tap left that part dead.
+                    Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        showImagePicker = true
+                    } label: {
+                        Image(systemName: "camera")
+                            .symbolVariant(.circle.fill)
+                            .font(.system(size: 20, weight: .medium)) // DESIGN §1.7 badge icon size — 20pt
+                            .foregroundStyle(.white)
+                            .padding(8)  // DESIGN §1.3 badge padding — 8pt (space2)
+                            .background(
+                                Circle()
+                                    .fill(Color("neonPurpleBackground"))
+                                    .shadow(color: Color("neonPurpleBackground").opacity(0.8), radius: 8) // DESIGN §3.1 badge glow
+                            )
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Change profile photo")
+                    .offset(x: 4, y: 4)  // DESIGN §5.1 camera badge offset — adjust if avatar size changes
                 }
             }
 
