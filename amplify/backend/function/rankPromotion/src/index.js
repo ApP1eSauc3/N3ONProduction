@@ -391,6 +391,7 @@ exports._approvalsFromStream = approvalsFromStream;
 exports._suspectsFromStream = suspectsFromStream;
 exports._evaluate = evaluate;
 exports._climb = climb;
+exports._internals = { attr, identityChanged, getUser, approvedByUpdate, neutralize, eventIDsFor, countValidEndorsers };
 exports._requiredEndorsements = requiredEndorsements;
 exports._documents = {
   GET_USER, APPROVED_ENDORSEMENTS, LINKS_BY_DJ, SET_RANK, GET_ENDORSEMENT, SET_ENDORSEMENT_STATUS,

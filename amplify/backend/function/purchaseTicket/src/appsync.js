@@ -87,15 +87,29 @@ async function graphql(query, variables = {}) {
   return json.data;
 }
 
-/** Follows `nextToken` until exhausted. `pick` extracts the connection object. */
+/** Pages fetched at most (×100 items) — a Lambda never pages forever. */
+const MAX_PAGES = 200;
+
+/**
+ * Follows `nextToken` until exhausted. `pick` extracts the connection object.
+ * A repeated token (or more than MAX_PAGES pages) throws instead of looping
+ * until the Lambda times out, paying for AppSync calls all the way.
+ */
 async function graphqlAll(query, variables, pick) {
   const items = [];
+  const seen = new Set();
   let nextToken = null;
+  let pages = 0;
   do {
     const data = await graphql(query, { ...variables, nextToken });
     const conn = pick(data) || { items: [], nextToken: null };
-    items.push(...conn.items.filter(Boolean));
+    items.push(...(conn.items || []).filter(Boolean));
     nextToken = conn.nextToken;
+    pages += 1;
+    if (nextToken && (seen.has(nextToken) || pages >= MAX_PAGES)) {
+      throw new Error(`pagination did not terminate after ${pages} pages`);
+    }
+    if (nextToken) seen.add(nextToken);
   } while (nextToken);
   return items;
 }
@@ -104,6 +118,8 @@ module.exports = {
   graphql,
   graphqlAll,
   GraphQLError,
+  MAX_PAGES,
+  _signer: () => signer(),
   // Test seam only.
   _setDeps: (d) => {
     deps = { ...deps, ...d };

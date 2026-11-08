@@ -113,7 +113,7 @@ struct MapSearchView: View {
 
                             // Result count badge
                             if !vm.query.isEmpty {
-                                let count = resultCount(for: cat)
+                                let count = Self.resultCount(for: cat, in: vm.results)
                                 if count > 0 {
                                     Text("\(count)")
                                         .font(.caption2.bold())
@@ -323,11 +323,11 @@ struct MapSearchView: View {
 
     // MARK: — Helpers
 
-    private func resultCount(for category: SearchViewModel.Category) -> Int {
+    static func resultCount(for category: SearchViewModel.Category, in results: SearchResults) -> Int {
         switch category {
-        case .djs:    return vm.djResults.count
-        case .events: return vm.eventResults.count
-        case .venues: return vm.venueResults.count
+        case .djs:    return results.djs.count
+        case .events: return results.events.count
+        case .venues: return results.venues.count
         }
     }
 

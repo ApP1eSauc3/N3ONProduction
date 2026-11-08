@@ -42,7 +42,7 @@ struct ImagePicker: UIViewControllerRepresentable {
                 if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
                     result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, error in
                         if let error = error {
-                            print("Error loading image: \(error.localizedDescription)")
+                            AppLog.app.error("Error loading image: \(error.localizedDescription, privacy: .private)")
                             return
                         }
                         

@@ -61,10 +61,10 @@ final class AdminCurationViewModel: ObservableObject {
 
     // MARK: - Local cache helpers
 
-    private func replaceDJ(_ dj: User) {
+    func replaceDJ(_ dj: User) {
         if let i = djs.firstIndex(where: { $0.id == dj.id }) { djs[i] = dj }
     }
-    private func replaceEvent(_ event: Event) {
+    func replaceEvent(_ event: Event) {
         if let i = events.firstIndex(where: { $0.id == event.id }) { events[i] = event }
     }
 }

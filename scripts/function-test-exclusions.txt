@@ -1,0 +1,84 @@
+# Functions exempt from the security + performance test rule, one reason each.
+# Checked by scripts/check-function-tests.py (a stale entry fails the check).
+
+AmplifyDataStoreClient.query  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyDataStoreClient.save  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyDataStoreClient.delete  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyDataStoreClient.observe  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyDataStoreClient.clear  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.getCurrentUser  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.fetchAuthSession  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.fetchUserAttributes  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.signIn  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.signUp  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.confirmSignUp  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.resendSignUpCode  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.resetPassword  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.confirmResetPassword  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.signOut  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyAuthClient.deleteUser  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyStorageClient.uploadData  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyStorageClient.uploadFile  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyStorageClient.getURL  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyStorageClient.downloadData  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyRESTTransport.post  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyGraphQLClient.getUser  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyHubClient.events  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AudioPicker.makeCoordinator  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+AudioPicker.makeUIViewController  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+AudioPicker.updateUIViewController  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+Coordinator.documentPicker  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+Coordinator.handleDoubleTap  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+Coordinator.mapView  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+Coordinator.picker  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+CustomMapView.makeCoordinator  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+CustomMapView.makeUIView  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+CustomMapView.updateUIView  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+ImagePicker.makeCoordinator  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+ImagePicker.makeUIViewController  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+ImagePicker.updateUIViewController  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+LocationMapView.makeUIView  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+LocationMapView.updateUIView  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+QRScannerRepresentable.makeUIViewController  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+QRScannerRepresentable.updateUIViewController  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+QRScannerViewController.metadataOutput  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+QRScannerViewController.setupSession  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+QRScannerViewController.viewDidLayoutSubviews  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+QRScannerViewController.viewDidLoad  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+QRScannerViewController.viewWillAppear  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+QRScannerViewController.viewWillDisappear  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere
+LoginView.submitLogin  # view action handler: forwards to AuthViewModel.signIn, which carries both tests
+SignUpView.submitSignUp  # view action handler: forwards to AuthViewModel.signUp, which carries both tests
+ConfirmationSignupView.submitCode  # view action handler: forwards to AuthViewModel.confirmCode, which carries both tests
+ConfirmationSignupView.sendResend  # view action handler: forwards to AuthViewModel.resendCode, which carries both tests
+ResetPasswordView.submit  # view action handler: forwards to AuthViewModel.requestReset, which carries both tests
+ConfirmResetView.submit  # view action handler: forwards to AuthViewModel.confirmReset, which carries both tests
+ChatsInboxView.open  # view action handler: forwards to ChatViewModel.load, which carries both tests
+EventInviteCard.accept  # view action handler: forwards to EventService.joinLineup, which carries both tests
+TicketScannerView.validate  # view action handler: forwards to AccessControlService.validateTicket, which carries both tests
+TicketScannerView.loadEvents  # view action handler: forwards to VenueService.fetchUpcomingEvents, which carries both tests
+EventLimboView.cancelEvent  # view action handler: forwards to EventService.cancelEvent, which carries both tests
+EventDatePickerView.loadBookedDates  # view action handler: forwards to EventService.bookedDates, which carries both tests
+EventInviteSheet.loadDJs  # view action handler: forwards to EventService.allDJs, which carries both tests
+EventInviteSheet.sendInvite  # view action handler: forwards to ChatRoomService.send, which carries both tests
+UserEventTimelineView.load  # view action handler: forwards to EventService.myEvents, which carries both tests
+RegularUserSection.loadTickets  # view action handler: forwards to TicketService.myTickets, which carries both tests
+DJSection.uploadAudio  # view action handler: forwards to AvatarUploadService.uploadProfileAudio, which carries both tests
+EventRequestsView.loadRequests  # view action handler: forwards to EndorsementService.pendingIncoming, which carries both tests
+VenueComplianceWrapper.resolveVenue  # view action handler: forwards to VenueService.fetchOwned, which carries both tests
+VenueComplianceForm.submitCompliance  # view action handler: forwards to VenueService.saveCompliance, which carries both tests
+PulsingAvatarView.loadContent  # view action handler: forwards to ImageCache.loadImage, which carries both tests
+PulsingAvatarView.loadImage  # view action handler: forwards to ImageCache.loadImage, which carries both tests
+PulsingAvatarView.loadAudioIfNeeded  # view action handler: forwards to StorageUploader.signedURL, which carries both tests
+PulsingAvatarView.handleTap  # view action handler: forwards to AVPlayer playback (no app logic), which carries both tests
+EventHistoryViewModel.loadAttendanceHistory  # preview stub that returns hard-coded sample data; EventHistoryPanel is presented nowhere in the app
+VenueApplicationForm.go  # view helper: wraps a step change in withAnimation; the step logic (nextStep/previousStep) carries both tests
+AvatarUploadService.uploadFromPickerItem  # needs a Photos-library PhotosPickerItem; only decodes it, then calls uploadUIImage (both tests there)
+PosterUploadService.uploadFromPickerItem  # needs a Photos-library PhotosPickerItem; only decodes it, then calls uploadUIImage (both tests there)
+MapViewModel.openDirections  # launches the Apple Maps app (system side effect); its logic is MapViewModel.directionsItem, which carries both tests
+EventViewModel.shareEvent  # presents the system share sheet (UIKit side effect); its logic is EventViewModel.shareText, which carries both tests
+SystemNotificationClient.requestAuthorization  # live-OS adapter: 1:1 forward to UNUserNotificationCenter (prompts the user); PushNotificationService is tested through FakeNotifications
+SystemNotificationClient.add  # live-OS adapter: 1:1 forward to UNUserNotificationCenter
+SystemNotificationClient.removePending  # live-OS adapter: 1:1 forward to UNUserNotificationCenter
+SystemNotificationClient.setBadgeCount  # live-OS adapter: 1:1 forward to UNUserNotificationCenter
+EventDatePickerView.checkDateConflict  # view action handler: sets @State from EventDatePickerView.hasConflict, which carries both tests

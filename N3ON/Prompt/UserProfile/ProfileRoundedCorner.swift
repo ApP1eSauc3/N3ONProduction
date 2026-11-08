@@ -27,6 +27,12 @@ extension View {
 
 @available(iOS 17.0, *)
 struct UnevenCornerClip: Shape {
+    /// Clamp to [0, half the shorter side]; non-finite → 0.
+    static func safeRadius(_ radius: CGFloat, in rect: CGRect) -> CGFloat {
+        guard radius.isFinite, rect.width.isFinite, rect.height.isFinite else { return 0 }
+        return max(0, min(radius, min(rect.width, rect.height) / 2))
+    }
+
     var radius: CGFloat
     var corners: UIRectCorner
     var animatableData: CGFloat {
@@ -34,7 +40,9 @@ struct UnevenCornerClip: Shape {
         set { radius = newValue }
     }
     func path(in rect: CGRect) -> Path {
-        let r = min(radius, min(rect.width, rect.height) / 2)
+        // A negative or non-finite radius (bad animation input) never reaches
+        // the path; the radius is also capped at half the shorter side.
+        let r = Self.safeRadius(radius, in: rect)
         let tl = corners.contains(.topLeft) ? r : 0
         let tr = corners.contains(.topRight) ? r : 0
         let bl = corners.contains(.bottomLeft) ? r : 0
@@ -52,6 +60,12 @@ struct UnevenCornerClip: Shape {
 import UIKit
 
 struct LegacyRoundedCorner: Shape {
+    /// Clamp to [0, half the shorter side]; non-finite → 0.
+    static func safeRadius(_ radius: CGFloat, in rect: CGRect) -> CGFloat {
+        guard radius.isFinite, rect.width.isFinite, rect.height.isFinite else { return 0 }
+        return max(0, min(radius, min(rect.width, rect.height) / 2))
+    }
+
     var radius: CGFloat
     var corners: UIRectCorner
     var animatableData: CGFloat {
@@ -59,7 +73,9 @@ struct LegacyRoundedCorner: Shape {
         set { radius = newValue }
     }
     func path(in rect: CGRect) -> Path {
-        let r = min(radius, min(rect.width, rect.height) / 2)
+        // A negative or non-finite radius (bad animation input) never reaches
+        // the path; the radius is also capped at half the shorter side.
+        let r = Self.safeRadius(radius, in: rect)
         let bezier = UIBezierPath(
             roundedRect: rect,
             byRoundingCorners: corners,

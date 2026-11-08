@@ -39,14 +39,14 @@ final class SearchViewModel: ObservableObject {
         }
     }
 
-    private func performSearch(query: String) async {
+    func performSearch(query: String) async {
         isSearching = true
         defer { isSearching = false }
         results = await SearchService.search(query: query)
     }
 
     func commitSearch(_ query: String) {
-        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        let trimmed = String(query.trimmingCharacters(in: .whitespaces).prefix(SearchService.maxQueryLength))
         guard !trimmed.isEmpty else { return }
         var updated = recentSearches.filter { $0.lowercased() != trimmed.lowercased() }
         updated.insert(trimmed, at: 0)

@@ -26,10 +26,22 @@ enum AvatarState: Equatable {
 
 extension AvatarState {
     static func fromUser(_ user: User) -> AvatarState {
-        if let key = user.avatarKey {
+        if let key = user.avatarKey, isStorageKey(key) {
             return .remote(avatarKey: key)
         }
         return .remote(avatarKey: "default-avatar")
+    }
+
+    /// An S3 key, not a URL. Signed URLs must never be stored (they expire and
+    /// leak a credential); a stored one is treated as no avatar.
+    /// S3's hard limit on key length — anything longer cannot be a real key,
+    /// and rejecting it first keeps this check O(1) on hostile input.
+    static let maxKeyBytes = 1_024
+
+    static func isStorageKey(_ key: String) -> Bool {
+        let bytes = key.utf8.count
+        guard bytes > 0, bytes <= maxKeyBytes else { return false }
+        return !key.contains("://") && !key.contains("X-Amz-")
     }
 
     func toAmplifyValue() -> String? {

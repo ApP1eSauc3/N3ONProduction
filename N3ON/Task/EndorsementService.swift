@@ -38,25 +38,30 @@ enum EndorsementService {
     /// endorsement the server would count (LEAN-RESEARCH.md F8).
     static func eligibleEndorsers(for userID: String, targetRank: Int) async -> [User] {
         // Step 1: event IDs the candidate has participated in
-        let myLinks = (try? await Amplify.DataStore.query(
+        let myLinks = (try? await Backend.dataStore.query(
             EventDJLink.self,
             where: EventDJLink.keys.djID == userID
         )) ?? []
         let myEventIDs = Set(myLinks.compactMap { $0.event?.id })
         guard !myEventIDs.isEmpty else { return [] }
 
-        // Step 2: all EventDJLinks across the entire platform, filtered to shared events
-        let allLinks = (try? await Amplify.DataStore.query(EventDJLink.self)) ?? []
-        let sharedDJIDs = Set(
-            allLinks
-                .filter { myEventIDs.contains($0.event?.id ?? "") && $0.djID != userID }
-                .map { $0.djID }
-        )
+        // Step 2: the lineups of those events (one predicate query per event —
+        // this used to load every EventDJLink on the platform)
+        var sharedDJIDs = Set<String>()
+        for eventID in myEventIDs {
+            let lineup = (try? await Backend.dataStore.query(EventDJLink.self, where: EventDJLink.keys.event == eventID)) ?? []
+            for link in lineup where link.djID != userID { sharedDJIDs.insert(link.djID) }
+        }
         guard !sharedDJIDs.isEmpty else { return [] }
 
-        // Step 3: resolve User records and filter to targetRank
-        let allUsers = (try? await Amplify.DataStore.query(User.self)) ?? []
-        return allUsers.filter { canEndorse($0, targetRank: targetRank) && sharedDJIDs.contains($0.id) }
+        // Step 3: resolve those users by id (this used to load every User)
+        var endorsers: [User] = []
+        for id in sharedDJIDs.sorted() {
+            if let user = try? await Backend.dataStore.query(User.self, byId: id), canEndorse(user, targetRank: targetRank) {
+                endorsers.append(user)
+            }
+        }
+        return endorsers
     }
 
     // MARK: — Send request
@@ -68,12 +73,17 @@ enum EndorsementService {
         targetRank: Int,
         message: String
     ) async throws {
+        guard message.count <= maxMessageLength else { throw EndorsementError.messageTooLong }
         let fromUser = try await AuthService.getCurrentUserModel()
         guard let from = fromUser else { throw EndorsementError.senderNotFound }
-        guard let toUser = try await Amplify.DataStore.query(User.self, byId: toUserID)
+        guard let toUser = try await Backend.dataStore.query(User.self, byId: toUserID)
         else { throw EndorsementError.recipientNotFound }
         guard canEndorse(toUser, targetRank: targetRank), toUser.id != from.id
         else { throw EndorsementError.rankMismatch }
+        // One open request per senior DJ per rank — no inbox spam.
+        let mine = try await Backend.dataStore.query(EndorsementRequest.self, where: EndorsementRequest.keys.fromUser == from.id)
+        guard !mine.contains(where: { $0.toUser?.id == toUserID && $0.targetRank == targetRank && $0.status != "rejected" })
+        else { throw EndorsementError.alreadyRequested }
 
         let request = EndorsementRequest(
             fromUser: from,
@@ -83,35 +93,46 @@ enum EndorsementService {
             status: "pending",
             timestamp: Temporal.DateTime(Date(), timeZone: .current)
         )
-        try await Amplify.DataStore.save(request)
+        try await Backend.dataStore.save(request)
     }
 
     // MARK: — Accept / Decline (called by the senior DJ)
 
     static func acceptRequest(id: String) async throws {
-        guard var req = try await Amplify.DataStore.query(EndorsementRequest.self, byId: id)
-        else { throw EndorsementError.notFound }
+        var req = try await incomingPending(id: id)
         req.status = "approved"
-        try await Amplify.DataStore.save(req)
+        try await Backend.dataStore.save(req)
     }
 
     static func declineRequest(id: String) async throws {
-        guard var req = try await Amplify.DataStore.query(EndorsementRequest.self, byId: id)
-        else { throw EndorsementError.notFound }
+        var req = try await incomingPending(id: id)
         req.status = "rejected"
-        try await Amplify.DataStore.save(req)
+        try await Backend.dataStore.save(req)
     }
+
+    /// A pending request addressed to the signed-in user. Anyone else's — or
+    /// one already decided — reads as not found: only the recipient decides,
+    /// once (the server's toUserID owner rule agrees).
+    static func incomingPending(id: String) async throws -> EndorsementRequest {
+        let me = try await AuthService.currentUserId()
+        guard let req = try await Backend.dataStore.query(EndorsementRequest.self, byId: id),
+              req.toUser?.id == me, req.status == "pending"
+        else { throw EndorsementError.notFound }
+        return req
+    }
+
+    /// Longest note a candidate can attach to a request.
+    static let maxMessageLength = 500
 
     // MARK: — Queries
 
     /// Incoming pending requests for a senior DJ to review.
     static func pendingIncoming(for userID: String) async throws ->
       [EndorsementRequest] {
-          let all = try await Amplify.DataStore.query(
+          let all = try await Backend.dataStore.query(
               EndorsementRequest.self,
               where: EndorsementRequest.keys.toUser == userID
           )
-          print("🔍 pendingIncoming — userID: \(userID), total fetched: \(all.count)")
           return all
               .filter { $0.status == "pending" }
               .sorted { $0.timestamp.foundationDate > $1.timestamp.foundationDate }
@@ -119,7 +140,7 @@ enum EndorsementService {
 
     /// All requests sent by `userID` for a specific target rank, sorted newest first.
     static func sentRequests(by userID: String, targetRank: Int) async throws -> [EndorsementRequest] {
-        let all = try await Amplify.DataStore.query(
+        let all = try await Backend.dataStore.query(
             EndorsementRequest.self,
             where: EndorsementRequest.keys.fromUser == userID
         )
@@ -131,7 +152,7 @@ enum EndorsementService {
     /// Count of approved endorsements the candidate has for a specific target rank,
     /// counted the way the server counts them (see `countedEndorsers`).
     static func approvedCount(for userID: String, targetRank: Int) async -> Int {
-        let sent = (try? await Amplify.DataStore.query(
+        let sent = (try? await Backend.dataStore.query(
             EndorsementRequest.self,
             where: EndorsementRequest.keys.fromUser == userID
         )) ?? []
@@ -191,6 +212,8 @@ enum EndorsementError: LocalizedError {
     case recipientNotFound
     case rankMismatch
     case notFound
+    case messageTooLong
+    case alreadyRequested
 
     var errorDescription: String? {
         switch self {
@@ -198,6 +221,8 @@ enum EndorsementError: LocalizedError {
         case .recipientNotFound: return "The DJ you selected could not be found."
         case .rankMismatch:      return "This DJ is not the right rank to endorse your promotion."
         case .notFound:          return "Endorsement request not found."
+        case .messageTooLong:    return "Keep your note under \(EndorsementService.maxMessageLength) characters."
+        case .alreadyRequested:  return "You've already asked this DJ."
         }
     }
 }

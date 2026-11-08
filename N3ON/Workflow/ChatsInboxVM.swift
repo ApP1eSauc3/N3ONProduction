@@ -57,8 +57,11 @@ final class ChatsInboxVM: ObservableObject {
             guard !roomIDs.isEmpty else { pinned = []; others = []; return }
 
             // Amplify DataStore has no .in() predicate — query all and filter in memory
-            let allRooms = try await ChatRoomService.allRooms()
-            let rooms = allRooms.filter { roomIDs.contains($0.id) }
+            // By id, not a scan of every room on the device.
+            var rooms: [ChatRoom] = []
+            for id in roomIDs.sorted() {
+                if let room = try await ChatRoomService.room(byId: id) { rooms.append(room) }
+            }
 
             // Each room's summary fires 2–4 independent DataStore queries.
             // Running them concurrently turns N serial round-trips into roughly 1×.
@@ -100,7 +103,7 @@ final class ChatsInboxVM: ObservableObject {
 
     // MARK: - Private
 
-    private func summarize(room: ChatRoom, me: String) async throws -> ChatSummary? {
+    func summarize(room: ChatRoom, me: String) async throws -> ChatSummary? {
         // Participants and unread count are independent queries — overlap them.
         async let othersFetch = ChatRoomService.participants(for: room.id, excludingID: me)
         async let unreadFetch = ChatRoomService.unreadCount(in: room.id, excludingSenderID: me)
@@ -150,12 +153,12 @@ final class ChatsInboxVM: ObservableObject {
 
     /// Observe Message mutations and refresh.
     /// Refreshes are debounced: N rapid mutations → 1 refresh, 400ms after the burst ends.
-    private func startObserving() {
+    func startObserving() {
         observationTask?.cancel()
         observationTask = Task { [weak self] in
             guard let self else { return }
             do {
-                for try await change in Amplify.DataStore.observe(Message.self) {
+                for try await change in Backend.dataStore.observe(Message.self) {
                     guard !Task.isCancelled else { return }
                     guard ["create", "update"].contains(change.mutationType) else { continue }
                     self.scheduleDebouncedRefresh()
@@ -164,7 +167,7 @@ final class ChatsInboxVM: ObservableObject {
         }
     }
 
-    private func scheduleDebouncedRefresh() {
+    func scheduleDebouncedRefresh() {
         refreshTask?.cancel()
         refreshTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 400_000_000)

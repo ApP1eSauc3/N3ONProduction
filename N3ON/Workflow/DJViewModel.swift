@@ -38,7 +38,7 @@ final class DJViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            upcomingEvents = try await EventService.fetchUpcomingEvents()
+            upcomingEvents = try await EventService.upcomingEvents(forDJ: user.id)
         } catch {
             errorMessage = "Failed to load events: \(error.localizedDescription)"
         }
@@ -73,7 +73,7 @@ final class DJViewModel: ObservableObject {
         }
     }
 
-    private func loadFollowState() async {
+    func loadFollowState() async {
         async let following = (try? await FollowService.isFollowing(djID: user.id)) ?? false
         async let count = await FollowService.followerCount(for: user.id)
         (isFollowing, followerCount) = await (following, count)
@@ -87,14 +87,16 @@ final class DJViewModel: ObservableObject {
 
     // MARK: - Live updates
 
-    private func subscribeToUserUpdates() {
+    func subscribeToUserUpdates() {
         observeTask?.cancel()
         observeTask = Task { [weak self] in
             guard let self else { return }
             do {
-                for try await change in Amplify.DataStore.observe(User.self) {
+                for try await change in Backend.dataStore.observe(User.self) {
                     guard !Task.isCancelled else { return }
+                    // Cheap id check first: this stream carries every User update.
                     guard change.mutationType == MutationEvent.MutationType.update.rawValue,
+                          change.modelId == self.user.id,
                           let updatedUser = try? change.decodeModel(as: User.self),
                           updatedUser.id == self.user.id else { continue }
                     // The enclosing Task has no guaranteed actor — hop to MainActor

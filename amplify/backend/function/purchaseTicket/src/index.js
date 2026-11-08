@@ -47,7 +47,7 @@ Amplify Params - DO NOT EDIT *//**
  * docs/schema-auth-hardening.md. Ship that schema change with this function.
  */
 const { graphql, graphqlAll, GraphQLError } = require('./appsync');
-const { callerSub, parseBody, ok, fail } = require('./http');
+const { callerSub, parseBody, isValidID, ok, fail } = require('./http');
 
 const MAX_PER_REQUEST = 10;
 // Server-side tally gate. Off while the platform is in bootstrap/curated mode
@@ -344,7 +344,7 @@ exports.handler = async (event) => {
   if (!sub) return fail(401, 'UNAUTHENTICATED');
   const body = parseBody(event);
   const quantity = body && body.quantity === undefined ? 1 : body && body.quantity;
-  if (!body || typeof body.eventID !== 'string' || !body.eventID
+  if (!body || !isValidID(body.eventID)
       || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_PER_REQUEST) {
     return fail(400, 'INVALID_REQUEST');
   }
@@ -362,3 +362,7 @@ exports._documents = {
   GET_ALLOWANCE, CREATE_ALLOWANCE, SET_ALLOWANCE,
 };
 exports._requiredTally = requiredTally;
+exports._internals = {
+  tallyEnforced, tallyMet, isConditionFailure, getEvent, applied, adjustStock, allowanceID,
+  heldFromTickets, reserveAllowance, releaseAllowance, releaseQuietly, purchase,
+};

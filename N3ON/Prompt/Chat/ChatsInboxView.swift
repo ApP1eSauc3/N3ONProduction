@@ -116,7 +116,7 @@ struct ChatsInboxView: View {
 
 // MARK: - Chat Row
 
-private struct ChatRow: View {
+struct ChatRow: View {
     let row: ChatSummary
     let tap: () -> Void
 
@@ -151,7 +151,7 @@ private struct ChatRow: View {
                             .lineLimit(1)
                         Spacer()
                         if let ts = row.lastAt {
-                            Text(relativeTime(ts))
+                            Text(Self.relativeTime(ts))
                                 .font(.caption2)
                                 .foregroundStyle(.white.opacity(0.4))
                         }
@@ -211,9 +211,15 @@ private struct ChatRow: View {
         }
     }
 
-    private func relativeTime(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+    /// One shared formatter — creating a RelativeDateTimeFormatter per row
+    /// render is expensive (Apple: cache formatters).
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
+
+    static func relativeTime(_ date: Date, now: Date = Date()) -> String {
+        relativeFormatter.localizedString(for: date, relativeTo: now)
     }
 }

@@ -2,7 +2,7 @@
 // N3ON — Workflow layer
 //
 // 2026 architecture:
-//   • Real-time observation via Amplify.DataStore.observe() (AsyncSequence, not Combine Hub)
+//   • Real-time observation via Backend.dataStore.observe() (AsyncSequence, not Combine Hub)
 //   • Optimistic message inserts — message appears at .sending before DataStore confirms
 //   • All DataStore calls delegated to ChatRoomService (Task layer)
 //   • Observation task cancelled on deinit — no memory leaks
@@ -48,9 +48,16 @@ final class ChatViewModel: ObservableObject {
         currentUser = try? await UserService.fetch(byId: currentUserID)
 
         do {
-            let raw = try await ChatRoomService.messages(for: chatRoomID)
             let room = try? await ChatRoomService.room(byId: chatRoomID)
-            memberIDs = Array(Set((room?.participantIDs ?? []).compactMap { $0 } + [currentUserID]))
+            let listed = (room?.participantIDs ?? []).compactMap { $0 }
+            // A member-scoped room you're not in shows nothing (the server
+            // scopes sync too; the client never renders someone else's chat).
+            guard listed.isEmpty || listed.contains(currentUserID) else {
+                errorMessage = "You're not in this chat."
+                return
+            }
+            let raw = try await ChatRoomService.messages(for: chatRoomID)
+            memberIDs = Array(Set(listed + [currentUserID]))
             senderByMessage = await ChatRoomService.senderIDs(in: chatRoomID, candidates: memberIDs)
             await resolveNames(for: memberIDs)
             messages = raw.map(toChatMessage)
@@ -69,6 +76,11 @@ final class ChatViewModel: ObservableObject {
     func sendMessage() {
         guard !messageText.trimmingCharacters(in: .whitespaces).isEmpty,
               let sender = currentUser else { return }
+        // Refuse before the optimistic insert, so it never shows as "sending".
+        guard messageText.count <= ChatRoomService.maxMessageLength else {
+            errorMessage = "Messages can be up to \(ChatRoomService.maxMessageLength) characters."
+            return
+        }
 
         let text = messageText
         messageText = ""
@@ -125,12 +137,12 @@ final class ChatViewModel: ObservableObject {
 
     /// Observes the DataStore mutation stream using AsyncSequence.
     /// Replaces the Combine Hub subscription with structured concurrency.
-    private func startObserving() {
+    func startObserving() {
         observationTask?.cancel()
         observationTask = Task { [weak self] in
             guard let self else { return }
             do {
-                for try await change in Amplify.DataStore.observe(Message.self) {
+                for try await change in Backend.dataStore.observe(Message.self) {
                     guard !Task.isCancelled else { return }
 
                     // Only handle creates for this room from other participants
@@ -154,7 +166,7 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    private func toChatMessage(_ m: Message) -> ChatMessage {
+    func toChatMessage(_ m: Message) -> ChatMessage {
         let senderID = m.sender?.id ?? senderByMessage[m.id] ?? ""
         return ChatMessage(
             id: m.id,
@@ -168,7 +180,7 @@ final class ChatViewModel: ObservableObject {
 
     /// The sender of a live message — from the association if loaded, else
     /// from the stored senderID column.
-    private func resolveSender(of m: Message) async -> String {
+    func resolveSender(of m: Message) async -> String {
         if let id = m.sender?.id { return id }
         if let known = senderByMessage[m.id] { return known }
         let fresh = await ChatRoomService.senderIDs(in: chatRoomID, candidates: memberIDs)
@@ -176,13 +188,13 @@ final class ChatViewModel: ObservableObject {
         return fresh[m.id] ?? ""
     }
 
-    private func resolveNames(for ids: [String]) async {
+    func resolveNames(for ids: [String]) async {
         for id in ids where !id.isEmpty && names[id] == nil {
             if let user = await UserService.fetchAnywhere(byId: id) { names[id] = user.username }
         }
     }
 
-    private func updateStatus(id: String, to status: ChatMessage.DeliveryStatus) {
+    func updateStatus(id: String, to status: ChatMessage.DeliveryStatus) {
         guard let i = messages.firstIndex(where: { $0.id == id }) else { return }
         messages[i].deliveryStatus = status
     }

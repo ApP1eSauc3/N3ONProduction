@@ -79,8 +79,13 @@ final class EventViewModel: ObservableObject {
         Self.dateFormatter.string(from: event.eventDate.foundationDate)
     }
 
+    /// What the share sheet sends: one line, host text bounded.
+    static func shareText(name: String, date: String) -> String {
+        "\(PushNotificationService.notificationSafe(name)) — \(date)"
+    }
+
     func shareEvent() {
-        let text = "\(event.eventName) — \(formattedDate)"
+        let text = Self.shareText(name: event.eventName, date: formattedDate)
         let av = UIActivityViewController(activityItems: [text], applicationActivities: nil)
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }

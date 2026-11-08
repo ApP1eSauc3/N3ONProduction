@@ -15,6 +15,8 @@ enum FollowService {
     /// Records that the current user is following a DJ.
     static func follow(djID: String) async throws {
         let followerID = try await AuthService.currentUserId()
+        // Following yourself would inflate your own follower count.
+        guard djID != followerID, !djID.isEmpty else { return }
         guard try await !isFollowing(djID: djID) else { return }
 
         let link = UserFollows(
@@ -22,18 +24,18 @@ enum FollowService {
             followeeID: djID,
             createdAt: Temporal.DateTime.now()
         )
-        try await Amplify.DataStore.save(link)
+        try await Backend.dataStore.save(link)
     }
 
     /// Removes the current user's follow on a DJ.
     static func unfollow(djID: String) async throws {
         let followerID = try await AuthService.currentUserId()
-        let matches = try await Amplify.DataStore.query(
+        let matches = try await Backend.dataStore.query(
             UserFollows.self,
             where: UserFollows.keys.followerID == followerID
         )
         if let link = matches.first(where: { $0.followeeID == djID }) {
-            try await Amplify.DataStore.delete(link)
+            try await Backend.dataStore.delete(link)
         }
     }
 
@@ -42,7 +44,7 @@ enum FollowService {
     /// Returns true if the current user follows the given DJ.
     static func isFollowing(djID: String) async throws -> Bool {
         let followerID = try await AuthService.currentUserId()
-        let matches = try await Amplify.DataStore.query(
+        let matches = try await Backend.dataStore.query(
             UserFollows.self,
             where: UserFollows.keys.followerID == followerID
         )
@@ -52,7 +54,7 @@ enum FollowService {
     /// Returns the djIDs of everyone the current user follows.
     static func followedDJIDs() async throws -> [String] {
         let followerID = try await AuthService.currentUserId()
-        let matches = try await Amplify.DataStore.query(
+        let matches = try await Backend.dataStore.query(
             UserFollows.self,
             where: UserFollows.keys.followerID == followerID
         )
@@ -61,7 +63,7 @@ enum FollowService {
 
     /// Returns the follower count for a given DJ.
     static func followerCount(for djID: String) async -> Int {
-        let matches = (try? await Amplify.DataStore.query(
+        let matches = (try? await Backend.dataStore.query(
             UserFollows.self,
             where: UserFollows.keys.followeeID == djID
         )) ?? []

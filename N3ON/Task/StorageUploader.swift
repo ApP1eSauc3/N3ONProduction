@@ -38,15 +38,28 @@ enum MediaKind {
     case feedImage(userID: String)
     case feedVideo(userID: String)
 
-    func makeKey(extension ext: String) -> String {
+    func makeKey(extension rawExt: String) -> String {
+        let ext = Self.component(rawExt)
         switch self {
-        case .avatar(let uid):        return "avatars/\(uid).\(ext)"
-        case .profileAudio(let uid):  return "profile-audio/\(uid).\(ext)"
-        case .eventPoster(let eid):   return "events/\(eid)/poster-\(UUID().uuidString).\(ext)"
-        case .venueImage(let vid):    return "venues/\(vid)/img-\(UUID().uuidString).\(ext)"
-        case .feedImage(let uid):     return "feed/\(uid)/img-\(UUID().uuidString).\(ext)"
-        case .feedVideo(let uid):     return "feed/\(uid)/vid-\(UUID().uuidString).\(ext)"
+        case .avatar(let uid):        return "avatars/\(Self.component(uid)).\(ext)"
+        case .profileAudio(let uid):  return "profile-audio/\(Self.component(uid)).\(ext)"
+        case .eventPoster(let eid):   return "events/\(Self.component(eid))/poster-\(UUID().uuidString).\(ext)"
+        case .venueImage(let vid):    return "venues/\(Self.component(vid))/img-\(UUID().uuidString).\(ext)"
+        case .feedImage(let uid):     return "feed/\(Self.component(uid))/img-\(UUID().uuidString).\(ext)"
+        case .feedVideo(let uid):     return "feed/\(Self.component(uid))/vid-\(UUID().uuidString).\(ext)"
         }
+    }
+
+    /// One S3 path component: letters, digits, `-` and `_` only (everything
+    /// else becomes `_`), never empty, at most 128 characters. IDs reach here
+    /// from client-written records, so "../avatars/victim" must not be able to
+    /// address another user's media. Cognito subs and UUIDs pass unchanged.
+    static func component(_ raw: String) -> String {
+        let cleaned = String(raw.unicodeScalars.prefix(128).map { scalar -> Character in
+            let ok = (scalar.isASCII && (CharacterSet.alphanumerics.contains(scalar))) || scalar == "-" || scalar == "_"
+            return ok ? Character(scalar) : "_"
+        })
+        return cleaned.isEmpty ? "_" : cleaned
     }
 }
 
@@ -57,14 +70,7 @@ struct StorageUploader {
         key: String,
         access: StorageAccessLevel
     ) async throws -> String {
-        let result = try await Amplify.Storage
-            .uploadData(
-                key: key,
-                data: data,
-                options: .init(accessLevel: access, contentType: "image/jpeg")
-            )
-            .value
-        return result
+        try await Backend.storage.uploadData(key: key, data: data, accessLevel: access, contentType: "image/jpeg")
     }
 
     // ✅ FIXED: uses uploadFile (streaming from disk) not uploadData (full RAM load)
@@ -75,14 +81,7 @@ struct StorageUploader {
         contentType: String,
         access: StorageAccessLevel
     ) async throws -> String {
-        let result = try await Amplify.Storage
-            .uploadFile(
-                key: key,
-                local: url,
-                options: .init(accessLevel: access, contentType: contentType)
-            )
-            .value
-        return result
+        try await Backend.storage.uploadFile(key: key, local: url, accessLevel: access, contentType: contentType)
     }
 
     // ✅ FIXED: native async/await — callback wrapper removed, deprecated API gone
@@ -90,9 +89,6 @@ struct StorageUploader {
         for key: String,
         access: StorageAccessLevel
     ) async throws -> URL {
-        try await Amplify.Storage.getURL(
-            key: key,
-            options: .init(accessLevel: access)
-        )
+        try await Backend.storage.getURL(key: key, accessLevel: access)
     }
 }

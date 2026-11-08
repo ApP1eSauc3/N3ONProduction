@@ -154,7 +154,7 @@ struct PulsingAvatarView: View {
             audioPlayer.prepareToPlay()
             player = audioPlayer
         } catch {
-            print("Audio init error: \(error)")
+            AppLog.app.error("Audio init error: \(error.localizedDescription, privacy: .private)")
         }
     }
 

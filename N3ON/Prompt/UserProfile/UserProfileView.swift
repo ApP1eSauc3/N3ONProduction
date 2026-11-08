@@ -231,10 +231,13 @@ struct UserProfileView: View {
 
 // MARK: - Scroll offset tracking
 
-private struct ProfileScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+struct ProfileScrollOffsetKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    /// Latest offset wins; a non-finite one (layout glitch) reads as 0 so it
+    /// can never trip the pull-to-reveal QR threshold.
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+        let next = nextValue()
+        value = next.isFinite ? next : 0
     }
 }
 

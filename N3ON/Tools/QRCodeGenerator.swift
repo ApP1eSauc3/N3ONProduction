@@ -7,10 +7,19 @@ import UIKit
 import CoreImage.CIFilterBuiltins
 
 enum QRCodeGenerator {
+    /// Output side length is clamped to this range (pt). The upper bound stops a
+    /// caller asking CoreImage for a gigapixel bitmap; 1,024 is far beyond any
+    /// on-screen QR (they render at 200–300).
+    static let sizeRange: ClosedRange<CGFloat> = 32...1_024
+
+    /// CIContext is expensive to create (Apple: "create one and reuse it") —
+    /// one shared context instead of one per QR.
+    private static let context = CIContext()
+
     /// Returns a high-contrast white-on-black QR code image.
     /// Returns nil only if CoreImage filters are unavailable (extremely unlikely on iOS).
-    static func make(from string: String, size: CGFloat = 300) -> UIImage? {
-        let context = CIContext()
+    static func make(from string: String, size requested: CGFloat = 300) -> UIImage? {
+        let size = min(max(requested.isFinite ? requested : 300, sizeRange.lowerBound), sizeRange.upperBound)
         let filter = CIFilter.qrCodeGenerator()
         guard let data = string.data(using: .ascii) else { return nil }
         filter.setValue(data, forKey: "inputMessage")

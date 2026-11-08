@@ -29,14 +29,14 @@ enum AdminService {
     /// Throws on query failure — an admin tool must distinguish "no DJs"
     /// from "query failed", so errors are never swallowed here.
     static func allDJs() async throws -> [User] {
-        let users = try await Amplify.DataStore.query(User.self)
+        let users = try await Backend.dataStore.query(User.self)
         return users.filter { $0.isDJ }.sorted { $0.username < $1.username }
     }
 
     /// All events, soonest-first by event date. Admin-console event source.
     /// Throws on query failure (see allDJs).
     static func allEvents() async throws -> [Event] {
-        let events = try await Amplify.DataStore.query(Event.self)
+        let events = try await Backend.dataStore.query(Event.self)
         return events.sorted { $0.eventDate.foundationDate > $1.eventDate.foundationDate }
     }
 
@@ -44,19 +44,29 @@ enum AdminService {
 
     /// Seeds a DJ's rank directly — the bootstrap shortcut for endorsement-based
     /// promotion. Pass `nil` to clear the rank.
+    /// Admin writes re-check the `AdminUser` group from the session's own token
+    /// before touching data. Event writes are also enforced server-side
+    /// (AdminUser @auth); User writes are not, so this is the line that stops a
+    /// non-admin client from re-ranking or curating DJs (MASVS-AUTH).
+    static func requireAdmin() async throws {
+        guard await AccessControlService.isAdmin() else { throw AdminError.notAuthorized }
+    }
+
     static func setDJRank(_ rank: Int?, for user: User) async throws -> User {
+        try await requireAdmin()
         var updated = user
         updated.djRank = rank
-        try await Amplify.DataStore.save(updated)
+        try await Backend.dataStore.save(updated)
         return updated
     }
 
     /// Marks (or unmarks) a DJ as curated — a curated DJ can host events during
     /// bootstrap regardless of `djRank`. See `CurationService.canCreateEvent`.
     static func setCurated(_ isCurated: Bool, for user: User) async throws -> User {
+        try await requireAdmin()
         var updated = user
         updated.isCurated = isCurated
-        try await Amplify.DataStore.save(updated)
+        try await Backend.dataStore.save(updated)
         return updated
     }
 
@@ -64,20 +74,22 @@ enum AdminService {
 
     /// Features (or unfeatures) an event so it surfaces on the map regardless of status.
     static func setFeatured(_ isFeatured: Bool, for event: Event) async throws -> Event {
+        try await requireAdmin()
         var updated = event
         updated.isFeatured = isFeatured
-        try await Amplify.DataStore.save(updated)
+        try await Backend.dataStore.save(updated)
         return updated
     }
 
     /// Force-publishes an event (status → live) without the tally gate — for
     /// hand-curated events during bootstrap.
     static func forcePublish(eventID: String) async throws {
-        guard var event = try await Amplify.DataStore.query(Event.self, byId: eventID) else {
+        try await requireAdmin()
+        guard var event = try await Backend.dataStore.query(Event.self, byId: eventID) else {
             throw AdminError.eventNotFound
         }
         event.status = EventStatus.live.rawValue
-        try await Amplify.DataStore.save(event)
+        try await Backend.dataStore.save(event)
     }
 
     /// Attaches a DJ to an event's lineup directly, bypassing the join/tally flow.
@@ -85,10 +97,11 @@ enum AdminService {
     /// mirror of Lambda config — see `Data/RankWeight.swift`). No-op if the DJ is
     /// already on this event's lineup.
     static func attachDJ(_ dj: User, toEventID eventID: String) async throws {
-        guard let event = try await Amplify.DataStore.query(Event.self, byId: eventID) else {
+        try await requireAdmin()
+        guard let event = try await Backend.dataStore.query(Event.self, byId: eventID) else {
             throw AdminError.eventNotFound
         }
-        let existing = (try? await Amplify.DataStore.query(
+        let existing = (try? await Backend.dataStore.query(
             EventDJLink.self,
             where: EventDJLink.keys.event == eventID
         )) ?? []
@@ -102,15 +115,17 @@ enum AdminService {
             coinContribution: RankWeight.coins(forRank: rank),
             createdAt: Temporal.DateTime(Date(), timeZone: .current)
         )
-        try await Amplify.DataStore.save(link)
+        try await Backend.dataStore.save(link)
     }
 }
 
 enum AdminError: LocalizedError {
     case eventNotFound
+    case notAuthorized
     var errorDescription: String? {
         switch self {
         case .eventNotFound: return "That event could not be found."
+        case .notAuthorized: return "Only N3ON admins can do that."
         }
     }
 }

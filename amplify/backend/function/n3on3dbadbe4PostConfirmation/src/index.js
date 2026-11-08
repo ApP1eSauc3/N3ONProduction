@@ -9,11 +9,24 @@
  * The names of modules to load are stored as a comma-delimited string in the
  * `MODULES` env var.
  */
-const moduleNames = process.env.MODULES.split(',');
+const moduleNames = parseModules(process.env.MODULES);
 /**
  * The array of imported modules.
  */
 const modules = moduleNames.map((name) => require(`./${name}`));
+
+/**
+ * Only plain module names from this folder — never a path (`../x`, `/x`):
+ * a malformed MODULES value must not load code from elsewhere.
+ */
+function parseModules(raw) {
+  const names = String(raw || '').split(',').map((n) => n.trim()).filter(Boolean);
+  for (const name of names) {
+    if (!/^[a-z0-9-]+$/i.test(name)) throw new Error(`invalid trigger module name: ${name}`);
+  }
+  return names;
+}
+exports._parseModules = parseModules;
 
 /**
  * This async handler iterates over the given modules and awaits them.

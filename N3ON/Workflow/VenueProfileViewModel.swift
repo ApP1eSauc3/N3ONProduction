@@ -42,7 +42,7 @@ final class VenueProfileViewModel: ObservableObject {
         }
     }
 
-    private func apply(venue v: Venue) {
+    func apply(venue v: Venue) {
         venue = v
         galleryKeys = v.imageKey ?? []
         if let firstKey = v.imageKey?.first {
@@ -71,6 +71,10 @@ final class VenueProfileViewModel: ObservableObject {
 
     func uploadGalleryImage(_ image: UIImage) async {
         guard var current = venue else { return }
+        guard galleryKeys.count < VenueService.maxImages else {
+            saveError = "Up to \(VenueService.maxImages) photos."
+            return
+        }
         isUploadingGallery = true
         saveError = nil
         defer { isUploadingGallery = false }
@@ -80,9 +84,12 @@ final class VenueProfileViewModel: ObservableObject {
                 saveError = "Image could not be processed."
                 return
             }
-            galleryKeys.append(key)
-            current.imageKey = galleryKeys
-            venue = try await VenueService.update(current)
+            // Commit to the gallery only once the record saved — a failed save
+            // used to leave a phantom photo in the grid.
+            current.imageKey = galleryKeys + [key]
+            let saved = try await VenueService.update(current)
+            venue = saved
+            galleryKeys = saved.imageKey ?? []
             // Update avatar to the first image if it was the default
             if galleryKeys.count == 1 {
                 avatarState = .remote(avatarKey: key)

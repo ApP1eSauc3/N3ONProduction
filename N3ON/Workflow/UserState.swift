@@ -24,8 +24,9 @@ class UserState: ObservableObject {
     func updateFromUser(_ user: User) {
             userId = user.id
             username = user.username
-            if let avatarKey = user.avatarKey {
-                avatarState = .remote(avatarKey: avatarKey)
+            // Same rule as everywhere else: a stored signed URL is not a key.
+            if user.avatarKey != nil {
+                avatarState = AvatarState.fromUser(user)
             }
         }
 }

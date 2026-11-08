@@ -44,6 +44,12 @@ final class MapViewModel: NSObject, ObservableObject {
 
     private var currentUserID: String?
     private var hasReceivedFirstLocation = false
+    private var lastGeocodedLocation: CLLocation?
+    /// Reverse-geocode again only after moving this far (Apple rate-limits
+    /// the geocoder per app; a moving phone reports constantly).
+    static let geocodeDistance: CLLocationDistance = 1_000
+    /// The map needs neighbourhood precision, not GPS-grade (MASVS-PRIVACY).
+    static let locationAccuracy: CLLocationAccuracy = kCLLocationAccuracyHundredMeters
     private let locationManager = CLLocationManager()
     private let geocoder = CLGeocoder()
 
@@ -79,11 +85,18 @@ final class MapViewModel: NSObject, ObservableObject {
 
     // MARK: - Navigation
 
-    func openDirections(to venue: Venue) {
+    /// The Maps destination for a venue, or nil for invalid coordinates (a
+    /// corrupt record must not send someone to the middle of the ocean).
+    static func directionsItem(for venue: Venue) -> MKMapItem? {
         let coordinate = CLLocationCoordinate2D(latitude: venue.latitude, longitude: venue.longitude)
-        let placemark = MKPlacemark(coordinate: coordinate)
-        let mapItem = MKMapItem(placemark: placemark)
-        mapItem.name = venue.name
+        guard CLLocationCoordinate2DIsValid(coordinate), venue.latitude != 0 || venue.longitude != 0 else { return nil }
+        let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
+        mapItem.name = String(venue.name.prefix(VenueService.maxNameLength))
+        return mapItem
+    }
+
+    func openDirections(to venue: Venue) {
+        guard let mapItem = Self.directionsItem(for: venue) else { return }
         mapItem.openInMaps(launchOptions: [
             MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
         ])
@@ -108,7 +121,7 @@ final class MapViewModel: NSObject, ObservableObject {
     // MARK: - Private: role-specific loaders
 
     /// Venue role: only the owner's registered venue(s) and their upcoming events.
-    private func loadVenueRoleData() async throws {
+    func loadVenueRoleData() async throws {
         guard let ownerID = currentUserID else { return }
         let myVenues = try await MapService.venues(ownedBy: ownerID)
         guard !Task.isCancelled else { return }
@@ -122,7 +135,7 @@ final class MapViewModel: NSObject, ObservableObject {
 
     /// DJ role: all approved venues (neon-highlighted when available for hosting),
     /// upcoming events for glow levels, and DJ pins for performers at those events.
-    private func loadDJRoleData() async throws {
+    func loadDJRoleData() async throws {
         if let uid = currentUserID,
            let user = try? await MapService.user(byId: uid) {
             djRank = user.djRank
@@ -142,14 +155,17 @@ final class MapViewModel: NSObject, ObservableObject {
         let activeLinks = try await MapService.djLinks(forEventIDs: upcomingEventIDs)
         guard !Task.isCancelled else { return }
 
-        let venueByID = Dictionary(uniqueKeysWithValues: approvedVenues.map { ($0.id, $0) })
+        let venueByID = Dictionary(approvedVenues.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let eventByID = Dictionary(upcomingEvents.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        var users: [String: User?] = [:]   // one read per DJ, not per link
         var pins: [DJMapPin] = []
         for link in activeLinks {
             guard !Task.isCancelled else { return }
             guard let eventID = link.event?.id,
-                  let event = upcomingEvents.first(where: { $0.id == eventID }),
+                  let event = eventByID[eventID],
                   let venue = venueByID[event.venueID] else { continue }
-            if let user = try? await MapService.user(byId: link.djID) {
+            if users[link.djID] == nil { users[link.djID] = try? await MapService.user(byId: link.djID) }
+            if let user = users[link.djID] ?? nil {
                 pins.append(DJMapPin(
                     coordinate: CLLocationCoordinate2D(latitude: venue.latitude, longitude: venue.longitude),
                     djName: user.username,
@@ -162,7 +178,7 @@ final class MapViewModel: NSObject, ObservableObject {
 
     /// Regular role: only venues with a live N3ON event, plus followed DJs
     /// pinned to the venue where they are performing.
-    private func loadRegularRoleData() async throws {
+    func loadRegularRoleData() async throws {
         let upcomingEvents = try await MapService.allUpcomingEvents()
         guard !Task.isCancelled else { return }
         let eventVenueIDs = Set(upcomingEvents.map { $0.venueID })
@@ -181,16 +197,18 @@ final class MapViewModel: NSObject, ObservableObject {
         let activeLinks = try await MapService.djLinks(forEventIDs: upcomingEventIDs)
         guard !Task.isCancelled else { return }
 
-        let venueByID = Dictionary(uniqueKeysWithValues: venues.map { ($0.id, $0) })
+        let venueByID = Dictionary(venues.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let eventByID = Dictionary(upcomingEvents.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        var users: [String: User?] = [:]
         var pins: [DJMapPin] = []
         for link in activeLinks {
             guard !Task.isCancelled else { return }
             guard followedDJIDs.contains(link.djID),
                   let eid = link.event?.id,
-                  upcomingEventIDs.contains(eid),
-                  let event = upcomingEvents.first(where: { $0.id == eid }),
+                  let event = eventByID[eid],
                   let venue = venueByID[event.venueID] else { continue }
-            if let user = try? await MapService.user(byId: link.djID) {
+            if users[link.djID] == nil { users[link.djID] = try? await MapService.user(byId: link.djID) }
+            if let user = users[link.djID] ?? nil {
                 pins.append(DJMapPin(
                     coordinate: CLLocationCoordinate2D(latitude: venue.latitude, longitude: venue.longitude),
                     djName: user.username,
@@ -201,13 +219,26 @@ final class MapViewModel: NSObject, ObservableObject {
         djPins = pins
     }
 
-    private func setupLocationManager() {
+    /// What the location manager is configured with (tests assert it).
+    var configuredAccuracy: CLLocationAccuracy { locationManager.desiredAccuracy }
+
+    func setupLocationManager() {
         locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.desiredAccuracy = Self.locationAccuracy
+        locationManager.distanceFilter = 100
         locationManager.requestWhenInUseAuthorization()
     }
 
-    private func reverseGeocode(location: CLLocation) async {
+    /// True for the first valid fix, then only after moving `geocodeDistance`.
+    func shouldReverseGeocode(_ location: CLLocation) -> Bool {
+        guard CLLocationCoordinate2DIsValid(location.coordinate) else { return false }
+        guard let last = lastGeocodedLocation else { return true }
+        return location.distance(from: last) >= Self.geocodeDistance
+    }
+
+    func reverseGeocode(location: CLLocation) async {
+        guard shouldReverseGeocode(location) else { return }
+        lastGeocodedLocation = location
         do {
             let placemarks = try await geocoder.reverseGeocodeLocation(location)
             userCity = placemarks.first?.locality

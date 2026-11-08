@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Amplify
 import Combine
 
 @MainActor
@@ -22,6 +23,8 @@ final class InviteSearchBarViewModel: ObservableObject {
     @Published var isOpening = false
 
     private var me: User?
+    static let resultLimit = 50
+    static let maxTermLength = 50
 
     private var debounceTimer: AnyCancellable?
     // Holds the current in-flight DataStore query so rapid keystrokes cancel
@@ -29,7 +32,7 @@ final class InviteSearchBarViewModel: ObservableObject {
     // faster later one and the UI shows stale results.
     private var searchTask: Task<Void, Never>?
 
-    private func debounceSearch() {
+    func debounceSearch() {
         debounceTimer?.cancel()
         debounceTimer = Just(searchText)
             .delay(for: .milliseconds(300), scheduler: RunLoop.main)
@@ -40,20 +43,23 @@ final class InviteSearchBarViewModel: ObservableObject {
 
     func performSearch(term: String) {
         searchTask?.cancel()
+        // An empty search returns nobody: `contains("")` matched every account,
+        // listing the whole user directory. DJs only (this is the DJ invite
+        // search — fans' handles aren't listed), filtered by DataStore, capped.
+        let needle = String(term.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().prefix(Self.maxTermLength))
+        guard !needle.isEmpty else { results = []; return }
         searchTask = Task {
             do {
-                let allUsers = try await UserService.fetchAll()
+                let djs = try await Backend.dataStore.query(User.self, where: User.keys.isDJ == true)
                 guard !Task.isCancelled else { return }
                 let myID = await AuthService.currentUserIdOrNil()
-                let filtered = allUsers.filter {
-                    $0.id != myID && $0.username.lowercased().contains(term.lowercased())
-                }
+                let matches = djs.lazy.filter { $0.id != myID && $0.username.lowercased().contains(needle) }.prefix(Self.resultLimit)
                 // Already on @MainActor via the class annotation — no hop needed.
-                self.results = filtered.map {
+                self.results = matches.map {
                     UserSummary(id: $0.id, username: $0.username, avatarKey: $0.avatarKey, isDJ: $0.isDJ)
                 }
             } catch {
-                print("❌ Error fetching users: \(error)")
+                AppLog.app.error("Error fetching users: \(error.localizedDescription, privacy: .private)")
             }
         }
     }

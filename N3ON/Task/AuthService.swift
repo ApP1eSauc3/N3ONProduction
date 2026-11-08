@@ -24,12 +24,12 @@ enum AuthService {
 
     /// Async throws — preferred. Call when absence of a session is an error.
     static func currentUserId() async throws -> String {
-        try await Amplify.Auth.getCurrentUser().userId
+        try await Backend.auth.getCurrentUser().userId
     }
 
     /// Safe fallback — returns nil instead of throwing. Use when guest state is valid.
     static func currentUserIdOrNil() async -> String? {
-        try? await Amplify.Auth.getCurrentUser().userId
+        try? await Backend.auth.getCurrentUser().userId
     }
 
     /// The handle chosen at sign-up, read back from the Cognito `name` attribute.
@@ -38,7 +38,7 @@ enum AuthService {
     /// Cognito *username* is not usable here: the pool signs in by email, so the
     /// username is the user's sub.
     static func currentHandle() async throws -> String? {
-        let attributes = try await Amplify.Auth.fetchUserAttributes()
+        let attributes = try await Backend.auth.fetchUserAttributes()
         return attributes.first { $0.key == .name }?.value
     }
 
@@ -46,7 +46,7 @@ enum AuthService {
     /// if the record does not yet exist (e.g. first launch after sign-up).
     static func getCurrentUserModel() async throws -> User? {
         let id = try await currentUserId()
-        return try await Amplify.DataStore.query(User.self, byId: id)
+        return try await Backend.dataStore.query(User.self, byId: id)
     }
 
     // MARK: — Sign in
@@ -55,7 +55,7 @@ enum AuthService {
     /// On success the Hub emits `.signedIn` — callers should react to that event
     /// rather than polling after this call returns.
     static func signIn(email: String, password: String) async throws {
-        let result = try await Amplify.Auth.signIn(username: cognitoUsername(email), password: password)
+        let result = try await Backend.auth.signIn(username: cognitoUsername(email), password: password)
         guard result.isSignedIn else {
             throw AuthError.unknown("Sign in did not complete. Next step: \(result.nextStep)", nil)
         }
@@ -72,7 +72,7 @@ enum AuthService {
     /// travels as `name`. The handle itself lives on the User record (`User.username`).
     static func signUp(handle: String, email: String, password: String) async throws -> Bool {
         let request = signUpRequest(handle: handle, email: email)
-        let result = try await Amplify.Auth.signUp(
+        let result = try await Backend.auth.signUp(
             username: request.username,
             password: password,
             options: AuthSignUpRequest.Options(userAttributes: request.attributes)
@@ -102,7 +102,7 @@ enum AuthService {
     /// Submits the 6-digit code from the Cognito verification email. Throws on failure
     /// or if the confirmation did not reach the `.done` step.
     static func confirmSignUp(email: String, code: String) async throws {
-        let result = try await Amplify.Auth.confirmSignUp(
+        let result = try await Backend.auth.confirmSignUp(
             for: cognitoUsername(email),
             confirmationCode: code
         )
@@ -113,10 +113,13 @@ enum AuthService {
 
     /// Requests a new verification code. Use when the original code expires.
     static func resendSignUpCode(email: String) async throws {
-        _ = try await Amplify.Auth.resendSignUpCode(for: cognitoUsername(email))
+        _ = try await Backend.auth.resendSignUpCode(for: cognitoUsername(email))
     }
 
     // MARK: — Password rules
+
+    /// Amazon Cognito accepts passwords of up to 256 characters.
+    static let maxPasswordLength = 256
 
     /// Why Cognito would reject `password`, or nil if it's acceptable. The pool
     /// requires 8+ characters, and Cognito's own pattern `^[\S]+.*[\S]+$`
@@ -124,6 +127,8 @@ enum AuthService {
     /// plain message instead of the raw AWS validation error.
     static func passwordProblem(_ password: String) -> String? {
         if password.count < 8 { return "Use at least 8 characters." }
+        // Cognito's hard limit — longer is rejected with a raw AWS error.
+        if password.count > maxPasswordLength { return "Use at most \(maxPasswordLength) characters." }
         if password.first?.isWhitespace == true || password.last?.isWhitespace == true {
             return "Your password can't start or end with a space."
         }
@@ -135,12 +140,12 @@ enum AuthService {
     /// Initiates Cognito's forgot-password flow. A verification code is sent to
     /// the given email address.
     static func resetPassword(email: String) async throws {
-        _ = try await Amplify.Auth.resetPassword(for: cognitoUsername(email))
+        _ = try await Backend.auth.resetPassword(for: cognitoUsername(email))
     }
 
     /// Completes the reset: submits the code and new password.
     static func confirmReset(email: String, newPassword: String, code: String) async throws {
-        try await Amplify.Auth.confirmResetPassword(
+        try await Backend.auth.confirmResetPassword(
             for: cognitoUsername(email),
             with: newPassword,
             confirmationCode: code
@@ -163,7 +168,7 @@ enum AuthService {
             isSharingLocation: false,
             coinBalance: 0
         )
-        try await Amplify.DataStore.save(user)
+        try await Backend.dataStore.save(user)
         return user
     }
 
@@ -171,7 +176,7 @@ enum AuthService {
 
     /// Signs out globally. Non-throwing — the Hub emits `.signedOut` on completion.
     static func signOut() async {
-        _ = await Amplify.Auth.signOut()
+        _ = await Backend.auth.signOut()
     }
 
     // MARK: — Account deletion
@@ -192,13 +197,13 @@ enum AuthService {
     static func deleteAccount() async throws {
         // Step 1 — remove User record from DataStore (propagates to backend)
         if let user = try await getCurrentUserModel() {
-            try await Amplify.DataStore.delete(user)
+            try await Backend.dataStore.delete(user)
         }
 
         // Step 2 — wipe local SQLite cache
-        try await Amplify.DataStore.clear()
+        try await Backend.dataStore.clear()
 
         // Step 3 — delete Cognito account; triggers Hub .signedOut
-        try await Amplify.Auth.deleteUser()
+        try await Backend.auth.deleteUser()
     }
 }

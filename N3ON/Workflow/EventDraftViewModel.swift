@@ -163,6 +163,30 @@ final class EventDraftViewModel: ObservableObject {
         hostDJRank = user.djRank ?? 0
     }
 
+    // MARK: - Validation (pure)
+
+    static let maxNameLength = 120
+    static let maxDescriptionLength = 2_000
+    static let maxTicketPrice = 1_000.0
+
+    /// Why the draft can't be saved, or nil. Stock can't exceed the venue's
+    /// capacity (or be ≤ 0), the date must be in the future, text is bounded.
+    static func draftProblem(name: String, description: String, tickets: Int, capacity: Int,
+                             date: Date, now: Date = Date()) -> String? {
+        if name.trimmingCharacters(in: .whitespacesAndNewlines).count > maxNameLength { return "Keep the name under \(maxNameLength) characters." }
+        if description.count > maxDescriptionLength { return "Keep the description under \(maxDescriptionLength) characters." }
+        if tickets < 1 { return "Offer at least one ticket." }
+        if capacity > 0, tickets > capacity { return "That's more tickets than the venue holds (\(capacity))." }
+        if date <= now { return "Pick a date in the future." }
+        return nil
+    }
+
+    /// Why the price can't be published, or nil.
+    static func priceProblem(_ price: Double) -> String? {
+        guard price.isFinite, price >= 0 else { return "Enter a valid price." }
+        return price > maxTicketPrice ? "Tickets can be up to $\(Int(maxTicketPrice))." : nil
+    }
+
     // MARK: - Stage 1 — save pending event
 
     /// Validates fields, saves Event with status "pending", starts tally observation,
@@ -174,6 +198,12 @@ final class EventDraftViewModel: ObservableObject {
         }
         guard !eventName.trimmingCharacters(in: .whitespaces).isEmpty else {
             submissionError = "Event name is required."
+            return
+        }
+        if let problem = Self.draftProblem(name: eventName, description: eventDescription,
+                                           tickets: availableTickets, capacity: venue.maxCapacity,
+                                           date: combinedEventDateTime()) {
+            submissionError = problem
             return
         }
         submissionError = nil
@@ -211,7 +241,7 @@ final class EventDraftViewModel: ObservableObject {
     /// AppSync, and DataStore syncs the just-saved Event asynchronously, so an
     /// early call can see EVENT_NOT_FOUND — retried with backoff. The tally
     /// observer picks up the resulting EventDJLink via DataStore sync.
-    private func joinOwnLineup(eventID: String) {
+    func joinOwnLineup(eventID: String) {
         hostJoinTask?.cancel()
         hostJoinTask = Task {
             for delay: UInt64 in [0, 1, 2, 4, 8] {
@@ -223,7 +253,7 @@ final class EventDraftViewModel: ObservableObject {
                 } catch JoinLineupError.eventNotFound {
                     continue   // not synced to the cloud yet
                 } catch {
-                    print("⚠️ Host lineup join failed: \(error.localizedDescription)")
+                    AppLog.app.error("Host lineup join failed: \(error.localizedDescription, privacy: .private)")
                     return
                 }
             }
@@ -232,7 +262,7 @@ final class EventDraftViewModel: ObservableObject {
 
     // MARK: - Tally observation
 
-    private func startTallyObserver() {
+    func startTallyObserver() {
         tallyObserverTask?.cancel()
         tallyObserverTask = Task { [weak self] in
             guard let self else { return }
@@ -241,7 +271,7 @@ final class EventDraftViewModel: ObservableObject {
                 // observe() takes no predicate in Amplify v2 — filter in-stream.
                 // Only re-query when the mutated link belongs to THIS event;
                 // otherwise every EventDJLink write anywhere re-reads the table.
-                for try await change in Amplify.DataStore.observe(EventDJLink.self) {
+                for try await change in Backend.dataStore.observe(EventDJLink.self) {
                     guard !Task.isCancelled else { return }
                     // Skip only when the link provably belongs to another event.
                     // If the association didn't decode, refresh — never miss a tally.
@@ -256,7 +286,7 @@ final class EventDraftViewModel: ObservableObject {
         }
     }
 
-    private func refreshTally() async {
+    func refreshTally() async {
         guard let eventID = createdEventID else { return }
         let links = (try? await EventService.djLinks(forEventID: eventID)) ?? []
         currentTally = links.reduce(0) { $0 + $1.coinContribution }
@@ -267,7 +297,12 @@ final class EventDraftViewModel: ObservableObject {
     /// Uploads the poster image, then updates the Event record with the poster key,
     /// ticket price, and status:"live". Creates the event chat room on success.
     func uploadPosterAndGoLive(_ image: UIImage) async {
-        guard let jpeg = image.jpegData(compressionQuality: 0.8) else { return }
+        if let problem = Self.priceProblem(ticketPrice) {
+            posterUploadError = problem
+            return
+        }
+        // Downscaled + metadata-stripped like every other upload.
+        guard let jpeg = ImagePipeline.makeJPEGData(from: image, config: .poster) else { return }
         // Final tally check at the price being published (see canPublish).
         guard canLeaveLimbo else {
             posterUploadError = "Your lineup has \(currentTally) of the \(requiredTally) tally coins needed "
@@ -358,7 +393,7 @@ final class EventDraftViewModel: ObservableObject {
 
     // MARK: - Private helpers
 
-    private func combinedEventDateTime() -> Date {
+    func combinedEventDateTime() -> Date {
         let cal   = Calendar.current
         let dateC = cal.dateComponents([.year, .month, .day], from: eventDate)
         let timeC = cal.dateComponents([.hour, .minute], from: eventTime)

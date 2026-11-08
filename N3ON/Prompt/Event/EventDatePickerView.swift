@@ -191,7 +191,11 @@ struct EventDatePickerView: View {
     }
 
     private func checkDateConflict(_ date: Date) {
-        let cal = Calendar.current
-        showDateConflict = bookedDates.contains(cal.startOfDay(for: date))
+        showDateConflict = Self.hasConflict(date, booked: bookedDates)
+    }
+
+    /// True when the venue already has an event on `date`'s calendar day.
+    static func hasConflict(_ date: Date, booked: Set<Date>, calendar: Calendar = .current) -> Bool {
+        booked.contains(calendar.startOfDay(for: date))
     }
 }

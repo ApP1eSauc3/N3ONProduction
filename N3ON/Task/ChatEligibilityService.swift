@@ -46,26 +46,25 @@ struct ChatEligibilityService {
 
     // MARK: - Private
 
-    private static func checkDJVenue(djUserID: String, venueUserID: String) async -> ChatEligibility {
+    static func checkDJVenue(djUserID: String, venueUserID: String) async -> ChatEligibility {
         do {
             // 1. All EventDJLinks for this DJ
-            let allLinks = try await Amplify.DataStore.query(EventDJLink.self)
-            let linkedEventIDs = Set(allLinks
-                .filter { $0.djID == djUserID }
-                .compactMap { $0.event?.id })
+            // Filters run in DataStore's SQLite (predicates), not over every
+            // row on the device — this check runs before each chat opens.
+            let links = try await Backend.dataStore.query(EventDJLink.self, where: EventDJLink.keys.djID == djUserID)
+            let linkedEventIDs = Set(links.compactMap { $0.event?.id })
             guard !linkedEventIDs.isEmpty else { return .ineligible(reason: .noSharedActiveEvent) }
 
             // 2. Venues owned by the venue user
-            let allVenues = try await Amplify.DataStore.query(Venue.self)
-            let venueIDs = Set(allVenues
-                .filter { $0.owner?.id == venueUserID }
-                .map { $0.id })
+            let venues = try await Backend.dataStore.query(Venue.self, where: Venue.keys.owner == venueUserID)
+            let venueIDs = Set(venues.map { $0.id })
             guard !venueIDs.isEmpty else { return .ineligible(reason: .noSharedActiveEvent) }
 
             // 3. Events the DJ is linked to that are hosted at one of those venues
-            let allEvents = try await Amplify.DataStore.query(Event.self)
-            let sharedEvents = allEvents.filter {
-                linkedEventIDs.contains($0.id) && venueIDs.contains($0.venueID)
+            var sharedEvents: [Event] = []
+            for venueID in venueIDs {
+                let atVenue = try await Backend.dataStore.query(Event.self, where: Event.keys.venueID == venueID)
+                sharedEvents += atVenue.filter { linkedEventIDs.contains($0.id) }
             }
             guard !sharedEvents.isEmpty else { return .ineligible(reason: .noSharedActiveEvent) }
 

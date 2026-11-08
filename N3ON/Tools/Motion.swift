@@ -37,7 +37,11 @@ enum Motion {
     /// Exits are 20% shorter than the matching entrance: the user has already
     /// decided, so get out of the way.
     static let exitRatio: Double = 0.8
-    static func exitDuration(for enter: Double) -> Double { enter * exitRatio }
+    static func exitDuration(for enter: Double) -> Double { safeDuration(enter) * exitRatio }
+
+    /// Durations are never negative or non-finite (a NaN reaching an
+    /// Animation makes CoreAnimation reject the transaction).
+    static func safeDuration(_ d: Double) -> Double { d.isFinite ? max(0, d) : 0 }
 
     /// Delay between list rows appearing.
     static let staggerStep: Double = 0.03
@@ -70,7 +74,7 @@ enum Motion {
     /// Strong ease-out (cubic-bezier 0.23, 1, 0.32, 1): fast start, gentle
     /// landing. The default for anything entering or leaving.
     static func enter(_ duration: Double = enterDuration) -> Animation {
-        .timingCurve(0.23, 1, 0.32, 1, duration: duration)
+        .timingCurve(0.23, 1, 0.32, 1, duration: safeDuration(duration))
     }
 
     /// Ease-out exit, 20% shorter than the entrance it reverses.
@@ -81,7 +85,7 @@ enum Motion {
     /// Strong ease-in-out (cubic-bezier 0.77, 0, 0.175, 1) for things that
     /// move or morph while staying on screen.
     static func move(_ duration: Double = moveDuration) -> Animation {
-        .timingCurve(0.77, 0, 0.175, 1, duration: duration)
+        .timingCurve(0.77, 0, 0.175, 1, duration: safeDuration(duration))
     }
 
     /// Press-down feedback.
@@ -98,13 +102,28 @@ enum Motion {
     /// physical momentum of the throw; Apple keeps bounce for this case.
     static let gestureEnd: Animation = .spring(response: 0.35, dampingFraction: 0.86)
 
+    // MARK: Transition parameters (pure — what the AnyTransitions use)
+
+    /// A non-finite anchor would put NaN into a scale transform.
+    static func sanitizedAnchor(_ p: UnitPoint) -> UnitPoint {
+        p.x.isFinite && p.y.isFinite ? p : .center
+    }
+
+    /// Entrance and (20% shorter) exit used by `.edgeReveal`.
+    static var edgeRevealDurations: (enter: Double, exit: Double) {
+        (enterDuration, exitDuration(for: enterDuration))
+    }
+
     // MARK: Rubber band
 
     /// UIScrollView's rubber-band curve: an offset past a bound is resisted
     /// progressively and can never exceed `dimension`.
     /// `(1 − 1 / (x·c / d + 1)) · d`, c = 0.55.
     static func rubberBand(_ offset: CGFloat, dimension: CGFloat, coefficient: CGFloat = 0.55) -> CGFloat {
-        guard dimension > 0, offset != 0 else { return 0 }
+        // Non-finite input (a NaN from a bad division in a gesture) must never
+        // reach layout; an infinite pull is simply fully resisted.
+        guard dimension > 0, dimension.isFinite, !offset.isNaN, offset != 0 else { return 0 }
+        if offset.isInfinite { return offset < 0 ? -dimension : dimension }
         let x = abs(offset)
         let resisted = (1 - 1 / (x * coefficient / dimension + 1)) * dimension
         return offset < 0 ? -resisted : resisted
@@ -112,6 +131,7 @@ enum Motion {
 
     /// Clamps `value` to `range`; any overshoot is rubber-banded instead of cut.
     static func rubberBanded(_ value: CGFloat, in range: ClosedRange<CGFloat>, dimension: CGFloat) -> CGFloat {
+        guard !value.isNaN else { return min(max(0, range.lowerBound), range.upperBound) }
         if value < range.lowerBound {
             return range.lowerBound + rubberBand(value - range.lowerBound, dimension: dimension)
         }
@@ -153,7 +173,8 @@ extension AnyTransition {
     /// Popovers, badges, inline reveals: start at 0.95 + transparent, scaled
     /// toward `anchor` — put the anchor on the side of the trigger, so the
     /// element grows out of it and shrinks back into it. Exit 20% shorter.
-    static func popover(anchor: UnitPoint = .center) -> AnyTransition {
+    static func popover(anchor requested: UnitPoint = .center) -> AnyTransition {
+        let anchor = Motion.sanitizedAnchor(requested)
         let base = AnyTransition.scale(scale: Motion.popoverStartScale, anchor: anchor).combined(with: .opacity)
         return .asymmetric(
             insertion: base.animation(Motion.enter(Motion.dropdownDuration)),
@@ -165,9 +186,10 @@ extension AnyTransition {
     /// Always paired with opacity: movement alone reads as clipping.
     static func edgeReveal(_ edge: Edge) -> AnyTransition {
         let base = AnyTransition.move(edge: edge).combined(with: .opacity)
+        let timing = Motion.edgeRevealDurations
         return .asymmetric(
-            insertion: base.animation(Motion.enter()),
-            removal: base.animation(Motion.exit())
+            insertion: base.animation(Motion.enter(timing.enter)),
+            removal: base.animation(Motion.exit(timing.enter))
         )
     }
 

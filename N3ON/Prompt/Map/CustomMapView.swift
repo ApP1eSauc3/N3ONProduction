@@ -58,9 +58,9 @@ struct CustomMapView: UIViewRepresentable {
             VenueAnnotation(
                 coordinate: CLLocationCoordinate2D(latitude: venue.latitude, longitude: venue.longitude),
                 venue: venue,
-                glowLevel: glowStrength(for: venue.id),
-                upcomingDates: upcomingEvents(for: venue.id),
-                isAvailableForHosting: role == .dj && glowStrength(for: venue.id) == 0.0
+                glowLevel: Self.glowStrength(for: venue.id, in: allEvents),
+                upcomingDates: Self.upcomingEvents(for: venue.id, in: allEvents),
+                isAvailableForHosting: role == .dj && Self.glowStrength(for: venue.id, in: allEvents) == 0.0
             )
         }
 
@@ -79,13 +79,19 @@ struct CustomMapView: UIViewRepresentable {
 
     // MARK: - Helpers
 
-    private func glowStrength(for venueID: String) -> CGFloat {
-        guard let nextEvent = allEvents
-            .filter({ $0.venueID == venueID && $0.eventDate.foundationDate > Date() })
-            .sorted(by: { $0.eventDate.foundationDate < $1.eventDate.foundationDate })
-            .first else { return 0.0 }
+    // Pure, static and testable. They run once per venue pin on every map
+    // update, so: `min` instead of a full sort for the next event, and one
+    // shared DateFormatter instead of one per pin (formatters are expensive).
 
-        let daysUntil = nextEvent.eventDate.foundationDate.timeIntervalSinceNow / 86400
+    static func firstUpcomingEvent(for venueID: String, in events: [Event], now: Date = Date()) -> Event? {
+        events
+            .filter { $0.venueID == venueID && $0.eventDate.foundationDate > now }
+            .min { $0.eventDate.foundationDate < $1.eventDate.foundationDate }
+    }
+
+    static func glowStrength(for venueID: String, in events: [Event], now: Date = Date()) -> CGFloat {
+        guard let next = firstUpcomingEvent(for: venueID, in: events, now: now) else { return 0.0 }
+        let daysUntil = next.eventDate.foundationDate.timeIntervalSince(now) / 86_400
         switch daysUntil {
         case ..<3:  return 1.0
         case ..<7:  return 0.7
@@ -94,21 +100,18 @@ struct CustomMapView: UIViewRepresentable {
         }
     }
 
-    private func upcomingEvents(for venueID: String) -> [String] {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return allEvents
-            .filter { $0.venueID == venueID && $0.eventDate.foundationDate > Date() }
-            .sorted { $0.eventDate.foundationDate < $1.eventDate.foundationDate }
-            .map { formatter.string(from: $0.eventDate.foundationDate) }
-    }
+    private static let pinDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
+        return f
+    }()
 
-    private func firstUpcomingEvent(for venueID: String) -> Event? {
-        allEvents
-            .filter { $0.venueID == venueID && $0.eventDate.foundationDate > Date() }
+    static func upcomingEvents(for venueID: String, in events: [Event], now: Date = Date()) -> [String] {
+        events
+            .filter { $0.venueID == venueID && $0.eventDate.foundationDate > now }
             .sorted { $0.eventDate.foundationDate < $1.eventDate.foundationDate }
-            .first
+            .map { pinDateFormatter.string(from: $0.eventDate.foundationDate) }
     }
 
     // MARK: - Coordinator
@@ -138,7 +141,7 @@ struct CustomMapView: UIViewRepresentable {
 
             // Regular users: route to ticket purchase for the first upcoming event
             if parent.role == .regular,
-               let event = parent.firstUpcomingEvent(for: venueAnnotation.venue.id),
+               let event = CustomMapView.firstUpcomingEvent(for: venueAnnotation.venue.id, in: parent.allEvents),
                let handler = parent.onEventTap {
                 handler(event)
             } else {

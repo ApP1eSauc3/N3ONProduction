@@ -9,6 +9,7 @@
 
 import Foundation
 import Amplify
+import AWSCognitoAuthPlugin
 
 @MainActor
 final class AuthViewModel: ObservableObject {
@@ -40,7 +41,7 @@ final class AuthViewModel: ObservableObject {
         startHubObservation()
     }
 
-    private func loadSession() async {
+    func loadSession() async {
         isLoading = true
         defer { isLoading = false }
         do {
@@ -53,7 +54,8 @@ final class AuthViewModel: ObservableObject {
                 // interrupted first run).
                 let id = try await AuthService.currentUserId()
                 userState.userId = id
-                if let pendingUsername = UserDefaults.standard.string(forKey: "pendingUsername") {
+                if let pendingUsername = UserDefaults.standard.string(forKey: "pendingUsername"),
+                   await pendingChoiceBelongsToCurrentAccount() {
                     let isDJ = UserDefaults.standard.bool(forKey: "pendingIsDJ")
                     do {
                         let created = try await AuthService.createInitialUserRecord(
@@ -85,10 +87,10 @@ final class AuthViewModel: ObservableObject {
 
     // MARK: — Hub observation (AsyncPublisher — no Combine tokens in views)
 
-    private func startHubObservation() {
+    func startHubObservation() {
         hubTask?.cancel()
         hubTask = Task { [weak self] in
-            for await payload in Amplify.Hub.publisher(for: .auth).values {
+            for await payload in Backend.hub.events(on: .auth) {
                 guard !Task.isCancelled else { return }
                 guard let self else { return }
                 switch payload.eventName {
@@ -135,7 +137,7 @@ final class AuthViewModel: ObservableObject {
             try await AuthService.signIn(email: email, password: password)
             // Hub .signedIn event will trigger loadSession() → flowState = .authenticated
         } catch {
-            errorMessage = authErrorMessage(from: error)
+            errorMessage = authErrorMessage(from: error, context: .signIn)
         }
     }
 
@@ -146,6 +148,11 @@ final class AuthViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
+        // Same rule Cognito enforces — say it plainly, without a round trip.
+        if let problem = AuthService.passwordProblem(password) {
+            errorMessage = problem
+            return
+        }
         do {
             let needsConfirmation = try await AuthService.signUp(
                 handle: handle,
@@ -167,6 +174,9 @@ final class AuthViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             try await AuthService.confirmSignUp(email: email, code: code)
+            // The role chosen next belongs to THIS account only (see
+            // pendingChoiceBelongsToCurrentAccount).
+            UserDefaults.standard.set(AuthService.cognitoUsername(email), forKey: Self.pendingEmailKey)
             // First-time user — let them pick their role before signing in.
             flowState = .roleSelection(username: handle)
         } catch {
@@ -210,6 +220,10 @@ final class AuthViewModel: ObservableObject {
         do {
             try await AuthService.resetPassword(email: email)
             flowState = .confirmReset(email: email)
+        } catch where Self.isUserNotFound(error) {
+            // Same outcome whether or not the account exists — the reset
+            // screen must not reveal which emails are registered.
+            flowState = .confirmReset(email: email)
         } catch {
             errorMessage = authErrorMessage(from: error)
         }
@@ -252,16 +266,50 @@ final class AuthViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             try await AuthService.deleteAccount()
-            // Hub .signedOut (fired by Amplify.Auth.deleteUser internally) drives
+            // Hub .signedOut (fired by Backend.auth.deleteUser internally) drives
             // flowState = .login and userState.reset() — no manual mutation needed here.
         } catch {
             errorMessage = authErrorMessage(from: error)
         }
     }
 
+    // MARK: — Account binding for the pending role choice
+
+    static let pendingEmailKey = "pendingEmail"
+
+    /// The handle + DJ choice saved before first sign-in apply only to the
+    /// account that confirmed its code on this device. Another account signing
+    /// in here must not inherit them; a mismatch discards them.
+    func pendingChoiceBelongsToCurrentAccount() async -> Bool {
+        guard let pendingEmail = UserDefaults.standard.string(forKey: Self.pendingEmailKey) else {
+            return true   // saved by a build before this check existed
+        }
+        let attributes = (try? await Backend.auth.fetchUserAttributes()) ?? []
+        let email = attributes.first { $0.key == .email }.map { AuthService.cognitoUsername($0.value) }
+        if email == pendingEmail { return true }
+        for key in ["pendingUsername", "pendingIsDJ", Self.pendingEmailKey] { UserDefaults.standard.removeObject(forKey: key) }
+        return false
+    }
+
     // MARK: — Error formatting
 
-    private func authErrorMessage(from error: Error) -> String {
+    enum ErrorContext { case signIn, other }
+
+    /// Cognito reports an unknown account as `userNotFound`.
+    static func isUserNotFound(_ error: Error) -> Bool {
+        guard let authError = error as? AuthError else { return false }
+        if case .userNotFound? = authError.underlyingError as? AWSCognitoAuthError { return true }
+        return false
+    }
+
+    func authErrorMessage(from error: Error, context: ErrorContext = .other) -> String {
+        // Sign-in: "no such user" and "wrong password" read the same, so the
+        // form can't be used to discover which emails have accounts (OWASP
+        // ASVS 2.2.x / Cognito PreventUserExistenceErrors is off on this pool).
+        if context == .signIn {
+            if Self.isUserNotFound(error) { return "Incorrect email or password." }
+            if let authError = error as? AuthError, case .notAuthorized = authError { return "Incorrect email or password." }
+        }
         // Cognito's raw password-pattern failure → plain English.
         let raw = (error as? AuthError)?.errorDescription ?? error.localizedDescription
         if raw.contains("Value at 'password' failed to satisfy constraint") {

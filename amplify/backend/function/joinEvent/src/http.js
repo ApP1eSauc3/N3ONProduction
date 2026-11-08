@@ -22,15 +22,31 @@ function callerSub(event) {
   return match ? match[1] : null;
 }
 
+/** Largest request body accepted. These endpoints take a few fields; API
+ * Gateway allows 10 MB, which must not reach JSON.parse. */
+const MAX_BODY_BYTES = 16 * 1024;
+
 function parseBody(event) {
   if (!event || event.body == null || event.body === '') return {};
+  if (typeof event.body !== 'string' || Buffer.byteLength(event.body, 'utf8') > MAX_BODY_BYTES * 2) return null;
   const raw = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body;
+  if (Buffer.byteLength(raw, 'utf8') > MAX_BODY_BYTES) return null;
   try {
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Record IDs from the client (event IDs). DataStore IDs are UUIDs; anything
+ * else is refused before it reaches a query filter or a derived key — link
+ * IDs are `<eventID>_<sub>`, which is only collision-free when event IDs
+ * contain no `_` (LEAN-RESEARCH.md, Ids.link_collision).
+ */
+function isValidID(id) {
+  return typeof id === 'string' && /^[A-Za-z0-9-]{1,64}$/.test(id);
 }
 
 /** Response envelope shared with the iOS client's decoders. */
@@ -42,8 +58,10 @@ function respond(statusCode, payload) {
   };
 }
 
-const ok = (payload) => respond(200, { success: true, ...payload });
+// The envelope keys go last so a payload can never overwrite them (an
+// `extra.success: true` used to turn a failure into a success).
+const ok = (payload) => respond(200, { ...payload, success: true });
 const fail = (statusCode, errorCode, extra = {}) =>
-  respond(statusCode, { success: false, errorCode, ...extra });
+  respond(statusCode, { ...extra, success: false, errorCode });
 
-module.exports = { callerSub, parseBody, respond, ok, fail };
+module.exports = { callerSub, parseBody, isValidID, respond, ok, fail, MAX_BODY_BYTES };

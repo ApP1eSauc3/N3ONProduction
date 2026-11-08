@@ -57,6 +57,7 @@ exports.handler = async (event) => {
 
 // Exposed for unit tests only.
 exports._resolveGroup = resolveGroup;
+exports._cognito = cognito;
 exports._setClient = (c) => {
   client = c;
 };

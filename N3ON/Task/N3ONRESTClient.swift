@@ -29,15 +29,8 @@ enum N3ONRESTClient {
             headers: ["Content-Type": "application/json"],
             body: body
         )
-        do {
-            return try await Amplify.API.post(request: request)
-        } catch let error as APIError {
-            if case let .httpStatusError(_, response) = error,
-               let awsResponse = response as? AWSHTTPURLResponse,
-               let data = awsResponse.body {
-                return data
-            }
-            throw error
-        }
+        // Backend.rest returns the body for every HTTP response (the
+        // AmplifyRESTTransport adapter unwraps APIError.httpStatusError).
+        return try await Backend.rest.post(request)
     }
 }

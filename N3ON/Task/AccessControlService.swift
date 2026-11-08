@@ -38,9 +38,9 @@ struct AccessControlService {
     /// Decodes the `cognito:groups` claim from the current id token.
     /// Returns `[]` on any failure (no session, malformed token, missing claim).
     /// Shared by `currentUserRole()` and `isAdmin()` so JWT decoding lives in one place.
-    private static func currentGroups() async -> [String] {
+    static func currentGroups() async -> [String] {
         do {
-            let session = try await Amplify.Auth.fetchAuthSession()
+            let session = try await Backend.auth.fetchAuthSession()
             guard let provider = session as? AuthCognitoTokensProvider else { return [] }
             let idToken: String
             do { idToken = try provider.getCognitoTokens().get().idToken }
@@ -55,15 +55,23 @@ struct AccessControlService {
     /// Returns true when the given userID holds at least one ticket for the event.
     /// Called by TicketScannerView after reading the attendee's QR code.
     static func validateTicket(userID: String, eventID: String) async -> Bool {
-        let tickets = (try? await Amplify.DataStore.query(
+        let tickets = (try? await Backend.dataStore.query(
             Ticket.self,
             where: Ticket.keys.eventID == eventID
         )) ?? []
         return tickets.contains { $0.userID == userID }
     }
 
+    /// Cognito ID tokens are a few KB; anything far larger is not one and is
+    /// not decoded (bounded work on hostile input).
+    static let maxTokenBytes = 16_384
+
     // AuthCognitoTokens.idToken is a raw JWT string — no structured payload API in AWSPluginsCore.
-    private static func decodeJWT(_ token: String) -> [String: Any]? {
+    // The signature is NOT verified here: the claims only drive client UI
+    // (role, admin console). Every privileged write is re-checked server-side
+    // by AppSync @auth against the signed token.
+    static func decodeJWT(_ token: String) -> [String: Any]? {
+        guard token.utf8.count <= maxTokenBytes else { return nil }
         let segments = token.components(separatedBy: ".")
         guard segments.count > 1 else { return nil }
         var base64 = segments[1]

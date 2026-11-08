@@ -45,6 +45,9 @@ final class ImageCache {
 
     /// Synchronous memory-tier lookup. Views use this to avoid a placeholder
     /// flash when the image is already decoded.
+    /// The in-memory byte budget (NSCache evicts beyond it).
+    var costLimit: Int { cache.totalCostLimit }
+
     func image(forKey key: String) -> UIImage? {
         cache.object(forKey: key as NSString)
     }
@@ -53,7 +56,7 @@ final class ImageCache {
         cache.setObject(image, forKey: key as NSString, cost: image.pixelCost)
     }
 
-    fileprivate func remove(forKey key: String) {
+    func remove(forKey key: String) {
         cache.removeObject(forKey: key as NSString)
     }
 
@@ -92,11 +95,11 @@ private extension UIImage {
 
 // MARK: — Loader actor (disk tier + request coalescing)
 
-private actor ImageLoader {
+actor ImageLoader {
     static let shared = ImageLoader()
 
     private var inFlight: [String: Task<UIImage, Error>] = [:]
-    private var didTrimDisk = false
+    private(set) var didTrimDisk = false
 
     /// Decode bound: largest display surface is a full-width poster,
     /// 390pt @3x ≈ 1170px. Uploads are already capped at 1600px by
@@ -122,10 +125,7 @@ private actor ImageLoader {
                 return image
             }
 
-            let data = try await Amplify.Storage.downloadData(
-                key: key,
-                options: .init(accessLevel: access)
-            ).value
+            let data = try await Backend.storage.downloadData(key: key, accessLevel: access)
 
             guard let image = Self.decodeDownsampled(data) else {
                 throw ImageCacheError.decodingFailed
@@ -165,7 +165,7 @@ private actor ImageLoader {
     /// `maxDecodePixelSize` on its long edge without ever materialising the
     /// full-resolution image — the decoded poster costs ~5.8 MB instead of
     /// ~10 MB, and the work happens here, not at first render.
-    private static func decodeDownsampled(_ data: Data) -> UIImage? {
+    static func decodeDownsampled(_ data: Data) -> UIImage? {
         let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions) else {
             return nil
@@ -191,7 +191,7 @@ private actor ImageLoader {
         return dir
     }()
 
-    private static func fileURL(for key: String) -> URL {
+    static func fileURL(for key: String) -> URL {
         // Keys contain "/" — hash to a flat, filesystem-safe name.
         let digest = SHA256.hash(data: Data(key.utf8))
         let name = digest.map { String(format: "%02x", $0) }.joined()
@@ -200,7 +200,7 @@ private actor ImageLoader {
 
     /// Once per process: evict oldest files until the disk tier is under
     /// budget. Runs off the actor so it never delays a load.
-    private func trimDiskIfNeeded() {
+    func trimDiskIfNeeded() {
         guard !didTrimDisk else { return }
         didTrimDisk = true
         Task.detached(priority: .utility) {

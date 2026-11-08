@@ -28,12 +28,20 @@ enum PushNotificationService {
     /// Safe to call repeatedly — iOS debounces the system prompt after the first ask.
     @discardableResult
     static func requestPermission() async -> Bool {
-        let center = UNUserNotificationCenter.current()
-        do {
-            return try await center.requestAuthorization(options: [.alert, .sound, .badge])
-        } catch {
-            return false
-        }
+        await Backend.notifications.requestAuthorization()
+    }
+
+    /// Longest event name shown on the lock screen.
+    static let maxNameInNotification = 80
+
+    /// The event name is host-written text shown on the lock screen: one line
+    /// (no newlines/control characters that could fake a second "message"),
+    /// trimmed and length-capped.
+    static func notificationSafe(_ name: String) -> String {
+        let oneLine = name.unicodeScalars.map { CharacterSet.controlCharacters.contains($0) || CharacterSet.newlines.contains($0) ? " " : String($0) }.joined()
+        let trimmed = oneLine.trimmingCharacters(in: .whitespaces)
+        guard trimmed.count > maxNameInNotification else { return trimmed.isEmpty ? "Your event" : trimmed }
+        return String(trimmed.prefix(maxNameInNotification - 1)) + "…"
     }
 
     // MARK: — Local event reminders
@@ -41,7 +49,6 @@ enum PushNotificationService {
     /// Schedules a local notification 24 hours before `event.eventDate`.
     /// Uses the event ID as the notification identifier so it can be cancelled.
     static func scheduleEventReminder(for event: Event) async {
-        let center = UNUserNotificationCenter.current()
         guard await requestPermission() else { return }
 
         let triggerDate = event.eventDate.foundationDate.addingTimeInterval(-86_400)
@@ -49,7 +56,7 @@ enum PushNotificationService {
 
         let content = UNMutableNotificationContent()
         content.title = "Event tomorrow 🎶"
-        content.body = "\(event.eventName) starts in 24 hours. Don't miss it."
+        content.body = "\(notificationSafe(event.eventName)) starts in 24 hours. Don't miss it."
         content.sound = .default
 
         let components = Calendar.current.dateComponents(
@@ -64,7 +71,7 @@ enum PushNotificationService {
         )
 
         do {
-            try await center.add(request)
+            try await Backend.notifications.add(request)
         } catch {
             // Non-fatal — reminder is a nice-to-have
         }
@@ -72,14 +79,13 @@ enum PushNotificationService {
 
     /// Cancels a previously scheduled event reminder.
     static func cancelEventReminder(for eventID: String) {
-        UNUserNotificationCenter.current()
-            .removePendingNotificationRequests(withIdentifiers: ["event-reminder-\(eventID)"])
+        Backend.notifications.removePending(withIdentifiers: ["event-reminder-\(eventID)"])
     }
 
     // MARK: — Badge
 
     /// Resets the app badge count to zero.
     static func clearBadge() async {
-        UNUserNotificationCenter.current().setBadgeCount(0) { _ in }
+        Backend.notifications.setBadgeCount(0)
     }
 }

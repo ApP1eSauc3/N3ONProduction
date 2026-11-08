@@ -14,13 +14,13 @@ enum TransactionService {
 
         try await withThrowingTaskGroup(of: [Transaction].self) { group in
             group.addTask {
-                try await Amplify.DataStore.query(
+                try await Backend.dataStore.query(
                     Transaction.self,
                     where: Transaction.keys.fromUserID == userID
                 )
             }
             group.addTask {
-                try await Amplify.DataStore.query(
+                try await Backend.dataStore.query(
                     Transaction.self,
                     where: Transaction.keys.toUserID == userID
                 )
@@ -39,14 +39,14 @@ enum TransactionService {
     }
 
     static func transactions(forEvent eventID: String) async throws -> [Transaction] {
-        try await Amplify.DataStore.query(
+        try await Backend.dataStore.query(
             Transaction.self,
             where: Transaction.keys.eventID == eventID
         )
     }
 
     static func totalEarned(by userID: String) async throws -> Int {
-        let received = try await Amplify.DataStore.query(
+        let received = try await Backend.dataStore.query(
             Transaction.self,
             where: Transaction.keys.toUserID == userID
         )

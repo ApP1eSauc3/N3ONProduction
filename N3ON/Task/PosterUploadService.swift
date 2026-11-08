@@ -23,7 +23,10 @@ enum PosterUploadService {
 
             static func uploadUIImage(_ image: UIImage, eventId: String,
                                       access: StorageAccessLevel = .guest) async throws -> String {
-                guard var event = try await Amplify.DataStore.query(Event.self, byId: eventId)
+                // Only the event's host may replace its poster. Another
+                // user's event reads as "not found" (no existence leak).
+                guard var event = try await Backend.dataStore.query(Event.self, byId: eventId),
+                      event.hostDJID == (try await AuthService.currentUserId())
                 else { throw UploadError.eventNotFound }
 
                 guard let jpeg = ImagePipeline.makeJPEGData(from: image, config: .poster)
@@ -32,7 +35,7 @@ enum PosterUploadService {
                 let key = MediaKind.eventPoster(eventID: eventId).makeKey(extension: "jpg")
                 _ = try await StorageUploader.uploadJPEG(jpeg, key: key, access: access)
                 event.posterKey = key
-                try await Amplify.DataStore.save(event)
+                try await Backend.dataStore.save(event)
                 return key
             }
         }

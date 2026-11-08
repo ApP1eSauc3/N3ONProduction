@@ -48,6 +48,9 @@ enum TicketPurchaseError: LocalizedError, Equatable {
 }
 
 enum TicketService {
+    /// The purchaseTicket Lambda's MAX_PER_REQUEST — larger is refused there.
+    static let maxPerRequest = 10
+
 
     /// Buys `quantity` tickets via the purchaseTicket Lambda — the only path
     /// that mints Ticket rows. The buyer is identified server-side from the
@@ -58,7 +61,7 @@ enum TicketService {
         do {
             data = try await N3ONRESTClient.post(
                 path: "/tickets/purchase",
-                json: ["eventID": eventID, "quantity": max(1, quantity)]
+                json: ["eventID": eventID, "quantity": min(max(1, quantity), maxPerRequest)]
             )
         } catch {
             throw TicketPurchaseError.serverError(error.localizedDescription)
@@ -76,7 +79,7 @@ enum TicketService {
     }
 
     static func tickets(for eventID: String) async throws -> [Ticket] {
-        try await Amplify.DataStore.query(
+        try await Backend.dataStore.query(
             Ticket.self,
             where: Ticket.keys.eventID == eventID
         )
@@ -84,7 +87,7 @@ enum TicketService {
 
     static func myTickets() async throws -> [Ticket] {
         let userID = try await AuthService.currentUserId()
-        return try await Amplify.DataStore.query(
+        return try await Backend.dataStore.query(
             Ticket.self,
             where: Ticket.keys.userID == userID
         )

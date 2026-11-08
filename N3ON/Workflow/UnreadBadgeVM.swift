@@ -19,7 +19,7 @@ final class UnreadCounterVM: ObservableObject {
         // resumes on this @MainActor class, so no manual main-queue hop.
         hubTask?.cancel()
         hubTask = Task { [weak self] in
-            for await payload in Amplify.Hub.publisher(for: .dataStore).values {
+            for await payload in Backend.hub.events(on: .dataStore) {
                 guard !Task.isCancelled else { return }
                 guard let self else { return }
                 if payload.eventName == HubPayload.EventName.DataStore.syncReceived,
@@ -35,7 +35,7 @@ final class UnreadCounterVM: ObservableObject {
 
     func reset() { count = 0 }
 
-    private func refresh() async {
+    func refresh() async {
         do {
             let userID = try await AuthService.currentUserId()
 

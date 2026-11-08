@@ -47,7 +47,7 @@ struct ChatRoomService {
     /// All chat rooms. DataStore has no .in() predicate, so callers that need
     /// a specific subset (e.g. rooms a user belongs to) filter this in memory.
     static func allRooms() async throws -> [ChatRoom] {
-        try await Amplify.DataStore.query(ChatRoom.self)
+        try await Backend.dataStore.query(ChatRoom.self)
     }
 
     /// Creates the event chat room record for a newly-published event.
@@ -55,6 +55,12 @@ struct ChatRoomService {
     /// so a room without them in `participantIDs` would be invisible to them.
     static func createEventChatRoom(eventID: String) async throws {
         let creatorID = try await AuthService.currentUserId()
+        // Only the event's host creates its room. Otherwise anyone could
+        // pre-create "event-<id>" — and getOrCreate reuses rooms by name, so
+        // the squatter's room (with them in it) would become the event chat.
+        guard let event = try await Backend.dataStore.query(Event.self, byId: eventID),
+              event.hostDJID == creatorID
+        else { throw ChatError.notAllowed }
         let now = Temporal.DateTime.now()
         let chatRoom = ChatRoom(
             id: UUID().uuidString,
@@ -66,13 +72,13 @@ struct ChatRoomService {
             associatedEvent: eventID,
             participantIDs: [creatorID]
         )
-        try await Amplify.DataStore.save(chatRoom)
+        try await Backend.dataStore.save(chatRoom)
     }
 
     // MARK: - Messages
 
     static func room(byId id: String) async throws -> ChatRoom? {
-        try await Amplify.DataStore.query(ChatRoom.self, byId: id)
+        try await Backend.dataStore.query(ChatRoom.self, byId: id)
     }
 
     /// messageID → senderID for the room, resolved by querying on the stored
@@ -82,7 +88,7 @@ struct ChatRoomService {
     static func senderIDs(in roomID: String, candidates: [String]) async -> [String: String] {
         var map: [String: String] = [:]
         for candidate in Set(candidates) {
-            let sent = (try? await Amplify.DataStore.query(
+            let sent = (try? await Backend.dataStore.query(
                 Message.self,
                 where: Message.keys.chatRoomID == roomID && Message.keys.sender == candidate
             )) ?? []
@@ -93,7 +99,7 @@ struct ChatRoomService {
 
     /// All messages in a room, sorted oldest-first.
     static func messages(for roomID: String) async throws -> [Message] {
-        let results = try await Amplify.DataStore.query(
+        let results = try await Backend.dataStore.query(
             Message.self,
             where: Message.keys.chatRoomID == roomID
         )
@@ -117,23 +123,38 @@ struct ChatRoomService {
     /// Saves a message and updates the room's last-message metadata.
     /// The room's members are copied onto the message — `Message.participantIDs`
     /// is its read scope, so a message saved without them reaches nobody.
+    /// Longest message accepted. The text is also copied into
+    /// `ChatRoom.lastMessage`, so it is bounded once, here.
+    static let maxMessageLength = 4_000
+
     static func send(message: Message) async throws {
-        guard var room = try await Amplify.DataStore.query(ChatRoom.self, byId: message.chatRoomID)
+        let trimmed = message.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw ChatError.emptyMessage }
+        guard message.content.count <= maxMessageLength else { throw ChatError.messageTooLong }
+        // Send only as yourself — the server rejects a forged senderID
+        // (Message @auth ownerField), and the client never tries.
+        let me = try await AuthService.currentUserId()
+        guard message.sender?.id == me else { throw ChatError.notAllowed }
+        guard var room = try await Backend.dataStore.query(ChatRoom.self, byId: message.chatRoomID)
         else { throw ChatError.roomNotFound }
+        // A member-scoped room only takes messages from its members. (Legacy
+        // rooms without participantIDs are healed by getOrCreate.)
+        let members = (room.participantIDs ?? []).compactMap { $0 }
+        guard members.isEmpty || members.contains(me) else { throw ChatError.notAllowed }
         var message = message
         // The sender is always included so they can read their own message back.
         message.participantIDs = memberIDs(room.participantIDs, adding: [message.sender?.id].compactMap { $0 })
-        try await Amplify.DataStore.save(message)
+        try await Backend.dataStore.save(message)
         room.lastMessage = message.content
         room.lastMessageTimestamp = message.timestamp
-        try await Amplify.DataStore.save(room)
+        try await Backend.dataStore.save(room)
     }
 
     /// Marks all unread messages not sent by `userID` as read.
     /// Saves run concurrently — each save is independent of the others, so
     /// sequential awaits would turn N writes into an O(N) round-trip stall.
     static func markRead(in roomID: String, userID: String) async {
-        let unread = (try? await Amplify.DataStore.query(
+        let unread = (try? await Backend.dataStore.query(
             Message.self,
             where: Message.keys.chatRoomID == roomID && Message.keys.isRead == false
         )) ?? []
@@ -144,7 +165,7 @@ struct ChatRoomService {
                 m.isRead = true
                 let updated = m
                 group.addTask {
-                    _ = try? await Amplify.DataStore.save(updated)
+                    _ = try? await Backend.dataStore.save(updated)
                 }
             }
         }
@@ -152,7 +173,7 @@ struct ChatRoomService {
 
     /// Count of unread messages in `roomID` not sent by `excludingSenderID`.
     static func unreadCount(in roomID: String, excludingSenderID: String) async throws -> Int {
-        let msgs = try await Amplify.DataStore.query(
+        let msgs = try await Backend.dataStore.query(
             Message.self,
             where: Message.keys.chatRoomID == roomID && Message.keys.isRead == false
         )
@@ -163,7 +184,7 @@ struct ChatRoomService {
 
     /// Participants in a room, excluding the specified user.
     static func participants(for roomID: String, excludingID: String) async throws -> [User] {
-        let links = try await Amplify.DataStore.query(
+        let links = try await Backend.dataStore.query(
             UserChatRooms.self,
             where: UserChatRooms.keys.chatRoom == roomID
         )
@@ -172,7 +193,7 @@ struct ChatRoomService {
 
     /// All chat room IDs the given user is a participant in.
     static func roomIDs(for userID: String) async throws -> Set<String> {
-        let links = try await Amplify.DataStore.query(
+        let links = try await Backend.dataStore.query(
             UserChatRooms.self,
             where: UserChatRooms.keys.user == userID
         )
@@ -181,7 +202,7 @@ struct ChatRoomService {
 
     // MARK: - Private
 
-    private static func getOrCreate(
+    static func getOrCreate(
         name: String,
         participants: [User],
         associatedEvent: String?
@@ -190,14 +211,14 @@ struct ChatRoomService {
         let callerID = try await AuthService.currentUserId()
         let members = memberIDs(nil, adding: participants.map(\.id) + [callerID])
 
-        if var existing = try await Amplify.DataStore
+        if var existing = try await Backend.dataStore
             .query(ChatRoom.self, where: ChatRoom.keys.name == name).first {
             // Rooms created before participantIDs existed (or missing a member):
             // add the members. Non-fatal — only a creator or member may update.
             let healed = memberIDs(existing.participantIDs, adding: members.compactMap { $0 })
             if Set(healed) != Set(existing.participantIDs ?? []) {
                 existing.participantIDs = healed
-                _ = try? await Amplify.DataStore.save(existing)
+                _ = try? await Backend.dataStore.save(existing)
             }
             return existing
         }
@@ -212,11 +233,11 @@ struct ChatRoomService {
             associatedEvent: associatedEvent,
             participantIDs: members
         )
-        try await Amplify.DataStore.save(room)
+        try await Backend.dataStore.save(room)
         for u in participants {
-            try await Amplify.DataStore.save(UserChatRooms(user: u, chatRoom: room))
+            try await Backend.dataStore.save(UserChatRooms(user: u, chatRoom: room))
         }
-        return (try? await Amplify.DataStore.query(ChatRoom.self, byId: room.id)) ?? room
+        return (try? await Backend.dataStore.query(ChatRoom.self, byId: room.id)) ?? room
     }
 
     /// Sorted, de-duplicated member IDs (Cognito subs) in the generated `[String?]` shape.
@@ -227,8 +248,12 @@ struct ChatRoomService {
 
 // MARK: - Errors
 
-enum ChatError: Error {
+enum ChatError: Error, Equatable {
     case ineligible(ChatIneligibilityReason)
     case roomNotFound
     case sendFailed
+    case emptyMessage
+    case messageTooLong
+    /// Not the sender / not a member / not the event's host.
+    case notAllowed
 }

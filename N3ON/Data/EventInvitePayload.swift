@@ -28,9 +28,15 @@ struct EventInvitePayload: Codable, Equatable {
         self.eventDate = ISO8601DateFormatter().string(from: eventDate)
     }
 
+    /// Largest message accepted as an invite. A real one is ~200 bytes; the cap
+    /// stops a hostile multi-megabyte "invite" being JSON-decoded on every
+    /// render of the chat row that shows it.
+    static let maxEncodedBytes = 4_096
+
     /// Returns the payload when `content` is an event invitation, else nil.
     static func parse(_ content: String) -> EventInvitePayload? {
-        guard content.first == "{",
+        guard content.utf8.count <= maxEncodedBytes,
+              content.first == "{",
               let data = content.data(using: .utf8),
               let payload = try? JSONDecoder().decode(EventInvitePayload.self, from: data),
               payload.type == messageType,

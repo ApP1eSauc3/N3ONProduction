@@ -30,7 +30,7 @@ Amplify Params - DO NOT EDIT *//**
  * Swift mirror stayed put (LEAN-RESEARCH.md F10). Change both files together.
  */
 const { graphql, graphqlAll, GraphQLError } = require('./appsync');
-const { callerSub, parseBody, ok, fail } = require('./http');
+const { callerSub, parseBody, isValidID, ok, fail } = require('./http');
 
 const WEIGHTS = Object.freeze({ 1: 0, 2: 5, 3: 7, 4: 10, 5: 25 });
 
@@ -160,6 +160,8 @@ async function existingLink(eventID, djID) {
   return links.find((l) => !l._deleted && l.eventID === eventID) || null;
 }
 
+const MAX_INVITE_BYTES = 4096;
+
 async function hasInvite(hostID, djID, eventID) {
   const expectedRoom = dmRoomName(hostID, djID);
   const messages = await graphqlAll(
@@ -170,6 +172,8 @@ async function hasInvite(hostID, djID, eventID) {
   for (const m of messages) {
     // The index is keyed by senderID; re-check rather than trust the query shape.
     if (m._deleted || m.senderID !== hostID) continue;
+    // Same cap as the app's EventInvitePayload.parse: a real invite is ~200 B.
+    if (typeof m.content !== 'string' || m.content.length > MAX_INVITE_BYTES) continue;
     let payload;
     try {
       payload = JSON.parse(m.content);
@@ -233,7 +237,7 @@ exports.handler = async (event) => {
   const sub = callerSub(event);
   if (!sub) return fail(401, 'UNAUTHENTICATED');
   const body = parseBody(event);
-  if (!body || typeof body.eventID !== 'string' || !body.eventID) {
+  if (!body || !isValidID(body.eventID)) {
     return fail(400, 'INVALID_REQUEST');
   }
   try {
@@ -248,3 +252,9 @@ exports.handler = async (event) => {
 exports._documents = { GET_EVENT, GET_USER, GET_LINK, LINKS_BY_DJ, HOST_INVITES, GET_ROOM, CREATE_LINK };
 exports._coinsForRank = coinsForRank;
 exports._dmRoomName = dmRoomName;
+exports._byCodePoint = byCodePoint;
+exports._linkID = linkID;
+exports._resolveLink = resolveLink;
+exports._existingLink = existingLink;
+exports._hasInvite = hasInvite;
+exports._join = join;
