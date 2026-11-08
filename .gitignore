@@ -74,3 +74,10 @@ AGENTS.md
 # Python bytecode (financial_model.py)
 __pycache__/
 *.pyc
+
+# Private legal, company and audit research — never commit (repo is public).
+# Same block as feat/legal-alignment, plus the Lean audit.
+LEGAL-RESEARCH.md
+legal-research/
+COMPANY-SETUP.md
+LEAN-RESEARCH.md
