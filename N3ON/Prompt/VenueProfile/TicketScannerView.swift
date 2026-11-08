@@ -112,7 +112,7 @@ struct TicketScannerView: View {
                         .background(Color.white.opacity(0.05))
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                     .padding(.horizontal, 16)
                 }
             }
@@ -160,8 +160,13 @@ struct TicketScannerView: View {
 
             // Result banner
             if let result = scanResult {
-                resultBanner(result)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                ScanResultBanner(isValid: result == .valid) {
+                    withAnimation(Motion.exit()) {   // DESIGN §4 exit, 20% shorter
+                        scanResult = nil
+                        isScanning = false
+                    }
+                }
+                .transition(.edgeReveal(.bottom))   // DESIGN §4 enters from / exits to the bottom edge
             }
         }
     }
@@ -185,47 +190,17 @@ struct TicketScannerView: View {
         }
     }
 
-    private func resultBanner(_ result: ScanResult) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: result == .valid ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(result == .valid ? Color("neonPurpleBackground") : .red)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(result == .valid ? "Valid Ticket" : "No Valid Ticket")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text(result == .valid
-                     ? "Admit entry"
-                     : "This person does not hold a ticket for this event.")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
-            }
-
-            Spacer()
-
-            Button("Scan Next") {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    scanResult = nil
-                    isScanning = false
-                }
-            }
-            .font(.caption.bold())
-            .foregroundStyle(Color("neonPurpleBackground"))
-        }
-        .padding(16)
-        .background(Color.customDarkGray)
-        .shadow(color: .black.opacity(0.4), radius: 12, y: -4)
-    }
-
     // MARK: — Validation
 
     private func validate(userID: String, eventID: String) async {
         let isValid = await AccessControlService.validateTicket(userID: userID, eventID: eventID)
-        UIImpactFeedbackGenerator(style: isValid ? .medium : .heavy).impactOccurred()
-        withAnimation(.easeInOut(duration: 0.25)) {
+        // Valid: the banner's success pulse fires the success haptic.
+        // Invalid: one heavy pulse (DESIGN §4 destructive warning).
+        if !isValid { UIImpactFeedbackGenerator(style: .heavy).impactOccurred() }
+        withAnimation(Motion.enter()) {   // DESIGN §4 ease-out entrance
             scanResult = isValid ? .valid : .invalid
         }
+
     }
 
     // MARK: — Data
@@ -241,6 +216,54 @@ struct TicketScannerView: View {
     // MARK: — Types
 
     private enum ScanResult { case valid, invalid }
+}
+
+// MARK: — Result banner
+
+/// Slides up from the bottom; once it lands, its details settle in order —
+/// icon, title, reason — 30ms apart, and a valid ticket pulses with a success
+/// haptic. The door person reads the verdict from the icon first.
+private struct ScanResultBanner: View {
+    let isValid: Bool
+    let onScanNext: () -> Void
+
+    @State private var settled = false
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: isValid ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.system(size: 28))
+                .foregroundStyle(isValid ? Color("neonPurpleBackground") : .red)
+                .staggeredAppear(index: 0, isVisible: settled)
+                // DESIGN §4 success pulse + haptic — valid tickets only
+                .successPulse(trigger: isValid && settled, haptic: isValid)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(isValid ? "Valid Ticket" : "No Valid Ticket")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .staggeredAppear(index: 1, isVisible: settled)
+                Text(isValid
+                     ? "Admit entry"
+                     : "This person does not hold a ticket for this event.")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .staggeredAppear(index: 2, isVisible: settled)
+            }
+
+            Spacer()
+
+            Button("Scan Next", action: onScanNext)
+                .font(.caption.bold())
+                .foregroundStyle(Color("neonPurpleBackground"))
+                .frame(minHeight: 44)                 // HIG minimum tap target
+                .buttonStyle(.pressable)              // DESIGN §4 press scale 0.97
+        }
+        .padding(16)
+        .background(Color.customDarkGray)
+        .shadow(color: .black.opacity(0.4), radius: 12, y: -4)
+        .onAppear { settled = true }
+    }
 }
 
 // MARK: — AVFoundation camera representable

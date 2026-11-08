@@ -77,7 +77,7 @@ struct SignUpView: View {
 
             Text("Create your account")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(Color.onPurpleSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -88,7 +88,7 @@ struct SignUpView: View {
         VStack(alignment: .leading, spacing: 20) {
             fieldGroup(label: "USERNAME") {
                 TextField("", text: $username, prompt:
-                    Text("Choose a username").foregroundColor(.white.opacity(0.3))
+                    Text("Choose a username").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -104,7 +104,7 @@ struct SignUpView: View {
 
             fieldGroup(label: "EMAIL") {
                 TextField("", text: $email, prompt:
-                    Text("Your email address").foregroundColor(.white.opacity(0.3))
+                    Text("Your email address").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -122,7 +122,7 @@ struct SignUpView: View {
 
             fieldGroup(label: "PASSWORD") {
                 SecureField("", text: $password, prompt:
-                    Text("Create a password").foregroundColor(.white.opacity(0.3))
+                    Text("Create a password").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -138,7 +138,7 @@ struct SignUpView: View {
             if let error = vm.errorMessage {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.06))
@@ -152,7 +152,8 @@ struct SignUpView: View {
                 Spacer()
                 Button("Already have an account? Sign in.") { vm.showLogin() }
                     .font(.subheadline)
-                    .foregroundStyle(Color("neonPurpleBackground"))
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.onPurplePrimary)   // DESIGN §1.4 on-purple — neon text is 1.1:1 here
                 Spacer()
             }
             .padding(.top, 8)
@@ -206,7 +207,7 @@ struct SignUpView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color("neonPurpleBackground"))
+                .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple label
                 .tracking(1.5)
             content()
         }

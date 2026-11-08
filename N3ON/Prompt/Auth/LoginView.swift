@@ -70,7 +70,7 @@ struct LoginView: View {
 
             Text("Sign in to continue")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(Color.onPurpleSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -81,7 +81,7 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 20) {
             fieldGroup(label: "EMAIL") {
                 TextField("", text: $email, prompt:
-                    Text("Enter your email").foregroundColor(.white.opacity(0.3))
+                    Text("Enter your email").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -99,7 +99,7 @@ struct LoginView: View {
 
             fieldGroup(label: "PASSWORD") {
                 SecureField("", text: $password, prompt:
-                    Text("Enter your password").foregroundColor(.white.opacity(0.3))
+                    Text("Enter your password").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -115,7 +115,7 @@ struct LoginView: View {
             if let error = vm.errorMessage {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.06))
@@ -129,7 +129,7 @@ struct LoginView: View {
                 Spacer()
                 Button("Forgot password?") { vm.showResetPassword() }
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
                 Spacer()
             }
             .padding(.top, 4)
@@ -138,7 +138,8 @@ struct LoginView: View {
                 Spacer()
                 Button("Create an account") { vm.showSignUp() }
                     .font(.subheadline)
-                    .foregroundStyle(Color("neonPurpleBackground"))
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.onPurplePrimary)   // DESIGN §1.4 on-purple — neon text is 1.1:1 here
                 Spacer()
             }
             .padding(.top, 8)
@@ -186,7 +187,7 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color("neonPurpleBackground"))
+                .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple label
                 .tracking(1.5)
             content()
         }

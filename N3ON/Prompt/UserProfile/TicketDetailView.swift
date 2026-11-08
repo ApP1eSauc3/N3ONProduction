@@ -111,7 +111,7 @@ struct TicketDetailView: View {
                         .foregroundStyle(.white.opacity(0.35))
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
             } else {
                 ProgressView().tint(Color("neonPurpleBackground"))
                     .frame(width: 200, height: 200)

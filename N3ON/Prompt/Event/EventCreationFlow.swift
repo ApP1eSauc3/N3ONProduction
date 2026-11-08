@@ -19,12 +19,17 @@ struct EventCreationFlowView: View {
                     .padding(.top, 16)
                     .padding(.bottom, 24)
 
+                // The flow only moves forward, so the new step enters from the
+                // trailing edge while the old one leaves to the leading edge —
+                // both at once (DESIGN §4: overlap old and new; exit 20% shorter).
                 stepContent
                     .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal:   .move(edge: .leading).combined(with: .opacity)
+                        insertion: .move(edge: .trailing).combined(with: .opacity)
+                            .animation(Motion.enter()),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                            .animation(Motion.exit())
                     ))
-                    .animation(.easeInOut(duration: 0.25), value: draft.currentStep)
+                    .animation(Motion.enter(), value: draft.currentStep)
             }
         }
         .task { await draft.load() }
@@ -46,12 +51,8 @@ struct EventCreationFlowView: View {
     private var progressBar: some View {
         HStack(spacing: 4) {
             ForEach(EventCreationStep.allCases, id: \.rawValue) { step in
-                Capsule()
-                    .fill(step.rawValue <= draft.currentStep.rawValue
-                          ? Color("neonPurpleBackground")
-                          : Color.white.opacity(0.15))
-                    .frame(height: 3)
-                    .animation(.easeInOut(duration: 0.25), value: draft.currentStep)
+                // DESIGN §4 mask reveal — the fill sweeps in from the leading edge.
+                StepProgressSegment(reached: step.rawValue <= draft.currentStep.rawValue)
             }
         }
     }

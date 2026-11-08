@@ -9,8 +9,14 @@ import SwiftUI
 // MARK: - View
 
 struct ChatsInboxView: View {
+    /// False while the map's chat panel is off screen. Rows cascade in each
+    /// time it becomes true (DESIGN §4 stagger) and reset once it is hidden.
+    var isActive: Bool = true
+
     @StateObject private var vm = ChatsInboxVM()
     @State private var openVM: ChatViewModel?
+    /// Flips once, when the first rows arrive, so they cascade in (DESIGN §4 stagger).
+    @State private var rowsVisible = false
 
     var body: some View {
         ZStack {
@@ -26,20 +32,32 @@ struct ChatsInboxView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             if !vm.pinned.isEmpty {
-                                inboxSection("Active Events", rows: vm.pinned)
+                                inboxSection("Active Events", rows: vm.pinned, firstIndex: 0)
                             }
                             if !vm.others.isEmpty {
-                                inboxSection("Messages", rows: vm.others)
+                                inboxSection("Messages", rows: vm.others, firstIndex: vm.pinned.count)
                             }
                         }
                         .padding(.horizontal)
                         .padding(.top, 12)
                         .padding(.bottom, 32)
                     }
+                    .staggerTrigger(hasContent: isActive, isVisible: $rowsVisible)
                 }
             }
         }
         .task { vm.start() }
+        // Re-arm the cascade once the panel has finished sliding away, without
+        // animating — nobody sees it. Waiting first keeps the rows on screen
+        // during the exit; a reopen inside the wait cancels the reset.
+        .task(id: isActive) {
+            guard !isActive else { return }
+            try? await Task.sleep(nanoseconds: UInt64((Motion.enterDuration + 0.2) * 1_000_000_000))
+            guard !Task.isCancelled, !isActive else { return }
+            var hidden = SwiftUI.Transaction()
+            hidden.disablesAnimations = true
+            withTransaction(hidden) { rowsVisible = false }
+        }
         // sheet(item:) — with sheet(isPresented:) the first frame could render
         // before openVM was set, showing an empty white sheet.
         .sheet(item: $openVM) { chatVM in
@@ -76,14 +94,16 @@ struct ChatsInboxView: View {
     }
 
     @ViewBuilder
-    private func inboxSection(_ title: String, rows: [ChatSummary]) -> some View {
+    private func inboxSection(_ title: String, rows: [ChatSummary], firstIndex: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.7))
                 .padding(.leading, 4)
-            ForEach(rows) { row in
+            ForEach(Array(rows.enumerated()), id: \.element.id) { offset, row in
                 ChatRow(row) { open(row) }
+                    // DESIGN §4 stagger: each row 30ms after the one above.
+                    .staggeredAppear(index: firstIndex + offset, isVisible: rowsVisible)
             }
         }
     }
@@ -170,7 +190,7 @@ private struct ChatRow: View {
                     .fill(Color.white.opacity(row.unread > 0 ? 0.08 : 0.05))
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
     }
 
     @ViewBuilder

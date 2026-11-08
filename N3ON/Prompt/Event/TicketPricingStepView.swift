@@ -160,7 +160,7 @@ struct TicketPricingStepView: View {
                             }
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
             }
         }
     }

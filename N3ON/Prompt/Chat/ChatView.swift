@@ -40,7 +40,7 @@ struct ChatView: View {
             }
             .background(Color.black)
             .onChangeCompat(of: viewModel.messages.count) { _, _ in
-                withAnimation { proxy.scrollTo("bottom") }
+                withAnimation(Motion.move()) { proxy.scrollTo("bottom") }
             }
             .onAppear {
                 proxy.scrollTo("bottom")

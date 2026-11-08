@@ -9,6 +9,11 @@ import MapKit
 struct VenueApplicationForm: View {
     @StateObject private var vm = VenueApplicationViewModel()
     @Environment(\.dismiss) private var dismiss
+    /// Direction of the last step change, set before the change so the
+    /// transition knows which edge to use: Next brings the new step in from
+    /// the trailing edge, Back from the leading edge (DESIGN §4: enter from,
+    /// and exit toward, the trigger).
+    @State private var movingForward = true
 
     var body: some View {
         ZStack {
@@ -21,9 +26,12 @@ struct VenueApplicationForm: View {
                     .padding(.bottom, 24)
 
                 ScrollView {
-                    VStack(spacing: 0) {
+                    // ZStack so the outgoing and incoming steps overlap while they
+                    // cross (DESIGN §4: overlap old and new states).
+                    ZStack(alignment: .top) {   // top: a shorter step never floats mid-crossfade
                         stepContent
                             .padding(.horizontal, 16)
+                            .transition(stepTransition)
                     }
                 }
 
@@ -46,17 +54,36 @@ struct VenueApplicationForm: View {
     private var stepProgressBar: some View {
         HStack(spacing: 4) {
             ForEach(VenueApplicationViewModel.Step.allCases, id: \.rawValue) { s in
-                Capsule()
-                    .fill(s.rawValue <= vm.step.rawValue
-                          ? Color("neonPurpleBackground")
-                          : Color.white.opacity(0.15))
-                    .frame(height: 3)
-                    .animation(.easeInOut(duration: 0.25), value: vm.step)
+                // DESIGN §4 mask reveal — the fill sweeps in (and back out on Back).
+                StepProgressSegment(reached: s.rawValue <= vm.step.rawValue)
             }
         }
     }
 
     // MARK: — Step routing
+
+    /// Changes step in the given direction. A view being removed keeps the
+    /// transition from its last render, so when the direction flips it is
+    /// committed in one update and the step changes in the next.
+    private func go(forward: Bool, _ change: @escaping () -> Void) {
+        guard movingForward != forward else {
+            withAnimation(Motion.enter()) { change() }
+            return
+        }
+        movingForward = forward
+        Task { @MainActor in
+            withAnimation(Motion.enter()) { change() }
+        }
+    }
+
+    private var stepTransition: AnyTransition {
+        let insertionEdge: Edge = movingForward ? .trailing : .leading
+        let removalEdge: Edge = movingForward ? .leading : .trailing
+        return .asymmetric(
+            insertion: .move(edge: insertionEdge).combined(with: .opacity).animation(Motion.enter()),
+            removal: .move(edge: removalEdge).combined(with: .opacity).animation(Motion.exit())
+        )
+    }
 
     @ViewBuilder
     private var stepContent: some View {
@@ -73,7 +100,7 @@ struct VenueApplicationForm: View {
     private var navigationButtons: some View {
         HStack(spacing: 12) {
             if vm.step != .details {
-                Button("Back") { vm.previousStep() }
+                Button("Back") { go(forward: false) { vm.previousStep() } }
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.7))
                     .frame(maxWidth: .infinity, minHeight: 50)
@@ -98,7 +125,7 @@ struct VenueApplicationForm: View {
                 .shadow(color: Color("neonPurpleBackground").opacity(0.85), radius: 5)
                 .disabled(vm.isSubmitting)
             } else {
-                Button("Next") { vm.nextStep() }
+                Button("Next") { go(forward: true) { vm.nextStep() } }
                     .font(.headline)
                     .foregroundStyle(vm.canAdvance ? .white : .white.opacity(0.3))
                     .frame(maxWidth: .infinity, minHeight: 50)

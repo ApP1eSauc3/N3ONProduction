@@ -10,6 +10,8 @@ struct EndorsementInboxView: View {
     let currentRank: Int
 
     @StateObject private var vm = EndorsementViewModel()
+    /// Flips once, when the requests first arrive (DESIGN §4 stagger).
+    @State private var rowsVisible = false
 
     var body: some View {
         ZStack {
@@ -65,13 +67,18 @@ struct EndorsementInboxView: View {
                         .frame(maxWidth: .infinity)
                 }
 
-                ForEach(vm.incomingRequests, id: \.id) { req in
-                    requestRow(req)
-                    Divider().background(Color.white.opacity(0.06))
+                ForEach(Array(vm.incomingRequests.enumerated()), id: \.element.id) { offset, req in
+                    VStack(spacing: 0) {
+                        requestRow(req)
+                        Divider().background(Color.white.opacity(0.06))
+                    }
+                    // DESIGN §4 stagger: each request 30ms after the one above.
+                    .staggeredAppear(index: offset, isVisible: rowsVisible)
                 }
             }
             .padding(.top, 8)
         }
+        .staggerTrigger(hasContent: !vm.incomingRequests.isEmpty, isVisible: $rowsVisible)
     }
 
     private func requestRow(_ req: EndorsementRequest) -> some View {

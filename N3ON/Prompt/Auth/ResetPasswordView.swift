@@ -66,7 +66,7 @@ struct ResetPasswordView: View {
                 .foregroundStyle(.white)
             Text("Enter your email and we'll send you a reset code.")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(Color.onPurpleSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
         }
@@ -80,10 +80,10 @@ struct ResetPasswordView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("EMAIL")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color("neonPurpleBackground"))
+                    .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple label
                     .tracking(1.5)
                 TextField("", text: $email, prompt:
-                    Text("Enter your email").foregroundColor(.white.opacity(0.3))
+                    Text("Enter your email").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -102,7 +102,7 @@ struct ResetPasswordView: View {
             if let error = vm.errorMessage {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.06))
@@ -116,7 +116,7 @@ struct ResetPasswordView: View {
                 Spacer()
                 Button("Back to sign in") { vm.showLogin() }
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
                 Spacer()
             }
             .padding(.top, 8)

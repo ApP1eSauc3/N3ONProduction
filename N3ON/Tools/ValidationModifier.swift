@@ -19,7 +19,8 @@ struct ValidationModifier: ViewModifier {
                 Text(message)
                     .font(.caption)
                     .foregroundColor(.red)
-                    .transition(.opacity)
+                    // Grows down out of the field it describes.
+                    .transition(.popover(anchor: .topLeading))
             }
         }
     }

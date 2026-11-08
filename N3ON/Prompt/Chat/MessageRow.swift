@@ -23,7 +23,7 @@ struct MessageRow: View {
                 if !message.isCurrentUser { profileIndicator }
                 messageContent
                     .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.15)) { showTimestamp.toggle() }
+                        withAnimation(Motion.enter(Motion.dropdownDuration)) { showTimestamp.toggle() }
                     }
                 if message.isCurrentUser { deliveryStatusIndicator }
             }
@@ -32,7 +32,8 @@ struct MessageRow: View {
                 Text(message.timestamp, style: .time)
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.4))
-                    .transition(.opacity)
+                    // Grows out of the bubble that was tapped, from its side.
+                    .transition(.popover(anchor: message.isCurrentUser ? .topTrailing : .topLeading))
             }
         }
         // Full width, so incoming messages sit left and yours sit right.
@@ -147,7 +148,11 @@ struct MessageRow: View {
                         .foregroundStyle(.white.opacity(0.6))
                 }
 
-                if isRecipient { acceptControl }
+                if isRecipient {
+                    acceptControl
+                        // DESIGN §4 success pulse + haptic when the join lands.
+                        .successPulse(trigger: joinState == .joined)
+                }
             }
             .padding(12)
             .background(
@@ -171,6 +176,7 @@ struct MessageRow: View {
                 Label("You're on the lineup", systemImage: "checkmark.circle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color("neonPurpleBackground"))
+                    .transition(.iconSwap)   // DESIGN §4 overlaps the outgoing button
             case .idle, .joining, .failed:
                 VStack(alignment: .leading, spacing: 4) {   // DESIGN §1.3 space1
                     Button {
@@ -192,7 +198,7 @@ struct MessageRow: View {
                         .frame(minHeight: 44)              // HIG minimum tap target
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                     .disabled(joinState == .joining)
 
                     if case .failed(let message) = joinState {
@@ -210,7 +216,7 @@ struct MessageRow: View {
             joinState = .joining
             do {
                 try await EventService.joinLineup(eventID: invite.eventID)
-                withAnimation(.easeInOut(duration: 0.25)) { joinState = .joined }   // DESIGN §4 state transition
+                withAnimation(Motion.state) { joinState = .joined }   // DESIGN §4 state transition
             } catch {
                 joinState = .failed(error.localizedDescription)
             }
@@ -219,26 +225,33 @@ struct MessageRow: View {
 
     @ViewBuilder
     private var deliveryStatusIndicator: some View {
-        Group {
+        // Each status replaces the last with an overlapping blur cross-fade
+        // (DESIGN §4 icon swap) instead of a hard cut.
+        ZStack {
             switch message.deliveryStatus {
             case .sending:
                 ProgressView()
                     .scaleEffect(0.5)
                     .tint(.white.opacity(0.5))
+                    .transition(.iconSwap)
             case .sent, .delivered:
                 Image(systemName: "checkmark")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.4))
+                    .transition(.iconSwap)
             case .read:
                 Image(systemName: "checkmark.circle.fill")
                     .font(.caption2)
                     .foregroundStyle(Color("neonPurpleBackground"))
+                    .transition(.iconSwap)
             case .failed:
                 Image(systemName: "exclamationmark.circle")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.6))
+                    .transition(.iconSwap)
             }
         }
+        .animation(Motion.state, value: message.deliveryStatus)
         .padding(.bottom, 4)
     }
 }

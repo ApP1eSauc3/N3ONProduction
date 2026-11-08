@@ -103,7 +103,7 @@ struct PulsingAvatarView: View {
         }
         .onDisappear {
             player?.stop()
-            withAnimation { isPulsing = false }
+            withAnimation(Motion.state) { isPulsing = false }
         }
     }
 
@@ -162,15 +162,15 @@ struct PulsingAvatarView: View {
         guard let player = player else { return }
         if player.isPlaying {
             player.stop()
-            withAnimation { isPulsing = false }
+            withAnimation(Motion.state) { isPulsing = false }
         } else {
             player.play()
-            withAnimation { isPulsing = true }
+            withAnimation(Motion.state) { isPulsing = true }
             let duration = player.duration
             Task {
                 try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
                 guard !Task.isCancelled else { return }
-                withAnimation { isPulsing = false }
+                withAnimation(Motion.state) { isPulsing = false }
             }
         }
     }

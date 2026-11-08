@@ -10,7 +10,9 @@ import SwiftUI
 struct EventHistoryPanel: View {
     @Binding var isVisible: Bool
     @ObservedObject var historyVM: EventHistoryViewModel
-    @State private var translation: CGSize = .zero
+    /// Resets itself (springing back) when the drag ends or is cancelled.
+    @GestureState(resetTransaction: SwiftUI.Transaction(animation: Motion.gestureEnd))
+    private var translation: CGSize = .zero
     
     var body: some View {
         GeometryReader { proxy in
@@ -37,7 +39,9 @@ struct EventHistoryPanel: View {
                     .frame(width: 40, height: 5)
                     .padding(.top, 8)
             }
-            .offset(x: max(translation.width, 0))
+            // Follows the finger 1:1; dragging left, past the open position,
+            // rubber-bands instead of stopping dead (DESIGN §4).
+            .offset(x: Motion.rubberBanded(translation.width, in: 0...CGFloat.infinity, dimension: 120))
             .gesture(dragGesture)
         }
         .frame(width: UIScreen.main.bounds.width * 0.85)
@@ -52,7 +56,7 @@ struct EventHistoryPanel: View {
             Spacer()
             
             Button {
-                withAnimation {
+                withAnimation(Motion.exit()) {   // DESIGN §4 exit, 20% shorter
                     isVisible = false
                 }
             } label: {
@@ -71,16 +75,13 @@ struct EventHistoryPanel: View {
     
     private var dragGesture: some Gesture {
         DragGesture()
-            .onChanged { value in
-                translation = value.translation
+            .updating($translation) { value, state, _ in
+                state = value.translation
             }
             .onEnded { value in
-                if value.translation.width > 100 {
-                    withAnimation {
-                        isVisible = false
-                    }
+                if value.translation.width > 100 || value.predictedEndTranslation.width > 200 {
+                    withAnimation(Motion.gestureEnd) { isVisible = false }   // DESIGN §4 gesture-end spring
                 }
-                translation = .zero
             }
     }
 }

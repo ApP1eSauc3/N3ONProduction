@@ -16,6 +16,8 @@ import SwiftUI
 
 struct MapSearchView: View {
     @StateObject private var vm = SearchViewModel()
+    /// One underline slides between categories (DESIGN §4 sliding indicator).
+    @Namespace private var categoryIndicator
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isSearchFocused: Bool
 
@@ -101,7 +103,7 @@ struct MapSearchView: View {
             ForEach(SearchViewModel.Category.allCases, id: \.self) { cat in
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.easeInOut(duration: 0.2)) { vm.category = cat }
+                    withAnimation(Motion.state) { vm.category = cat }
                 } label: {
                     VStack(spacing: 6) {
                         HStack(spacing: 4) {
@@ -132,22 +134,20 @@ struct MapSearchView: View {
                             }
                         }
 
-                        // Active indicator
-                        Rectangle()
-                            .fill(vm.category == cat
-                                  ? Color("neonPurpleBackground")
-                                  : Color.clear)
+                        // Where the shared underline sits for this category.
+                        Color.clear
                             .frame(height: 2)
-                            .shadow(
-                                color: Color("neonPurpleBackground").opacity(
-                                    vm.category == cat ? 0.6 : 0
-                                ),
-                                radius: 6
-                            )
+                            .slidingIndicatorAnchor(cat, in: categoryIndicator)
                     }
                 }
                 .frame(maxWidth: .infinity)
             }
+        }
+        // DESIGN §4 — one glowing underline, reused across categories.
+        .slidingIndicator(selection: vm.category, in: categoryIndicator) {
+            Rectangle()
+                .fill(Color("neonPurpleBackground"))
+                .shadow(color: Color("neonPurpleBackground").opacity(0.6), radius: 6)
         }
         .padding(.horizontal, 16)
         .background(Color.black)
@@ -246,7 +246,7 @@ struct MapSearchView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
     }
 
     // MARK: — DJ results (RA-style: avatar + username + rank badge)
@@ -265,7 +265,7 @@ struct MapSearchView: View {
                             } label: {
                                 DJSearchRow(user: user)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                             Divider().background(Color.white.opacity(0.05))
                         }
                     }
@@ -291,7 +291,7 @@ struct MapSearchView: View {
                             } label: {
                                 EventSearchRow(event: event)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                             Divider().background(Color.white.opacity(0.05))
                         }
                     }

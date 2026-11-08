@@ -71,7 +71,7 @@ struct ConfirmationSignupView: View {
         VStack(spacing: 8) {
             Image(systemName: "envelope.badge.fill")
                 .font(.system(size: 36))
-                .foregroundStyle(Color("neonPurpleBackground"))
+                .foregroundStyle(Color.onPurplePrimary)   // DESIGN §1.4 on-purple — glow stays neon
                 .shadow(color: Color("neonPurpleBackground").opacity(0.55), radius: 18)
                 .shadow(color: Color("neonPurpleBackground").opacity(0.85), radius: 5)
 
@@ -81,7 +81,7 @@ struct ConfirmationSignupView: View {
 
             Text("We sent a verification code to\n\(email)")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(Color.onPurpleSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
         }
@@ -95,7 +95,7 @@ struct ConfirmationSignupView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("VERIFICATION CODE")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color("neonPurpleBackground"))
+                    .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple label
                     .tracking(1.5)
 
                 codeField
@@ -104,7 +104,7 @@ struct ConfirmationSignupView: View {
             if let error = vm.errorMessage {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.06))
@@ -121,8 +121,8 @@ struct ConfirmationSignupView: View {
                 }
                 .font(.subheadline)
                 .foregroundStyle(resendSent
-                                 ? .white.opacity(0.3)
-                                 : Color("neonPurpleBackground"))
+                                 ? Color.onPurpleTertiary
+                                 : Color.onPurplePrimary)
                 .disabled(resendSent || vm.isLoading)
 
                 Spacer()
@@ -133,7 +133,7 @@ struct ConfirmationSignupView: View {
                 Spacer()
                 Button("Back to sign up") { vm.showSignUp() }
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.3))
+                    .foregroundStyle(Color.onPurpleTertiary)
                 Spacer()
             }
         }
@@ -143,7 +143,7 @@ struct ConfirmationSignupView: View {
 
     private var codeField: some View {
         TextField("", text: $code, prompt:
-            Text("6-digit code").foregroundColor(.white.opacity(0.3))
+            Text("6-digit code").foregroundColor(Color.onPurpleTertiary)
         )
         .font(.system(.title3, design: .monospaced, weight: .semibold))
         .foregroundStyle(.white)
@@ -164,7 +164,7 @@ struct ConfirmationSignupView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(code.count == 6
-                        ? Color("neonPurpleBackground").opacity(0.5)
+                        ? Color.onPurpleSecondary   // DESIGN §1.4 state cue needs 3:1 — neon is 1.1:1 here
                         : .clear,
                         lineWidth: 1)
         )

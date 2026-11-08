@@ -69,7 +69,7 @@ struct UserEventTimelineView: View {
                 } label: {
                     row(event)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
             }
         }
     }

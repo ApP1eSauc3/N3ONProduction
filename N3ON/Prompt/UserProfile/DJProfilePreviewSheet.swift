@@ -64,7 +64,7 @@ struct DJProfilePreviewSheet: View {
                         } else {
                             Text("No upcoming events")
                                 .font(.subheadline)
-                                .foregroundStyle(.white.opacity(0.5))
+                                .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple
                                 .padding()
                         }
                     }
@@ -77,7 +77,7 @@ struct DJProfilePreviewSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
-                        .foregroundStyle(Color("neonPurpleBackground"))
+                        .foregroundStyle(Color.onPurplePrimary)   // DESIGN §1.4 neon text is 1.1:1 on purple
                 }
             }
         }
@@ -90,7 +90,7 @@ struct DJProfilePreviewSheet: View {
             Text("Rank \(rank)")
                 .font(.caption.bold())
         }
-        .foregroundStyle(Color("neonPurpleBackground"))
+        .foregroundStyle(Color.onPurplePrimary)   // DESIGN §1.4 on-purple — fill/stroke stay neon
         .padding(.horizontal, 12)
         .padding(.vertical, 5)
         .background(
@@ -107,7 +107,7 @@ struct DJProfilePreviewSheet: View {
                 .frame(width: 44, height: 44)
                 .overlay(
                     Image(systemName: "music.note")
-                        .foregroundStyle(Color("neonPurpleBackground"))
+                        .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple
                 )
 
             VStack(alignment: .leading, spacing: 2) {
@@ -116,7 +116,7 @@ struct DJProfilePreviewSheet: View {
                     .foregroundStyle(.white)
                 Text(event.eventDate.foundationDate.formatted(date: .abbreviated, time: .shortened))
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple
             }
             Spacer()
         }

@@ -48,7 +48,7 @@ struct DJValidationChecklist: View {
 
     private func checklistRow(text: String, satisfied: Bool) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: satisfied ? "checkmark.circle.fill" : "xmark.octagon.fill")
+            SwapIcon(satisfied ? "checkmark.circle.fill" : "xmark.octagon.fill")   // DESIGN §4 icon cross-fade + blur
                 // DESIGN §3.2 — neon accent for satisfied; disabled opacity for not satisfied
                 .foregroundStyle(satisfied ? Color("neonPurpleBackground") : Color.white.opacity(0.3))
                 .shadow(color: satisfied ? Color("neonPurpleBackground") : .clear, radius: 5)

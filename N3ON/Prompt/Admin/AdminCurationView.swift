@@ -13,7 +13,11 @@ import SwiftUI
 struct AdminCurationView: View {
     @StateObject private var vm = AdminCurationViewModel()
     @State private var tab: Tab = .djs
+    /// One pill slides between tabs (DESIGN §4 sliding indicator).
+    @Namespace private var tabIndicator
     @State private var lineupEvent: Event?
+    /// Flips once, when the first rows load (DESIGN §4 stagger).
+    @State private var rowsVisible = false
 
     private enum Tab { case djs, events }
 
@@ -38,14 +42,23 @@ struct AdminCurationView: View {
                 } else {
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 12) {
+                            // DESIGN §4 stagger on first load only — rows a tab
+                            // switch or scroll re-creates appear at once.
                             switch tab {
-                            case .djs:    ForEach(vm.djs, id: \.id) { djRow($0) }
-                            case .events: ForEach(vm.events, id: \.id) { eventRow($0) }
+                            case .djs:
+                                ForEach(Array(vm.djs.enumerated()), id: \.element.id) { offset, dj in
+                                    djRow(dj).staggeredAppear(index: offset, isVisible: rowsVisible)
+                                }
+                            case .events:
+                                ForEach(Array(vm.events.enumerated()), id: \.element.id) { offset, event in
+                                    eventRow(event).staggeredAppear(index: offset, isVisible: rowsVisible)
+                                }
                             }
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 32)
                     }
+                    .staggerTrigger(hasContent: !vm.djs.isEmpty || !vm.events.isEmpty, isVisible: $rowsVisible)
                 }
             }
             .padding(.top, 12)
@@ -66,6 +79,10 @@ struct AdminCurationView: View {
             tabButton("DJs", .djs)
             tabButton("Events", .events)
         }
+        // DESIGN §4 — one pill, reused across tabs: slides and stretches.
+        .slidingIndicator(selection: tab, in: tabIndicator) {
+            Capsule().fill(Color("neonPurpleBackground"))
+        }
         .padding(4)
         .background(Color.white.opacity(0.06))
         .clipShape(Capsule())
@@ -75,14 +92,14 @@ struct AdminCurationView: View {
     private func tabButton(_ title: String, _ value: Tab) -> some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            tab = value
+            withAnimation(Motion.state) { tab = value }
         } label: {
             Text(title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(tab == value ? .white : .white.opacity(0.5))
                 .frame(maxWidth: .infinity, minHeight: 44)   // HIG min tap target
-                .background(tab == value ? Color("neonPurpleBackground") : Color.clear)
-                .clipShape(Capsule())
+                .contentShape(Capsule())
+                .slidingIndicatorAnchor(value, in: tabIndicator)
         }
     }
 

@@ -20,7 +20,7 @@ struct SessionView: View {
             Color.black.ignoresSafeArea()
             currentScreen
         }
-        .animation(.easeInOut(duration: 0.25), value: vm.flowState)
+        .animation(Motion.state, value: vm.flowState)   // DESIGN §4 cross-fade: old and new screens overlap
         .task { await vm.load() }
     }
 

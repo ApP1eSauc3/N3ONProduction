@@ -9,6 +9,8 @@ import PhotosUI
 struct VenueProfileView: View {
     @StateObject private var vm = VenueProfileViewModel()
     @State private var selectedTab: VenueTab = .events
+    /// One underline slides between tabs (DESIGN §4 sliding indicator).
+    @Namespace private var tabIndicator
     @State private var pickedGalleryItem: PhotosPickerItem? = nil
     @State private var showApplicationForm = false
 
@@ -141,11 +143,11 @@ struct VenueProfileView: View {
 
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(vm.isApproved ? Color("neonPurpleBackground") : Color.white.opacity(0.3))
+                        .fill(vm.isApproved ? Color.onPurplePrimary : Color.onPurpleTertiary)   // DESIGN §1.4 on-purple
                         .frame(width: 6, height: 6)
                     Text(vm.approvalStatus.capitalized)
                         .font(.caption)
-                        .foregroundStyle(vm.isApproved ? Color("neonPurpleBackground") : .white.opacity(0.5))
+                        .foregroundStyle(vm.isApproved ? Color.onPurplePrimary : Color.onPurpleSecondary)
                 }
             }
 
@@ -165,7 +167,7 @@ struct VenueProfileView: View {
                 .foregroundStyle(.white)
             Text(label)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple hero
         }
     }
 
@@ -175,19 +177,26 @@ struct VenueProfileView: View {
         HStack(spacing: 0) {
             ForEach(VenueTab.allCases, id: \.rawValue) { tab in
                 Button {
-                    withAnimation(.easeInOut(duration: 0.25)) { selectedTab = tab }
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()   // DESIGN §4 toggle
+                    withAnimation(Motion.state) { selectedTab = tab }
                 } label: {
                     VStack(spacing: 6) {
                         Text(tab.rawValue)
                             .font(.subheadline.weight(selectedTab == tab ? .semibold : .regular))
                             .foregroundStyle(selectedTab == tab ? .white : .white.opacity(0.4))
-                        Rectangle()
-                            .fill(selectedTab == tab ? Color("neonPurpleBackground") : .clear)
+                        // Where the shared underline sits for this tab.
+                        Color.clear
                             .frame(height: 2)
+                            .slidingIndicatorAnchor(tab, in: tabIndicator)
                     }
                 }
                 .frame(maxWidth: .infinity)
             }
+        }
+        // DESIGN §4 — one underline, reused across tabs: slides ease-in-out
+        // and stretches 12% mid-move instead of blinking between tabs.
+        .slidingIndicator(selection: selectedTab, in: tabIndicator) {
+            Rectangle().fill(Color("neonPurpleBackground"))
         }
         .padding(.horizontal, 16)
     }

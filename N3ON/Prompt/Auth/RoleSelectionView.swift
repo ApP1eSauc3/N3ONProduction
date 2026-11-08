@@ -104,7 +104,7 @@ struct RoleSelectionView: View {
         let isSelected = selected == role
         return Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+            withAnimation(Motion.state) {   // DESIGN §4 state change — no bounce
                 selected = role
             }
         } label: {
@@ -134,7 +134,7 @@ struct RoleSelectionView: View {
 
                 Spacer()
 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                SwapIcon(isSelected ? "checkmark.circle.fill" : "circle")   // DESIGN §4 icon cross-fade + blur
                     .font(.system(size: 22))
                     .foregroundStyle(isSelected ? Color("neonPurpleBackground") : .white.opacity(0.2))
             }
@@ -155,8 +155,8 @@ struct RoleSelectionView: View {
                 radius: 12
             )
         }
-        .buttonStyle(.plain)
-        .animation(.easeInOut(duration: 0.2), value: isSelected)
+        .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
+        .animation(Motion.state, value: isSelected)
     }
 
     // MARK: — Continue button
@@ -167,17 +167,20 @@ struct RoleSelectionView: View {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             Task { await vm.completeRoleSelection(username: username, isDJ: role == .dj) }
         } label: {
+            // Fill inside the label so the press scale moves the whole button.
             Text("Continue")
                 .font(.headline)
                 .foregroundStyle(selected != nil ? .white : .white.opacity(0.3))
                 .frame(maxWidth: .infinity, minHeight: 50)
+                .background(
+                    selected != nil
+                        ? AnyShapeStyle(Color("neonPurpleBackground"))
+                        : AnyShapeStyle(Color.white.opacity(0.08))
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .background(
-            selected != nil
-                ? AnyShapeStyle(Color("neonPurpleBackground"))
-                : AnyShapeStyle(Color.white.opacity(0.08))
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
+        .animation(Motion.state, value: selected != nil)
         .shadow(color: Color("neonPurpleBackground").opacity(selected != nil ? 0.55 : 0), radius: 18)
         .shadow(color: Color("neonPurpleBackground").opacity(selected != nil ? 0.85 : 0), radius: 5)
         .disabled(selected == nil)

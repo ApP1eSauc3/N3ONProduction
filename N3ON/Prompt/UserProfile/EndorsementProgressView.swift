@@ -89,7 +89,7 @@ struct EndorsementProgressView: View {
                               : Color("neonPurpleBackground").opacity(0.6))
                         .frame(width: geo.size.width * vm.progressFraction, height: 8)
                         .shadow(color: Color("neonPurpleBackground").opacity(vm.isEligibleToPromote ? 0.8 : 0), radius: 8)
-                        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: vm.progressFraction)
+                        .animation(Motion.move(), value: vm.progressFraction)   // DESIGN §4 on-screen move — no bounce
                 }
             }
             .frame(height: 8)

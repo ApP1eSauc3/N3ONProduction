@@ -83,7 +83,7 @@ struct EventLimboView: View {
                      : (draft.canLeaveLimbo ? "Curated — ready to publish" : "Building lineup..."))
                     .font(.system(.subheadline, design: .rounded, weight: .semibold))
                     .foregroundStyle(draft.canLeaveLimbo ? Color("neonPurpleBackground") : .white)
-                    .animation(.easeInOut(duration: 0.25), value: draft.canLeaveLimbo)
+                    .animation(Motion.state, value: draft.canLeaveLimbo)
                 Text("\(draft.currentTally) of \(draft.requiredTally) tally coins")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.4))
@@ -111,7 +111,7 @@ struct EventLimboView: View {
                             ? Color("neonPurpleBackground")
                             : Color.white.opacity(0.3)
                     )
-                    .animation(.easeInOut(duration: 0.2), value: draft.ticketPrice)
+                    .animation(Motion.state, value: draft.ticketPrice)
             }
             Slider(value: $draft.ticketPrice, in: 0...200, step: 5)
                 .tint(Color("neonPurpleBackground"))
@@ -231,12 +231,14 @@ private struct TallyRing: View {
                     style: StrokeStyle(lineWidth: 8, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: progress)
+                .animation(Motion.move(), value: progress)   // DESIGN §4 on-screen move — no bounce
             // Label
             VStack(spacing: 2) {
                 Text("\(current)")
                     .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(.white)
+                    .contentTransition(.numericText())   // DESIGN §4 digits roll
+                    .animation(Motion.state, value: current)
                 Text("/ \(required)")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.5))

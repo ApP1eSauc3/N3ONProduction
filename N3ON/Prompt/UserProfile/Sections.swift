@@ -38,7 +38,7 @@ struct RegularUserSection: View {
                     } label: {
                         TicketSummaryRow(ticket: entry.ticket, eventName: entry.eventName)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                 }
             }
         }
@@ -139,7 +139,7 @@ struct DJSection: View {
                 } label: {
                     toolLabel("Create Event", "calendar.badge.plus", locked: !canCreateEvent)
                 }
-                .buttonStyle(ToolGridButtonStyle())
+                .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                 .disabled(!canCreateEvent)
 
                 NavigationLink {
@@ -147,14 +147,14 @@ struct DJSection: View {
                 } label: {
                     toolLabel("My Events", "calendar")
                 }
-                .buttonStyle(ToolGridButtonStyle())
+                .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
 
                 NavigationLink {
                     VenueListView()
                 } label: {
                     toolLabel("Find Venues", "map")
                 }
-                .buttonStyle(ToolGridButtonStyle())
+                .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
 
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -166,7 +166,7 @@ struct DJSection: View {
                         locked: false
                     )
                 }
-                .buttonStyle(ToolGridButtonStyle())
+                .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                 .disabled(isUploadingAudio)
             }
 
@@ -261,7 +261,7 @@ struct DJSection: View {
 
     private func toolLabel(_ title: String, _ system: String, locked: Bool = false) -> some View {
         HStack {
-            Image(systemName: locked ? "lock" : system)
+            SwapIcon(locked ? "lock" : system)   // DESIGN §4 icon cross-fade + blur
             Text(title)
         }
         .frame(maxWidth: .infinity)
@@ -273,15 +273,6 @@ struct DJSection: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
         )
-    }
-}
-
-private struct ToolGridButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.6 : 1.0)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 

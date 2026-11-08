@@ -17,5 +17,7 @@ struct FilledButtonStyle: ButtonStyle {
                     .opacity(configuration.isPressed ? 0.7 : 1.0)              // DESIGN §1.2 pressed state — lower B
             )
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))  // DESIGN §1.6 standard card radius
+            .scaleEffect(configuration.isPressed ? Motion.pressScale : 1)        // DESIGN §4 press scale 0.97
+            .animation(Motion.press, value: configuration.isPressed)
     }
 }

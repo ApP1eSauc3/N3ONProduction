@@ -119,8 +119,8 @@ struct UserProfileView: View {
                 }
                 .coordinateSpace(name: "profileScroll")
                 .onPreferenceChange(ProfileScrollOffsetKey.self) { offset in
-                    if offset > 90 {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                    if offset > 90, !showQR {
+                        withAnimation(Motion.enter()) {   // DESIGN §4 ease-out entrance
                             showQR = true
                         }
                     }
@@ -130,15 +130,13 @@ struct UserProfileView: View {
                 // ── QR full-screen overlay ─────────────────────────────────────
                 if showQR, let qr = qrImage {
                     QRRevealView(qrImage: qr, username: vm.username) {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                        withAnimation(Motion.exit()) {   // DESIGN §4 exit, 20% shorter
                             showQR = false
                         }
                     }
                     .zIndex(2)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .top).combined(with: .opacity),
-                        removal:   .move(edge: .top).combined(with: .opacity)
-                    ))
+                    // Pulled down from the top, so it enters from and leaves to the top.
+                    .transition(.edgeReveal(.top))
                 }
             } // ZStack
             } // GeometryReader

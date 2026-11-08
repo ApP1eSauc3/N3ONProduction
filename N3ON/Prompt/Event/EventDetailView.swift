@@ -9,6 +9,8 @@ import SwiftUI
 struct EventDetailView: View {
     @ObservedObject var vm: EventViewModel
     @State private var showError = false
+    /// "You're in" shows on the Buy button briefly after each purchase.
+    @State private var showPurchaseConfirmed = false
     @State private var selectedDJ: User?
 
     var body: some View {
@@ -126,7 +128,7 @@ struct EventDetailView: View {
                             } label: {
                                 DJAvatarCell(user: dj)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                         }
                     }
                     .padding(.horizontal, 16)
@@ -191,6 +193,8 @@ struct EventDetailView: View {
                         Text("$\(Int(vm.event.ticketPrice * Double(vm.ticketQuantity)))")
                             .font(.system(.title2, design: .rounded, weight: .bold))
                             .foregroundStyle(.white)
+                            .contentTransition(.numericText())            // DESIGN §4 digits roll, old/new overlap
+                            .animation(Motion.state, value: vm.ticketQuantity)
                         Text(vm.ticketQuantity > 1 ? "\(vm.ticketQuantity) tickets" : "per ticket")
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.5))
@@ -220,6 +224,8 @@ struct EventDetailView: View {
                             .font(.system(.subheadline, design: .rounded, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(width: 28)
+                            .contentTransition(.numericText())            // DESIGN §4 digits roll
+                            .animation(Motion.state, value: vm.ticketQuantity)
 
                         Button {
                             if vm.ticketQuantity < 10 { vm.ticketQuantity += 1 }
@@ -241,25 +247,48 @@ struct EventDetailView: View {
 
                 // CTA
                 Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()   // DESIGN §4 primary CTA
                     Task { await vm.handlePurchase() }
                 } label: {
-                    Group {
+                    // One label at a time, old and new overlapping as they
+                    // cross-fade (DESIGN §4 overlap + icon swap).
+                    ZStack {
                         if vm.isLoading {
                             ProgressView().tint(.white)
+                                .transition(.opacity)
+                        } else if showPurchaseConfirmed {
+                            Label("You're in", systemImage: "checkmark")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .transition(.iconSwap)
                         } else {
                             Text(vm.isSoldOut ? "Sold Out" : "Buy Tickets")
                                 .font(.headline)
                                 .foregroundStyle(vm.isSoldOut ? .white.opacity(0.3) : .white)
+                                .transition(.iconSwap)
                         }
                     }
+                    .animation(Motion.state, value: vm.isLoading)
+                    .animation(Motion.state, value: showPurchaseConfirmed)
                     .frame(width: 136, height: 50)
+                    .background(
+                        vm.isSoldOut
+                            ? AnyShapeStyle(Color.white.opacity(0.08))
+                            : AnyShapeStyle(Color("neonPurpleBackground"))
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .background(
-                    vm.isSoldOut
-                        ? AnyShapeStyle(Color.white.opacity(0.08))
-                        : AnyShapeStyle(Color("neonPurpleBackground"))
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .buttonStyle(.pressable)                                  // DESIGN §4 press scale 0.97
+                .successPulse(trigger: vm.completedPurchases)            // DESIGN §4 success pulse + haptic
+                .onChangeCompat(of: vm.completedPurchases) { _, _ in showPurchaseConfirmed = true }
+                .task(id: vm.completedPurchases) {
+                    // Hold the confirmation long enough to read, then return
+                    // to the normal label so another purchase stays possible.
+                    guard vm.completedPurchases > 0 else { return }
+                    try? await Task.sleep(nanoseconds: 1_600_000_000)
+                    guard !Task.isCancelled else { return }
+                    showPurchaseConfirmed = false
+                }
                 .shadow(color: Color("neonPurpleBackground").opacity(vm.isSoldOut ? 0 : 0.55), radius: 18)
                 .shadow(color: Color("neonPurpleBackground").opacity(vm.isSoldOut ? 0 : 0.85), radius: 5)
                 .disabled(vm.isLoading || vm.isSoldOut)

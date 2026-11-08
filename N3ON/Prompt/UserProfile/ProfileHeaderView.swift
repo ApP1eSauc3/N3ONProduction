@@ -49,7 +49,7 @@ struct ProfileHeaderView: View {
                             .frame(minWidth: 44, minHeight: 44)
                             .contentShape(Circle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressable)   // DESIGN §4 press scale 0.97
                     .accessibilityLabel("Change profile photo")
                     .offset(x: 4, y: 4)  // DESIGN §5.1 camera badge offset — adjust if avatar size changes
                 }
@@ -70,7 +70,7 @@ struct ProfileHeaderView: View {
                 } label: {
                     Label("Preview public profile", systemImage: "arrow.up.right.square")
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.45))
+                        .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple
                 }
 
                 // DESIGN §5.1 stats row spacing — 24pt (space6). Change here.
@@ -84,7 +84,7 @@ struct ProfileHeaderView: View {
                 .padding(.top, 4)  // DESIGN §5.1 stats row top padding — 4pt (space1). Off-grid relative to VStack spacing; increase to 8pt for clarity.
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: vm.role)
+        .animation(Motion.state, value: vm.role)   // DESIGN §4 role switch
     }
 
     // MARK: - Role badge
@@ -96,13 +96,21 @@ struct ProfileHeaderView: View {
                 .progressViewStyle(.circular)
                 .tint(Color.cyan)
                 .frame(height: 28)
+                .transition(.opacity)
         } else if vm.role == .dj {
             // Tappable — opens confirmation to drop back to Fan
             Button {
                 showRoleSwitchConfirm = true
             } label: {
-                RolePill(icon: "headphones", text: "DJ", tint: .cyan)
+                // DESIGN §1.4 on-purple: cyan text is 3.0:1 here (fails AA 4.5), so
+                // the text is white; a full-strength cyan outline (4.5:1, above the
+                // 3:1 non-text bar — PurpleSurfaceContrastTests) keeps the DJ identity.
+                RolePill(icon: "headphones", text: "DJ",
+                         foreground: Color.onPurplePrimary,
+                         fill: .cyan.opacity(0.18),
+                         stroke: .cyan)
             }
+            .transition(.iconSwap)   // DESIGN §4 old and new pill overlap with a blur cross-fade
             .accessibilityLabel("DJ mode active — tap to switch to Fan mode")
         } else if vm.role == .regular {
             // Tappable — opens BecomeDJSheet with functional Enable action
@@ -110,15 +118,20 @@ struct ProfileHeaderView: View {
                 showBecomeDJSheet = true
             } label: {
                 RolePill(icon: "person.fill", text: "Fan",
-                         foreground: .white.opacity(0.45),
+                         foreground: Color.onPurpleSecondary,   // DESIGN §1.4 on-purple
                          fill: .white.opacity(0.06),
                          stroke: .white.opacity(0.12))
             }
+            .transition(.iconSwap)
             .accessibilityLabel("Fan mode active — tap to enable DJ mode")
         } else if vm.role == .venue {
             // Static — venue role is admin-assigned via Cognito
+            // Neon text on dullPurple is 1.1:1 — white text, neon fill.
             RolePill(icon: "building.2.fill", text: "Venue",
-                     tint: Color("neonPurpleBackground"))
+                     foreground: Color.onPurplePrimary,
+                     fill: Color("neonPurpleBackground").opacity(0.5),
+                     stroke: Color.onPurpleTertiary)
+                .transition(.iconSwap)
         }
     }
 }

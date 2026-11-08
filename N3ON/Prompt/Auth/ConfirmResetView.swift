@@ -74,7 +74,7 @@ struct ConfirmResetView: View {
                 .foregroundStyle(.white)
             Text("Check your email for the code we sent to\nyour account.")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(Color.onPurpleSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
         }
@@ -87,7 +87,7 @@ struct ConfirmResetView: View {
         VStack(alignment: .leading, spacing: 20) {
             fieldGroup(label: "VERIFICATION CODE") {
                 TextField("", text: $code, prompt:
-                    Text("6-digit code").foregroundColor(.white.opacity(0.3))
+                    Text("6-digit code").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -100,7 +100,7 @@ struct ConfirmResetView: View {
 
             fieldGroup(label: "NEW PASSWORD") {
                 SecureField("", text: $newPassword, prompt:
-                    Text("At least 8 characters").foregroundColor(.white.opacity(0.3))
+                    Text("At least 8 characters").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -115,7 +115,7 @@ struct ConfirmResetView: View {
 
             fieldGroup(label: "CONFIRM PASSWORD") {
                 SecureField("", text: $confirmPassword, prompt:
-                    Text("Re-enter new password").foregroundColor(.white.opacity(0.3))
+                    Text("Re-enter new password").foregroundColor(Color.onPurpleTertiary)
                 )
                 .font(.subheadline)
                 .foregroundStyle(.white)
@@ -143,19 +143,19 @@ struct ConfirmResetView: View {
             if !newPassword.isEmpty, let problem = AuthService.passwordProblem(newPassword) {
                 Text(problem)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(Color.onPurpleSecondary)
             }
 
             if !confirmPassword.isEmpty && !passwordsMatch {
                 Text("Passwords don't match")
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
             }
 
             if let error = vm.errorMessage {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.06))
@@ -169,7 +169,7 @@ struct ConfirmResetView: View {
                 Spacer()
                 Button("Back to sign in") { vm.showLogin() }
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Color.onPurpleSecondary)
                 Spacer()
             }
             .padding(.top, 8)
@@ -219,7 +219,7 @@ struct ConfirmResetView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color("neonPurpleBackground"))
+                .foregroundStyle(Color.onPurpleSecondary)   // DESIGN §1.4 on-purple label
                 .tracking(1.5)
             content()
         }

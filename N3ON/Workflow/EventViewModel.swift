@@ -12,6 +12,9 @@ final class EventViewModel: ObservableObject {
     @Published var djProfiles: [User] = []
     @Published var isLoadingDJs = false
     @Published var ticketQuantity: Int = 1
+    /// Purchases completed on this screen. Bumped once per success so the view
+    /// can confirm it; nothing else signals success (errors use errorMessage).
+    @Published private(set) var completedPurchases = 0
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -57,6 +60,7 @@ final class EventViewModel: ObservableObject {
 
         do {
             try await TicketService.purchaseTicket(eventID: event.id, quantity: ticketQuantity)
+            completedPurchases += 1
             if let refreshed = try await EventService.fetchEvent(byId: event.id) {
                 event = refreshed
             }
