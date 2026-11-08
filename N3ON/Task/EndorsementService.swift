@@ -5,11 +5,12 @@
 //
 // Flow:
 //   1. Candidate DJ (rank N) calls eligibleEndorsers(targetRank: N+1)
-//      → Returns DJs of rank N+1 who shared an event with the candidate via EventDJLink.
+//      → Returns DJs of rank ≥ N+1 who shared an event with the candidate via EventDJLink.
 //   2. Candidate sends one request per endorser via requestEndorsement(toUserID:targetRank:message:).
 //   3. Senior DJ sees incoming requests via pendingIncoming(for:) and calls accept/decline.
-//   4. Once approvedCount(for:targetRank:) == requiredEndorsements(forTargetRank:),
-//      a Lambda (rankPromotion) detects the threshold and updates User.djRank.
+//   4. Once enough distinct endorsers approve (requiredEndorsements(forTargetRank:)),
+//      a Lambda (rankPromotion) promotes User.djRank — as many ranks as the
+//      endorsements support, one at a time. countedEndorsers mirrors its count.
 //   5. Demotion is also Lambda-driven: after an event, if the event underperforms,
 //      the Lambda demotes the DJ and resets endorsements for that rank.
 //
@@ -31,8 +32,10 @@ enum EndorsementService {
 
     // MARK: — Eligible endorsers
 
-    /// Returns DJs who (a) hold `targetRank` and (b) have shared at least one event with `userID`
-    /// via EventDJLink. These are the only DJs whose endorsement counts toward promotion.
+    /// Returns DJs who (a) hold `targetRank` or higher and (b) have shared at least one event
+    /// with `userID` via EventDJLink — the same rule rankPromotion applies server-side
+    /// (`djRank >= target`). Offering only `== targetRank` hid senior DJs whose
+    /// endorsement the server would count (LEAN-RESEARCH.md F8).
     static func eligibleEndorsers(for userID: String, targetRank: Int) async -> [User] {
         // Step 1: event IDs the candidate has participated in
         let myLinks = (try? await Amplify.DataStore.query(
@@ -53,7 +56,7 @@ enum EndorsementService {
 
         // Step 3: resolve User records and filter to targetRank
         let allUsers = (try? await Amplify.DataStore.query(User.self)) ?? []
-        return allUsers.filter { sharedDJIDs.contains($0.id) && ($0.djRank ?? 0) == targetRank }
+        return allUsers.filter { canEndorse($0, targetRank: targetRank) && sharedDJIDs.contains($0.id) }
     }
 
     // MARK: — Send request
@@ -69,7 +72,7 @@ enum EndorsementService {
         guard let from = fromUser else { throw EndorsementError.senderNotFound }
         guard let toUser = try await Amplify.DataStore.query(User.self, byId: toUserID)
         else { throw EndorsementError.recipientNotFound }
-        guard (toUser.djRank ?? 0) == targetRank
+        guard canEndorse(toUser, targetRank: targetRank), toUser.id != from.id
         else { throw EndorsementError.rankMismatch }
 
         let request = EndorsementRequest(
@@ -125,13 +128,59 @@ enum EndorsementService {
             .sorted { $0.timestamp.foundationDate > $1.timestamp.foundationDate }
     }
 
-    /// Count of approved endorsements the candidate has for a specific target rank.
+    /// Count of approved endorsements the candidate has for a specific target rank,
+    /// counted the way the server counts them (see `countedEndorsers`).
     static func approvedCount(for userID: String, targetRank: Int) async -> Int {
         let sent = (try? await Amplify.DataStore.query(
             EndorsementRequest.self,
             where: EndorsementRequest.keys.fromUser == userID
         )) ?? []
-        return sent.filter { $0.status == "approved" && $0.targetRank == targetRank }.count
+        return countedEndorsers(in: sent, candidateID: userID, targetRank: targetRank)
+    }
+
+    // MARK: — Server mirror (pure)
+
+    /// Whether `user` may endorse a promotion to `targetRank`: an active DJ at
+    /// that rank or above. Mirrors rankPromotion's `isDJ` + `djRank >= target`.
+    static func canEndorse(_ user: User, targetRank: Int) -> Bool {
+        user.isDJ && (user.djRank ?? 0) >= targetRank
+    }
+
+    /// Distinct endorsers whose approval rankPromotion would count, as far as
+    /// the client can tell. Counting raw `status == "approved"` rows overstated
+    /// progress (LEAN-RESEARCH.md F8): duplicates stacked, self-endorsements
+    /// counted, and a row the candidate created already approved (never
+    /// touched by the recipient, so `updatedAt == createdAt`) looked genuine.
+    ///
+    /// The server also requires a shared event; that check needs every
+    /// EventDJLink and stays server-side, so this is an upper bound on the
+    /// server's count — never below it for the rows it can see.
+    static func countedEndorsers(
+        in requests: [EndorsementRequest],
+        candidateID: String,
+        targetRank: Int
+    ) -> Int {
+        let endorserIDs = requests.compactMap { request -> String? in
+            guard request.status == "approved",
+                  request.targetRank == targetRank,
+                  approvedByUpdate(request),
+                  let endorser = request.toUser,
+                  endorser.id != candidateID,
+                  canEndorse(endorser, targetRank: targetRank)
+            else { return nil }
+            return endorser.id
+        }
+        return Set(endorserIDs).count
+    }
+
+    /// Mirrors rankPromotion's `approvedByUpdate`: both timestamps are set by
+    /// the AppSync resolver (absent from every input type), so a row only
+    /// moves `updatedAt` past `createdAt` when someone with update rights —
+    /// the recipient or an admin — writes it. Unsynced local rows have nil
+    /// timestamps and do not count yet.
+    static func approvedByUpdate(_ request: EndorsementRequest) -> Bool {
+        guard let created = request.createdAt, let updated = request.updatedAt else { return false }
+        return updated != created
     }
 }
 

@@ -6,7 +6,7 @@ const appsync = require('../amplify/backend/function/rankPromotion/src/appsync.j
 const lambda = require('../amplify/backend/function/rankPromotion/src/index.js');
 const fakeAppSync = require('./fake-appsync');
 
-function world({ users, endorsements, links, updateError, endorsementUpdateError }) {
+function world({ users, endorsements, links, updateError, endorsementUpdateError, concurrentUserWrites = 0 }) {
   const db = { users: structuredClone(users), endorsements: structuredClone(endorsements), links };
   const handlers = {
     getUser: ({ id }) => ({ data: { getUser: db.users[id] || null } }),
@@ -25,6 +25,14 @@ function world({ users, endorsements, links, updateError, endorsementUpdateError
     },
     updateUser: ({ input }) => {
       if (updateError) return { errors: [updateError] };
+      // User runs on AUTOMERGE. An unrelated write (e.g. a location update)
+      // lands first; our now-stale write is merged: server scalars kept,
+      // _version bumped, success returned.
+      if (concurrentUserWrites > 0) { concurrentUserWrites -= 1; db.users[input.id]._version += 1; }
+      if (input._version !== db.users[input.id]._version) {
+        db.users[input.id] = { ...db.users[input.id], _version: db.users[input.id]._version + 1 };
+        return { data: { updateUser: db.users[input.id] } };
+      }
       db.users[input.id] = { ...db.users[input.id], djRank: input.djRank, _version: db.users[input.id]._version + 1 };
       return { data: { updateUser: db.users[input.id] } };
     },
@@ -229,4 +237,84 @@ test('neutralising a record someone already changed is a no-op', async () => {
   });
   await lambda.handler(streamEvent('approved'));
   assert.strictEqual(fake.calls.filter(c => c.field === 'updateEndorsementRequest').length, 0);
+});
+
+// ── F2 (LEAN-RESEARCH.md): promotion must not depend on batch order ─────────
+// A DJ with valid rank-2 AND rank-3 endorsements must end at rank 3 whichever
+// approval arrives first, in one batch or across batches.
+const approval = (id, to, rank) => ({ eventName: 'MODIFY', dynamodb: {
+  NewImage: { id: { S: id }, fromUserID: { S: 'cand' }, toUserID: { S: to }, targetRank: { N: String(rank) }, status: { S: 'approved' } },
+  OldImage: { id: { S: id }, fromUserID: { S: 'cand' }, toUserID: { S: to }, targetRank: { N: String(rank) }, status: { S: 'pending' } } } });
+const climbWorld = () => world({
+  users: { cand: dj('cand', 1), a: dj('a', 2), b: dj('b', 2), c: dj('c', 3), d: dj('d', 3) },
+  endorsements: [approved('a', 2), approved('b', 2), approved('c', 3), approved('d', 3)],
+  links: ['cand', 'a', 'b', 'c', 'd'].map(x => link(x, 'ev1')),
+});
+
+test('promotion does not depend on batch order: rank-3 approval first', async () => {
+  const { db } = climbWorld();
+  await lambda.handler({ Records: [approval('e-d', 'd', 3), approval('e-a', 'a', 2)] });
+  assert.strictEqual(db.users.cand.djRank, 3);
+});
+
+test('promotion does not depend on batch order: rank-2 approval first', async () => {
+  const { db } = climbWorld();
+  await lambda.handler({ Records: [approval('e-a', 'a', 2), approval('e-d', 'd', 3)] });
+  assert.strictEqual(db.users.cand.djRank, 3);
+});
+
+test('a rank-3 approval spent while rank 1 is not stranded by a later batch', async () => {
+  const { db } = climbWorld();
+  await lambda.handler({ Records: [approval('e-d', 'd', 3)] });
+  // Rank-3 approval alone: the climb starts at rank 2, which qualifies too.
+  // The point is the end state, not which batch did the work.
+  await lambda.handler({ Records: [approval('e-a', 'a', 2)] });
+  assert.strictEqual(db.users.cand.djRank, 3);
+});
+
+test('the climb stops at the first rank that does not qualify, and never passes 5', async () => {
+  const { db, fake } = world({
+    users: { cand: dj('cand', 1), a: dj('a', 5), b: dj('b', 5), c: dj('c', 5) },
+    endorsements: [2, 3, 4, 5].flatMap(r => ['a', 'b', 'c'].map(x => ({ ...approved(x, r), id: `e-${x}${r}` }))),
+    links: ['cand', 'a', 'b', 'c'].map(x => link(x, 'ev1')),
+  });
+  await lambda.handler({ Records: [approval('e-a2', 'a', 2)] });
+  assert.strictEqual(db.users.cand.djRank, 5);
+  assert.strictEqual(fake.calls.filter(c => c.field === 'updateUser').length, 4, 'one write per step, 1→5');
+
+  const { db: db2 } = climbWorld();
+  db2.endorsements.splice(3, 1); // only one rank-3 endorser left
+  await lambda.handler({ Records: [approval('e-a', 'a', 2)] });
+  assert.strictEqual(db2.users.cand.djRank, 2);
+});
+
+test('the climb uses each step\'s new _version and current-rank condition', async () => {
+  const { fake } = climbWorld();
+  await lambda.handler({ Records: [approval('e-a', 'a', 2)] });
+  const ups = fake.calls.filter(c => c.field === 'updateUser').map(c => c.variables);
+  assert.deepStrictEqual(ups.map(u => u.input), [
+    { id: 'cand', djRank: 2, _version: 1 }, { id: 'cand', djRank: 3, _version: 2 }]);
+  assert.deepStrictEqual(ups.map(u => u.condition), [{ djRank: { eq: 1 } }, { djRank: { eq: 2 } }]);
+});
+
+test('a promotion merged away by a concurrent User write is retried, not reported as done', async () => {
+  const { db } = world({
+    users: { cand: dj('cand', 1), a: dj('a', 2), b: dj('b', 2) },
+    endorsements: [approved('a'), approved('b')],
+    links: [link('cand', 'ev1'), link('a', 'ev1'), link('b', 'ev1')],
+    concurrentUserWrites: 2,
+  });
+  await lambda.handler(streamEvent('approved', 'pending'));
+  assert.strictEqual(db.users.cand.djRank, 2);
+});
+
+test('_evaluate reports a merged write as not promoted', async () => {
+  world({
+    users: { cand: dj('cand', 1), a: dj('a', 2), b: dj('b', 2) },
+    endorsements: [approved('a'), approved('b')],
+    links: [link('cand', 'ev1'), link('a', 'ev1'), link('b', 'ev1')],
+    concurrentUserWrites: 1,
+  });
+  const r = await lambda._evaluate({ candidateID: 'cand', targetRank: 2 });
+  assert.deepStrictEqual([r.promoted, r.merged], [false, true]);
 });

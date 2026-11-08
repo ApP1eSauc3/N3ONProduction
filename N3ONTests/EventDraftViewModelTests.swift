@@ -55,6 +55,26 @@ final class EventDraftViewModelTests: XCTestCase {
         XCTAssertEqual(makeVM(capacity: 350, price: 60).requiredTally, 28)
     }
 
+    /// F12 (LEAN-RESEARCH.md): purchaseTicket's mirror puts any capacity ≤ 200 in
+    /// the smallest tier. Swift used `0...200`, sending negatives to the top tier.
+    /// Same cases as lambda-tests/ticket.test.js "requiredTally mirrors…".
+    func testNegativeCapacityUsesSmallestTierLikeTheLambda() {
+        XCTAssertEqual(makeVM(capacity: -1).requiredTally, 40)
+        XCTAssertEqual(makeVM(capacity: -500, price: 40).requiredTally, 20)
+        XCTAssertEqual(makeVM(capacity: 0).requiredTally, 40)
+    }
+
+    /// F5 (LEAN-RESEARCH.md): the gate follows the price being published.
+    /// Clearing limbo at $200 (needs 20) must not let a $0 event (needs 40) go live.
+    func testPublishGateFollowsFinalPriceInCommunityMode() {
+        let vm = makeVM(capacity: 150, price: 200)
+        vm.currentTally = 20
+        XCTAssertTrue(vm.canPublish(in: .community), "20 of 20 at $200")
+        vm.ticketPrice = 0
+        XCTAssertFalse(vm.canPublish(in: .community), "20 of 40 at $0 — the server would refuse every sale")
+        XCTAssertTrue(vm.canPublish(in: .curated), "tally not enforced in curated mode")
+    }
+
     func testExtremePriceFloorsAtHalfBase() {
         // Factor clamps at 0.5 no matter how expensive the ticket.
         XCTAssertEqual(makeVM(capacity: 150, price: 500).requiredTally, 20)

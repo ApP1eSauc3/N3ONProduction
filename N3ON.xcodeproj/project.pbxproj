@@ -17,6 +17,8 @@
 		16C9F523DC8BA3B9E75D3879 /* DailyUserCount+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE67C374449B3CE85360ACF7 /* DailyUserCount+Schema.swift */; };
 		20C8AFCF7AEAA072E5C166B7 /* EventDJLink+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1FB99D43D98EB3AACAF7B50 /* EventDJLink+Schema.swift */; };
 		23885C44BD1583A2800B4C06 /* Review+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = A74A3A8E73DFB2B23B9F0067 /* Review+Schema.swift */; };
+		5259DF88B0C22DF57B8557CA /* TicketAllowance+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 422BAA438A53A64E59B3E9C6 /* TicketAllowance+Schema.swift */; };
+		691931BC5BCDE27784BA75E0 /* TicketAllowance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119BF235F3939AA9E523F036 /* TicketAllowance.swift */; };
 		2CAD03755C851FA1B75EE02D /* Review.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE42145BE70C360706D92336 /* Review.swift */; };
 		3474B93EA00C21D7A3DDFBF8 /* Event+Schema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9367310BAC19DBEC8A1E6883 /* Event+Schema.swift */; };
 		377E184A71F811ED3FC3353F /* UserChatRooms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A6404F2B5449B22C82F5B2 /* UserChatRooms.swift */; };
@@ -106,6 +108,8 @@
 		962CA66C4FFDE282448D9527 /* AmplifyModels.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = AmplifyModels.swift; path = amplify/generated/models/AmplifyModels.swift; sourceTree = "<group>"; };
 		A74A3A8E73DFB2B23B9F0067 /* Review+Schema.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = "Review+Schema.swift"; path = "amplify/generated/models/Review+Schema.swift"; sourceTree = "<group>"; };
 		AE2F018E27AF6FBA40412988 /* Post.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Post.swift; path = amplify/generated/models/Post.swift; sourceTree = "<group>"; };
+		422BAA438A53A64E59B3E9C6 /* TicketAllowance+Schema.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = "TicketAllowance+Schema.swift"; path = "amplify/generated/models/TicketAllowance+Schema.swift"; sourceTree = "<group>"; };
+		119BF235F3939AA9E523F036 /* TicketAllowance.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = TicketAllowance.swift; path = amplify/generated/models/TicketAllowance.swift; sourceTree = "<group>"; };
 		AE42145BE70C360706D92336 /* Review.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Review.swift; path = amplify/generated/models/Review.swift; sourceTree = "<group>"; };
 		BA2578201C0843BD66D69F2C /* Transaction+Schema.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = "Transaction+Schema.swift"; path = "amplify/generated/models/Transaction+Schema.swift"; sourceTree = "<group>"; };
 		C55E7B0F2C50266900B142E2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -257,6 +261,8 @@
 				7D501EAA60D43E92923F237E /* DailyUserCount.swift */,
 				A74A3A8E73DFB2B23B9F0067 /* Review+Schema.swift */,
 				AE42145BE70C360706D92336 /* Review.swift */,
+				119BF235F3939AA9E523F036 /* TicketAllowance.swift */,
+				422BAA438A53A64E59B3E9C6 /* TicketAllowance+Schema.swift */,
 				E96BAE45D09C7310D74961C6 /* Attendance+Schema.swift */,
 				63DD270F84412E58D46658A5 /* Attendance.swift */,
 				920951C96D3F28623939EF53 /* EndorsementRequest+Schema.swift */,
@@ -546,6 +552,8 @@
 				23885C44BD1583A2800B4C06 /* Review+Schema.swift in Sources */,
 				C5DD98592DCDB45F00431EC5 /* Message+Equatable.swift in Sources */,
 				2CAD03755C851FA1B75EE02D /* Review.swift in Sources */,
+				691931BC5BCDE27784BA75E0 /* TicketAllowance.swift in Sources */,
+				5259DF88B0C22DF57B8557CA /* TicketAllowance+Schema.swift in Sources */,
 				F6163EE2CBB6DAC6E8909745 /* Attendance+Schema.swift in Sources */,
 				0BC771A750D0D3944CA5FA96 /* Attendance.swift in Sources */,
 				C63B4C1D51229DA1F8D63C5A /* EndorsementRequest+Schema.swift in Sources */,

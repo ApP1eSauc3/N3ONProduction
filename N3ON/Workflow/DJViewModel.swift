@@ -82,8 +82,7 @@ final class DJViewModel: ObservableObject {
     // MARK: - Chat
 
     func openChatRoomID(with otherUserID: String) -> String {
-        let sortedIDs = [user.id, otherUserID].sorted()
-        return "dm-\(sortedIDs[0])-\(sortedIDs[1])"
+        ChatRoomService.dmRoomName(user.id, otherUserID)
     }
 
     // MARK: - Live updates

@@ -11,9 +11,10 @@
 // ranking rules.
 //
 // The ranking system is NOT removed — it is suspended behind `platformMode`.
-// Flip `platformMode` to `.community` to re-enforce every rank/tally gate with
-// no other code changes. The capability checks that read this flag live in
-// `Task/CurationService.swift`.
+// Flipping `platformMode` to `.community` re-enforces every CLIENT rank/tally
+// gate with no other code changes — but the server's tally gate is a separate
+// switch (purchaseTicket env `TALLY_ENFORCED=true`). Flip both together; see
+// the header of `Task/CurationService.swift`, where the gates live.
 
 import Foundation
 

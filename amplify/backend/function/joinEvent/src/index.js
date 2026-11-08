@@ -24,36 +24,40 @@ Amplify Params - DO NOT EDIT *//**
  * Idempotent: the link ID is derived from (eventID, djID), so a retry or a
  * double tap returns the existing link instead of double-counting the tally.
  *
- * Rank weights mirror the documented 0/5/7/10/25 table (Data/RankWeight.swift).
- * Override without a redeploy of code via the RANK_WEIGHTS env var, e.g.
- * {"1":0,"2":5,"3":7,"4":10,"5":25}.
+ * Rank weights are the documented 0/5/7/10/25 table, mirrored exactly by
+ * Data/RankWeight.swift and pinned on both sides by tests. There is deliberately
+ * no env-var override: an override changed the server's weights while the
+ * Swift mirror stayed put (LEAN-RESEARCH.md F10). Change both files together.
  */
 const { graphql, graphqlAll, GraphQLError } = require('./appsync');
 const { callerSub, parseBody, ok, fail } = require('./http');
 
-const DEFAULT_WEIGHTS = { 1: 0, 2: 5, 3: 7, 4: 10, 5: 25 };
-
-function rankWeights() {
-  if (!process.env.RANK_WEIGHTS) return DEFAULT_WEIGHTS;
-  try {
-    return { ...DEFAULT_WEIGHTS, ...JSON.parse(process.env.RANK_WEIGHTS) };
-  } catch {
-    console.error('RANK_WEIGHTS is not valid JSON — using defaults');
-    return DEFAULT_WEIGHTS;
-  }
-}
+const WEIGHTS = Object.freeze({ 1: 0, 2: 5, 3: 7, 4: 10, 5: 25 });
 
 /** Same rule as RankWeight.coins(forRank:): unranked/rank 1 → 0, ≥5 → rank-5 weight. */
 function coinsForRank(rank) {
-  const w = rankWeights();
-  if (rank < 2) return w[1];
-  if (rank >= 5) return w[5];
-  return w[rank];
+  if (!(rank >= 2)) return WEIGHTS[1];
+  if (rank >= 5) return WEIGHTS[5];
+  return WEIGHTS[Math.floor(rank)];
 }
 
-/** Deterministic room name — must match ChatRoomService.openDJDirectRoom. */
+/**
+ * Compares by Unicode code point, like Swift's
+ * `unicodeScalars.lexicographicallyPrecedes`. Plain `.sort()` compares UTF-16
+ * units, which orders astral characters below U+E000–U+FFFF (F14).
+ */
+function byCodePoint(a, b) {
+  const x = [...a]; const y = [...b];
+  for (let i = 0; i < Math.min(x.length, y.length); i += 1) {
+    const d = x[i].codePointAt(0) - y[i].codePointAt(0);
+    if (d !== 0) return d;
+  }
+  return x.length - y.length;
+}
+
+/** Deterministic room name — must match ChatRoomService.dmRoomName. */
 function dmRoomName(a, b) {
-  const [x, y] = [a, b].sort();
+  const [x, y] = [a, b].sort(byCodePoint);
   return `dm-${x}-${y}`;
 }
 

@@ -1,16 +1,14 @@
 // RankWeight.swift
 // N3ON — Data layer
 //
-// BOOTSTRAP-ONLY mirror of the DJ rank → coin-weight table.
+// Client mirror of the DJ rank → coin-weight table.
 //
-// The canonical weights live in the Lambda's DynamoDB config (RankWeights
-// table), NOT in the app — see Prompt/Event/AGENTS.md. This local copy exists
-// only so admin lineup curation can stamp a plausible `coinContribution` on the
-// EventDJLink records it creates during the bootstrap phase. It mirrors the
-// same precedent already set by `EventDraftViewModel.requiredTally`, which
-// hardcodes capacity tiers for a client-side estimate.
-//
-// Remove this once the join/tally Lambda owns EventDJLink creation.
+// The canonical weights are the `WEIGHTS` constant in the joinEvent Lambda
+// (amplify/backend/function/joinEvent/src/index.js), which stamps
+// `coinContribution` on every EventDJLink it creates. There is no config table
+// and no env-var override — an override let the server drift from this copy
+// (LEAN-RESEARCH.md F10). Both tables are pinned to the same cases by
+// RankWeightTests and lambda-tests/join.test.js; change them together.
 
 import Foundation
 

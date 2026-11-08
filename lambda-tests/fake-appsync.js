@@ -14,6 +14,8 @@ module.exports = function fakeAppSync(db, opts = {}) {
     if (h) return resp(await h(variables, db));
     return resp({ errors: [{ message: `no handler for ${field}` }] });
   }
-  function resp(json) { return { ok: true, status: 200, json: async () => json }; }
+  // Cloned like a real JSON response, so a handler mutating db later cannot
+  // reach back into a row the Lambda already read.
+  function resp(json) { return { ok: true, status: 200, json: async () => structuredClone(json) }; }
   return { fetch, calls };
 };

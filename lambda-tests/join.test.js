@@ -159,15 +159,27 @@ test('request validation and auth', async () => {
   assert.strictEqual((await lambda.handler({ ...req('host'), body: '[1]' })).statusCode, 400);
 });
 
-test('RANK_WEIGHTS env override applies', () => {
-  process.env.RANK_WEIGHTS = '{"4":12}';
-  assert.deepStrictEqual([1, 2, 3, 4, 5, 9].map(lambda._coinsForRank), [0, 5, 7, 12, 25, 25]);
-  process.env.RANK_WEIGHTS = 'garbage';
-  assert.strictEqual(lambda._coinsForRank(4), 10);
-  delete process.env.RANK_WEIGHTS;
+test('weight table matches RankWeight.swift (0/5/7/10/25) — same cases as RankWeightTests', () => {
+  assert.deepStrictEqual([-1, 0, 1, 2, 3, 4, 5, 6, 9].map(lambda._coinsForRank), [0, 0, 0, 5, 7, 10, 25, 25, 25]);
+  assert.strictEqual(lambda._coinsForRank(null), 0, 'null djRank (unranked)');
+  assert.strictEqual(lambda._coinsForRank(undefined), 0);
 });
 
-test('default weight table matches RankWeight.swift (0/5/7/10/25)', () => {
-  delete process.env.RANK_WEIGHTS;
-  assert.deepStrictEqual([0, 1, 2, 3, 4, 5].map(lambda._coinsForRank), [0, 0, 5, 7, 10, 25]);
+test('F10: no env var can make the server weights drift from the Swift mirror', () => {
+  process.env.RANK_WEIGHTS = '{"5":30}';
+  try {
+    assert.strictEqual(lambda._coinsForRank(5), 25);
+  } finally {
+    delete process.env.RANK_WEIGHTS;
+  }
+});
+
+// F14: same cases as ChatRoomServiceTests.testDMRoomNameMirrorsLambda.
+test('dmRoomName orders by code point, like Swift unicodeScalars', () => {
+  const uuidA = '0b6e1c2a-7f9d-4a51-9c3e-2f1d8b7a6e50'; const uuidB = 'f3a9d2c1-5e7b-4c8a-b1d6-9e2f4a7c3b81';
+  assert.strictEqual(lambda._dmRoomName(uuidB, uuidA), `dm-${uuidA}-${uuidB}`);
+  assert.strictEqual(lambda._dmRoomName(uuidA, uuidB), `dm-${uuidA}-${uuidB}`);
+  // U+1F600 (astral) vs U+FF21: UTF-16 sort put the emoji first; code point puts it last.
+  assert.strictEqual(lambda._dmRoomName('\u{1F600}', 'Ａ'), 'dm-Ａ-\u{1F600}');
+  assert.strictEqual(lambda._dmRoomName('ab', 'a'), 'dm-a-ab');
 });

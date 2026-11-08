@@ -10,12 +10,25 @@ struct ChatRoomService {
 
     // MARK: - Room access
 
+    /// Deterministic DJ↔DJ room name: `dm-<lower>-<higher>`, the same whoever
+    /// opens it. The single Swift source of this name — the joinEvent Lambda's
+    /// `dmRoomName` must produce the same string.
+    ///
+    /// Ordered by Unicode scalar value on both sides. Swift's `String <`
+    /// applies canonical equivalence and JS `.sort()` compares UTF-16 units, so
+    /// the two disagreed for some non-ASCII IDs (LEAN-RESEARCH.md F14). Cognito
+    /// subs are ASCII UUIDs, where every ordering agrees, so no existing room
+    /// name changes.
+    static func dmRoomName(_ a: String, _ b: String) -> String {
+        let (lower, higher) = b.unicodeScalars.lexicographicallyPrecedes(a.unicodeScalars) ? (b, a) : (a, b)
+        return "dm-\(lower)-\(higher)"
+    }
+
     /// Opens or creates a DJ↔DJ direct message room.
-    /// Room name is deterministic from sorted user IDs — idempotent on repeat calls.
+    /// Room name is deterministic (`dmRoomName`) — idempotent on repeat calls.
     static func openDJDirectRoom(userA: User, userB: User) async throws -> ChatRoom {
-        let sorted = [userA.id, userB.id].sorted()
-        return try await getOrCreate(
-            name: "dm-\(sorted[0])-\(sorted[1])",
+        try await getOrCreate(
+            name: dmRoomName(userA.id, userB.id),
             participants: [userA, userB],
             associatedEvent: nil
         )

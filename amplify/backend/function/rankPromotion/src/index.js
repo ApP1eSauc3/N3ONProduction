@@ -4,7 +4,8 @@
 	ENV
 	REGION
 Amplify Params - DO NOT EDIT *//**
- * rankPromotion — promotes a DJ one rank once enough valid endorsements exist.
+ * rankPromotion — promotes a DJ as far as their valid endorsements allow, one
+ * rank at a time (see climb()).
  *
  * Trigger: DynamoDB stream on the EndorsementRequest @model table
  * (NEW_AND_OLD_IMAGES — already enabled by the transformer). Runs when a
@@ -13,7 +14,7 @@ Amplify Params - DO NOT EDIT *//**
  * The client never writes djRank for promotion. Every rule is re-derived here
  * from server data, because the endorsement records themselves are
  * client-written:
- *   - target must be exactly current rank + 1 (no skipping, no stale requests)
+ *   - each step goes from the current rank to exactly current + 1 (no skipping)
  *   - each endorser must currently hold djRank >= target, and
  *   - must have shared at least one event (EventDJLink) with the candidate —
  *     same rule as EndorsementService.eligibleEndorsers on the client, which a
@@ -41,6 +42,8 @@ Amplify Params - DO NOT EDIT *//**
 const { graphql, graphqlAll } = require('./appsync');
 
 const MAX_RANK = 5;
+/** Re-tries of a rank write that a concurrent User update merged away. */
+const MERGE_RETRIES = 3;
 
 /** Mirror of EndorsementService.requiredEndorsements(forTargetRank:). */
 function requiredEndorsements(targetRank) {
@@ -260,12 +263,16 @@ async function countValidEndorsers(candidateID, targetRank, excludedIDs = new Se
   return { count, rejected };
 }
 
-/** Evaluates one candidate. Returns a result object (also used by tests). */
-async function evaluate({ candidateID, targetRank }, excludedIDs = new Set()) {
+/**
+ * Evaluates one step (current rank → targetRank). Returns a result object
+ * (also used by tests). `preloaded` skips the user read when the caller has
+ * just fetched it.
+ */
+async function evaluate({ candidateID, targetRank }, excludedIDs = new Set(), preloaded = undefined) {
   if (targetRank < 1 || targetRank > MAX_RANK) {
     return { candidateID, targetRank, promoted: false, reason: 'target out of range' };
   }
-  const user = await getUser(candidateID);
+  const user = preloaded === undefined ? await getUser(candidateID) : preloaded;
   if (!user) return { candidateID, targetRank, promoted: false, reason: 'user not found' };
   if (!user.isDJ) return { candidateID, targetRank, promoted: false, reason: 'not a DJ' };
 
@@ -285,11 +292,51 @@ async function evaluate({ candidateID, targetRank }, excludedIDs = new Set()) {
   const condition = current === 0
     ? { or: [{ djRank: { attributeExists: false } }, { djRank: { eq: 0 } }] }
     : { djRank: { eq: current } };
-  await graphql(SET_RANK, {
+  const row = (await graphql(SET_RANK, {
     input: { id: candidateID, djRank: targetRank, _version: user._version },
     condition,
-  });
+  })).updateUser;
+  // User runs on AUTOMERGE: if any other write (a location update, a profile
+  // edit) bumped _version after our read, AppSync does not reject ours — it
+  // keeps the server's djRank, bumps _version and returns success. Only a row
+  // carrying our rank exactly one version on is a promotion.
+  if (!row || row.djRank !== targetRank || row._version !== user._version + 1) {
+    return { candidateID, targetRank, promoted: false, merged: true, reason: 'write merged by a concurrent update' };
+  }
   return { candidateID, targetRank, promoted: true, count, required };
+}
+
+/**
+ * Promotes a candidate as far as their valid endorsements allow, one rank at a
+ * time, starting from their CURRENT rank — not from the rank the triggering
+ * approval was for.
+ *
+ * Why: evaluating only the approval's own targetRank made the outcome depend
+ * on stream order. A rank-3 approval processed while the DJ was still rank 1
+ * was spent and never looked at again, so a DJ holding valid rank-2 and
+ * rank-3 endorsements could be stranded at 2 (LEAN-RESEARCH.md F2; the climb
+ * is the proven fix: order-independent, and it always stops at a rank that
+ * does not qualify further).
+ *
+ * Each step re-reads the user, so the next write carries the new _version and
+ * a `djRank == current` condition. At most MAX_RANK promotions plus
+ * MERGE_RETRIES re-tries; persistent merging throws so the batch retries.
+ */
+async function climb(candidateID, excludedIDs = new Set()) {
+  const steps = [];
+  let merges = 0;
+  while (steps.length < MAX_RANK + MERGE_RETRIES) {
+    const user = await getUser(candidateID);
+    const targetRank = ((user && user.djRank) || 0) + 1;
+    if (user && targetRank > MAX_RANK) break;
+    const step = await evaluate({ candidateID, targetRank }, excludedIDs, user);
+    steps.push(step);
+    // A merged write changed nothing — re-read (new _version) and try again.
+    if (step.merged && merges < MERGE_RETRIES) { merges += 1; continue; }
+    if (step.merged) throw new Error(`rank write for ${candidateID} kept being merged`);
+    if (!step.promoted) break;
+  }
+  return steps;
 }
 
 /**
@@ -311,14 +358,18 @@ exports.handler = async (event) => {
     }
   }
 
-  const candidates = approvalsFromStream(event);
-  for (const c of candidates) {
+  // One climb per candidate, however many of their approvals are in the batch.
+  const candidateIDs = [...new Set(approvalsFromStream(event).map((c) => c.candidateID))];
+  for (const candidateID of candidateIDs) {
+    const c = { candidateID };
     try {
-      const result = await evaluate(c, excludedIDs);
-      console.log(JSON.stringify({ msg: 'rankPromotion', ...result }));
+      for (const result of await climb(candidateID, excludedIDs)) {
+        console.log(JSON.stringify({ msg: 'rankPromotion', ...result }));
+      }
     } catch (err) {
-      // A failed condition means someone else already changed the rank — the
-      // next approval event re-evaluates, so it is not retried. With conflict
+      // A failed condition means someone else already changed the rank
+      // mid-climb — the next approval event climbs again from the new rank,
+      // so it is not retried. With conflict
       // detection on, AppSync may report this as either errorType, so both
       // are treated the same.
       const types = err.errorTypes || [];
@@ -330,7 +381,7 @@ exports.handler = async (event) => {
       failures.push(err);
     }
   }
-  // Throwing makes Lambda retry the batch. evaluate() is idempotent (the
+  // Throwing makes Lambda retry the batch. climb() is idempotent (each step's
   // rank precondition stops a double promotion), so retries are safe.
   if (failures.length) throw failures[0];
 };
@@ -339,6 +390,7 @@ exports.handler = async (event) => {
 exports._approvalsFromStream = approvalsFromStream;
 exports._suspectsFromStream = suspectsFromStream;
 exports._evaluate = evaluate;
+exports._climb = climb;
 exports._requiredEndorsements = requiredEndorsements;
 exports._documents = {
   GET_USER, APPROVED_ENDORSEMENTS, LINKS_BY_DJ, SET_RANK, GET_ENDORSEMENT, SET_ENDORSEMENT_STATUS,

@@ -83,14 +83,19 @@ final class EventDraftViewModel: ObservableObject {
         guard let capacity = venue?.maxCapacity else { return 40 }
         let base: Int
         let midpointPrice: Double   // ticket price at which threshold = full tier
+        // `...200`, not `0...200`: a negative (corrupt) capacity must land in the
+        // smallest tier, as `capacity <= 200` does in purchaseTicket's mirror —
+        // `0...200` sent it to `default` (80) and the copies disagreed (F12).
         switch capacity {
-        case 0...200:   base = 40; midpointPrice = 20
+        case ...200:    base = 40; midpointPrice = 20
         case 201...500: base = 55; midpointPrice = 30
         default:        base = 80; midpointPrice = 50
         }
         guard ticketPrice > 0 else { return base }
         // factor ∈ [0.5, 1.0]: higher price → smaller factor → lower threshold
         let factor = min(1.0, max(0.5, midpointPrice / ticketPrice))
+        // The 10 floor is unreachable today (factor ≥ 0.5 and every base ≥ 40,
+        // so the result is ≥ 20); it guards a future tier base below 20.
         return max(10, Int((Double(base) * factor).rounded()))
     }
 
@@ -109,7 +114,19 @@ final class EventDraftViewModel: ObservableObject {
     /// gate in community mode; during bootstrap (curated mode) it is not enforced,
     /// so hand-curated events can proceed without an accrued lineup. The ranking
     /// system is intact — flipping CurationConfig.platformMode re-enables the gate.
-    var canLeaveLimbo: Bool { tallyMet || !CurationService.tallyEnforced }
+    var canLeaveLimbo: Bool { canPublish(in: CurationConfig.platformMode) }
+
+    /// The tally gate at the CURRENT price, for `mode` (the testable seam).
+    ///
+    /// Re-checked at go-live, not only when leaving limbo: the limbo price
+    /// slider lowers `requiredTally`, so a host could clear limbo at $200 and
+    /// publish at $0. purchaseTicket (TALLY_ENFORCED=true) re-derives the tally
+    /// from the saved price and would then refuse every sale of a live event
+    /// (LEAN-RESEARCH.md F5). Checking the price that is actually saved keeps
+    /// the client gate at least as strict as the server's.
+    func canPublish(in mode: PlatformMode) -> Bool {
+        tallyMet || !CurationService.tallyEnforced(in: mode)
+    }
 
     // MARK: Submission state
     @Published var submissionError: String?
@@ -251,6 +268,12 @@ final class EventDraftViewModel: ObservableObject {
     /// ticket price, and status:"live". Creates the event chat room on success.
     func uploadPosterAndGoLive(_ image: UIImage) async {
         guard let jpeg = image.jpegData(compressionQuality: 0.8) else { return }
+        // Final tally check at the price being published (see canPublish).
+        guard canLeaveLimbo else {
+            posterUploadError = "Your lineup has \(currentTally) of the \(requiredTally) tally coins needed "
+                + "at this ticket price. Raise the price or grow the lineup before going live."
+            return
+        }
         isUploadingPoster = true
         posterUploadError = nil
         defer { isUploadingPoster = false }

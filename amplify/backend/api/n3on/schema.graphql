@@ -328,6 +328,28 @@ type Ticket @model @auth(rules: [
   pricePaid: Float
 }
 
+# Running total of tickets issued to one buyer for one event, so purchaseTicket
+# can enforce the 10-per-buyer cap with a single conditional write. Reading
+# "tickets held" and then buying is check-then-act: two concurrent requests
+# both saw 0 held and both bought 10 (LEAN-RESEARCH.md F1).
+# - id = "<eventID>_<userID>". Written only by the purchaseTicket Lambda
+#   (IAM adminRoles); no client create/update/delete.
+# - Conflict handler is OPTIMISTIC_CONCURRENCY (transform.conf.json), so a
+#   stale write is rejected rather than auto-merged.
+# - userID is a Cognito sub: personal data. Belongs in the deleteAccount
+#   cascade and compliance/retention-schedule.md.
+type TicketAllowance @model @auth(rules: [
+  # Same read shape as Ticket, so every DataStore client can sync the model
+  # (only its own rows) instead of failing the sync with Unauthorized.
+  { allow: owner, ownerField: "userID", operations: [read] },
+  { allow: groups, groups: ["AdminUser"], operations: [read] }
+]) {
+  id: ID!
+  eventID: ID!
+  userID: ID! @index(name: "byUser")
+  issued: Int!
+}
+
 # ─────────────────────────────────────────────
 # ENDORSEMENT REQUEST
 # ─────────────────────────────────────────────

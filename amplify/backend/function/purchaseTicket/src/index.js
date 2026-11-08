@@ -19,6 +19,23 @@ Amplify Params - DO NOT EDIT *//**
  * retried on contention. If the ticket write then fails, the decrement is
  * compensated so stock is not lost.
  *
+ * Per-user cap: a check of "tickets already held" followed by the stock CAS is
+ * check-then-act — two concurrent requests both see 0 held and both buy 10
+ * (LEAN-RESEARCH.md F1). The cap is instead a TicketAllowance row per
+ * (event, buyer), id `<eventID>_<sub>`, raised with a conditional write
+ * `issued == n` (so `n + q <= 10` holds at write time) BEFORE stock is taken,
+ * and lowered again if the purchase then fails. The check and the write are
+ * one DynamoDB operation, which is what closes the race.
+ *
+ * AUTOMERGE caveat (AWS AppSync conflict-resolution docs): on a versioned
+ * table with the Automerge handler, a write carrying a stale _version is NOT
+ * rejected — the server keeps its own scalar values, bumps _version and
+ * returns success. Event uses Automerge (DataStore clients need it), so every
+ * CAS here also checks the response: success only if the returned row has
+ * our value at exactly _version + 1. TicketAllowance is configured with
+ * OPTIMISTIC_CONCURRENCY in transform.conf.json, so a stale write is rejected
+ * outright; the response check covers it too.
+ *
  * Tally gate: with TALLY_ENFORCED=true, sales stay closed until the lineup's
  * coinContribution sum reaches the venue tier's required tally (schema
  * comment on EventDJLink; Prompt/Event/CLAUDE.md). Off by default — curated
@@ -58,6 +75,28 @@ const EVENT_LINKS = /* GraphQL */ `
       items { coinContribution _deleted }
       nextToken
     }
+  }
+`;
+
+// Every TicketAllowance scalar + sync metadata (AppSync subscriptions deliver
+// only selected fields — see the root CLAUDE.md "Lambda mutations" rule).
+const ALLOWANCE_FIELDS = 'id eventID userID issued createdAt updatedAt _version _deleted _lastChangedAt';
+
+const GET_ALLOWANCE = /* GraphQL */ `
+  query GetAllowance($id: ID!) {
+    getTicketAllowance(id: $id) { ${ALLOWANCE_FIELDS} }
+  }
+`;
+
+const CREATE_ALLOWANCE = /* GraphQL */ `
+  mutation CreateAllowance($input: CreateTicketAllowanceInput!) {
+    createTicketAllowance(input: $input) { ${ALLOWANCE_FIELDS} }
+  }
+`;
+
+const SET_ALLOWANCE = /* GraphQL */ `
+  mutation SetAllowance($input: UpdateTicketAllowanceInput!, $condition: ModelTicketAllowanceConditionInput) {
+    updateTicketAllowance(input: $input, condition: $condition) { ${ALLOWANCE_FIELDS} }
   }
 `;
 
@@ -136,6 +175,16 @@ async function getEvent(id) {
 }
 
 /**
+ * True only if the write we sent is the one that landed: the returned row
+ * holds our value and moved exactly one version past the row we read. Under
+ * Automerge a stale write "succeeds" without applying (see header), and the
+ * returned row then fails this check.
+ */
+function applied(row, field, value, readVersion) {
+  return !!row && row[field] === value && row._version === readVersion + 1;
+}
+
+/**
  * Compare-and-swap on availableTickets. `delta` is negative to take stock,
  * positive to give it back. Returns the new count, or null when there is not
  * enough stock to take.
@@ -147,17 +196,88 @@ async function adjustStock(eventID, delta) {
     const next = event.availableTickets + delta;
     if (next < 0) return null;
     try {
-      await graphql(SET_STOCK, {
+      const row = (await graphql(SET_STOCK, {
         input: { id: eventID, availableTickets: next, _version: event._version },
         condition: { availableTickets: { eq: event.availableTickets } },
-      });
-      return next;
+      })).updateEvent;
+      if (applied(row, 'availableTickets', next, event._version)) return next;
+      // Merged, not applied — someone else wrote first. Re-read and retry.
     } catch (err) {
       if (!isConditionFailure(err)) throw err;
       // Someone else bought in between — re-read and retry.
     }
   }
   throw new Error('stock contention: retries exhausted');
+}
+
+const allowanceID = (eventID, sub) => `${eventID}_${sub}`;
+
+/** Tickets the buyer already holds for this event, from Ticket rows. */
+async function heldFromTickets(sub, eventID) {
+  const held = await graphqlAll(MY_TICKETS, { userID: sub, eventID }, (d) => d.ticketsByUserIDAndPurchaseTime);
+  return held.filter((t) => !t._deleted).reduce((n, t) => n + t.quantity, 0);
+}
+
+/**
+ * Reserves `quantity` of the buyer's per-event cap. Returns
+ * `{ reserved: true }` or `{ reserved: false, held }` when it would pass the
+ * cap. The row is created on the buyer's first purchase, seeded from tickets
+ * minted before TicketAllowance existed; `create` fails if another request
+ * created it first (key condition), and the loop then re-reads it.
+ */
+async function reserveAllowance(sub, eventID, quantity) {
+  const id = allowanceID(eventID, sub);
+  for (let attempt = 0; attempt < CAS_ATTEMPTS; attempt += 1) {
+    const row = (await graphql(GET_ALLOWANCE, { id })).getTicketAllowance;
+    if (row && row._deleted) throw new Error(`allowance ${id} is deleted`);
+    const held = row ? row.issued : await heldFromTickets(sub, eventID);
+    if (held + quantity > MAX_PER_USER_PER_EVENT) return { reserved: false, held };
+    const issued = held + quantity;
+    try {
+      if (!row) {
+        await graphql(CREATE_ALLOWANCE, { input: { id, eventID, userID: sub, issued } });
+        return { reserved: true };
+      }
+      const updated = (await graphql(SET_ALLOWANCE, {
+        input: { id, issued, _version: row._version },
+        condition: { issued: { eq: row.issued } },
+      })).updateTicketAllowance;
+      if (applied(updated, 'issued', issued, row._version)) return { reserved: true };
+    } catch (err) {
+      if (!isConditionFailure(err)) throw err;
+    }
+    // Another purchase by the same buyer got there first — re-read and retry.
+  }
+  throw new Error('allowance contention: retries exhausted');
+}
+
+/** Gives back a reservation after a failed purchase. Never goes below 0. */
+async function releaseAllowance(sub, eventID, quantity) {
+  const id = allowanceID(eventID, sub);
+  for (let attempt = 0; attempt < CAS_ATTEMPTS; attempt += 1) {
+    const row = (await graphql(GET_ALLOWANCE, { id })).getTicketAllowance;
+    if (!row || row._deleted) return;
+    const issued = Math.max(0, row.issued - quantity);
+    try {
+      const updated = (await graphql(SET_ALLOWANCE, {
+        input: { id, issued, _version: row._version },
+        condition: { issued: { eq: row.issued } },
+      })).updateTicketAllowance;
+      if (applied(updated, 'issued', issued, row._version)) return;
+    } catch (err) {
+      if (!isConditionFailure(err)) throw err;
+    }
+  }
+  throw new Error('allowance release contention: retries exhausted');
+}
+
+/** Release that never masks the original outcome; a failure only over-restricts the buyer. */
+async function releaseQuietly(sub, eventID, quantity) {
+  try {
+    await releaseAllowance(sub, eventID, quantity);
+  } catch (err) {
+    console.error(JSON.stringify({ msg: 'ALLOWANCE NOT RELEASED — buyer cap over-counts', sub, eventID, quantity, error: err.message }));
+  }
 }
 
 async function purchase(sub, eventID, quantity) {
@@ -174,14 +294,23 @@ async function purchase(sub, eventID, quantity) {
     return fail(409, 'SOLD_OUT', { remainingStock: Math.max(0, event.availableTickets) });
   }
 
-  const held = await graphqlAll(MY_TICKETS, { userID: sub, eventID }, (d) => d.ticketsByUserIDAndPurchaseTime);
-  const alreadyHeld = held.filter((t) => !t._deleted).reduce((n, t) => n + t.quantity, 0);
-  if (alreadyHeld + quantity > MAX_PER_USER_PER_EVENT) {
-    return fail(409, 'LIMIT_REACHED', { limit: MAX_PER_USER_PER_EVENT, held: alreadyHeld });
+  // Cap first, then stock — the order the F1 fix was proven in.
+  const allowance = await reserveAllowance(sub, eventID, quantity);
+  if (!allowance.reserved) {
+    return fail(409, 'LIMIT_REACHED', { limit: MAX_PER_USER_PER_EVENT, held: allowance.held });
   }
 
-  const remaining = await adjustStock(eventID, -quantity);
-  if (remaining === null) return fail(409, 'SOLD_OUT', { remainingStock: 0 });
+  let remaining;
+  try {
+    remaining = await adjustStock(eventID, -quantity);
+  } catch (err) {
+    await releaseQuietly(sub, eventID, quantity);
+    throw err;
+  }
+  if (remaining === null) {
+    await releaseQuietly(sub, eventID, quantity);
+    return fail(409, 'SOLD_OUT', { remainingStock: 0 });
+  }
 
   try {
     const ticket = (await graphql(CREATE_TICKET, {
@@ -201,6 +330,7 @@ async function purchase(sub, eventID, quantity) {
     } catch (restoreErr) {
       console.error(JSON.stringify({ msg: 'STOCK NOT RESTORED — fix manually', eventID, quantity, error: restoreErr.message }));
     }
+    await releaseQuietly(sub, eventID, quantity);
     throw err;
   }
 }
@@ -227,5 +357,8 @@ exports.handler = async (event) => {
 };
 
 // Exposed for unit tests only.
-exports._documents = { GET_EVENT, GET_VENUE, EVENT_LINKS, MY_TICKETS, SET_STOCK, CREATE_TICKET };
+exports._documents = {
+  GET_EVENT, GET_VENUE, EVENT_LINKS, MY_TICKETS, SET_STOCK, CREATE_TICKET,
+  GET_ALLOWANCE, CREATE_ALLOWANCE, SET_ALLOWANCE,
+};
 exports._requiredTally = requiredTally;

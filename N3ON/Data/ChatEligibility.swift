@@ -25,7 +25,7 @@ enum ChatIneligibilityReason: Equatable {
     case regularUserCannotChat    // .regular role has no chat access
     case noSharedActiveEvent      // DJ-Venue pair has no current EventDJLink
     case eventExpired             // 48-hour post-event window has closed
-    case rolesIncompatible        // e.g. venue↔venue, regular↔venue
+    case rolesIncompatible        // venue↔venue (any pair with a regular user is regularUserCannotChat)
 }
 
 /// How long after an event's scheduled date the DJ↔Venue chat channel remains open.

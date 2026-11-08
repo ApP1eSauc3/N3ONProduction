@@ -1,9 +1,9 @@
 // RankWeightTests.swift
 // N3ONTests
 //
-// Pins the bootstrap coin-weight table (0 / 5 / 7 / 10 / 25) that admin
-// lineup curation stamps onto EventDJLink records. Must stay in lockstep
-// with the Lambda's RankWeights DynamoDB config.
+// Pins the coin-weight table (0 / 5 / 7 / 10 / 25). Must stay in lockstep
+// with the joinEvent Lambda's WEIGHTS constant — same cases as
+// lambda-tests/join.test.js "weight table matches RankWeight.swift".
 
 import XCTest
 @testable import N3ON

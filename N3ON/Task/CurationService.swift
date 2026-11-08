@@ -4,9 +4,21 @@
 // The single capability chokepoint for bootstrap / curation overrides.
 //
 // Every rank/tally gate in the app routes through here so the ranking system
-// can be suspended (curated mode) or fully enforced (community mode) by flipping
-// `CurationConfig.platformMode` — with no other code changes. See
+// can be suspended (curated mode) or enforced (community mode) by flipping
+// `CurationConfig.platformMode` — with no other client code changes. See
 // `Data/CurationConfig.swift` for the flag and the cold-start rationale.
+//
+// FLIPPING TO COMMUNITY IS TWO CHANGES, not one (LEAN-RESEARCH.md F7):
+//   1. `CurationConfig.platformMode = .community` (client gates), and
+//   2. env `TALLY_ENFORCED=true` on the purchaseTicket Lambda (the server's
+//      tally gate on ticket sales — the real one). Either alone leaves the
+//      client and server disagreeing about whether sales are open.
+//
+// SERVER-SIDE RESIDUAL (F6): `canCreateEvent` is a client check only. Event's
+// @auth lets any signed-in owner create/update an Event, so a modified client
+// can skip the rank gate. Harmless in curated mode; before relying on it in
+// community mode, route event creation (or going live) through a Lambda that
+// re-checks the host's rank, like purchaseTicket re-checks the tally.
 
 import Foundation
 

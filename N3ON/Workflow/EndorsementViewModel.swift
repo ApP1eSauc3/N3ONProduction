@@ -24,12 +24,18 @@ final class EndorsementViewModel: ObservableObject {
 
     // MARK: — Rank context (set by caller)
     var currentRank: Int = 0
+    /// The candidate whose progress is loaded — set by `loadProgress`.
+    private(set) var candidateID: String?
 
     var targetRank: Int { currentRank + 1 }
     var required: Int { EndorsementService.requiredEndorsements(forTargetRank: targetRank) }
 
+    /// Distinct endorsers the server would count — not raw approved rows.
     var approvedCount: Int {
-        sentRequests.filter { $0.status == "approved" && $0.targetRank == targetRank }.count
+        guard let candidateID else { return 0 }
+        return EndorsementService.countedEndorsers(
+            in: sentRequests, candidateID: candidateID, targetRank: targetRank
+        )
     }
 
     var pendingCount: Int {
@@ -48,6 +54,7 @@ final class EndorsementViewModel: ObservableObject {
     func loadProgress(userID: String) async {
         isLoadingProgress = true
         defer { isLoadingProgress = false }
+        candidateID = userID
         sentRequests = (try? await EndorsementService.sentRequests(by: userID, targetRank: targetRank)) ?? []
     }
 
@@ -74,6 +81,7 @@ final class EndorsementViewModel: ObservableObject {
             didSend = true
             // Refresh sent list
             if let myID = await AuthService.currentUserIdOrNil() {
+                candidateID = myID
                 sentRequests = (try? await EndorsementService.sentRequests(by: myID, targetRank: targetRank)) ?? []
             }
         } catch {

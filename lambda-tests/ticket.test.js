@@ -13,15 +13,58 @@ const req = (sub, body, method = 'POST') => ({ httpMethod: method, body: JSON.st
 const future = new Date(Date.now() + 86400e3).toISOString();
 const ev = (o = {}) => ({ id: 'ev1', status: 'live', eventDate: future, ticketPrice: 0, availableTickets: 5, _version: 3, _deleted: null, ...o });
 
+const condFail = { errors: [{ message: 'cond', errorType: 'DynamoDB:ConditionalCheckFailedException' }] };
+
+// A barrier: the first `n` callers wait until all `n` have arrived, so
+// concurrent requests finish their reads before any of them writes.
+function barrier(n) {
+  let waiting = []; let left = n;
+  return () => {
+    if (left <= 0) return Promise.resolve();
+    left -= 1;
+    const p = new Promise((res) => waiting.push(res));
+    if (left === 0) { waiting.forEach((r) => r()); waiting = []; }
+    return p;
+  };
+}
+
 function world(o = {}) {
-  const db = { event: ev(o.event), tickets: o.tickets || [] };
+  const db = { event: ev(o.event), tickets: o.tickets || [], allowances: structuredClone(o.allowances || {}) };
   let interleave = o.interleave || 0;
+  const heldGate = barrier(o.barrier || 0);
   const handlers = {
     getEvent: () => ({ data: { getEvent: db.event } }),
-    ticketsByUserIDAndPurchaseTime: ({ userID, eventID }) => ({ data: { ticketsByUserIDAndPurchaseTime: {
-      items: db.tickets.filter(t => t.userID === userID && t.eventID === eventID), nextToken: null } } }),
+    ticketsByUserIDAndPurchaseTime: async ({ userID, eventID }) => {
+      await heldGate();
+      return { data: { ticketsByUserIDAndPurchaseTime: {
+        items: db.tickets.filter(t => t.userID === userID && t.eventID === eventID), nextToken: null } } };
+    },
+    // TicketAllowance: DynamoDB semantics under OPTIMISTIC_CONCURRENCY —
+    // create fails on an existing id; a stale _version or a false condition is rejected.
+    getTicketAllowance: async ({ id }) => {
+      await heldGate();
+      return { data: { getTicketAllowance: db.allowances[id] ? { ...db.allowances[id] } : null } };
+    },
+    createTicketAllowance: ({ input }) => {
+      if (db.allowances[input.id]) return condFail;
+      db.allowances[input.id] = { ...input, _version: 1, _deleted: null };
+      return { data: { createTicketAllowance: { ...db.allowances[input.id] } } };
+    },
+    updateTicketAllowance: ({ input, condition }) => {
+      const row = db.allowances[input.id];
+      if (!row || row._version !== input._version) return { errors: [{ message: 'conflict', errorType: 'ConflictUnhandled' }] };
+      if (condition && row.issued !== condition.issued.eq) return condFail;
+      db.allowances[input.id] = { ...row, issued: input.issued, _version: row._version + 1 };
+      return { data: { updateTicketAllowance: { ...db.allowances[input.id] } } };
+    },
     updateEvent: ({ input, condition }) => {
       if (interleave > 0) { interleave -= 1; db.event.availableTickets -= 1; db.event._version += 1; } // another buyer wins
+      // Event runs on AUTOMERGE: a stale _version is not rejected — the server
+      // keeps its scalar values, bumps _version and returns success.
+      if (o.automerge && input._version !== db.event._version) {
+        db.event = { ...db.event, _version: db.event._version + 1 };
+        return { data: { updateEvent: db.event } };
+      }
       if (db.event.availableTickets !== condition.availableTickets.eq)
         return { errors: [{ message: 'cond', errorType: 'DynamoDB:ConditionalCheckFailedException' }] };
       db.event = { ...db.event, availableTickets: input.availableTickets, _version: db.event._version + 1 };
@@ -89,6 +132,58 @@ test('CAS retries under contention and never oversells', async () => {
   assert.deepStrictEqual([r2.errorCode, db2.event.availableTickets, db2.tickets.length], ['SOLD_OUT', 0, 0]);
 });
 
+// ── F1 (LEAN-RESEARCH.md): the per-user cap under concurrency ─────────────
+test('per-user cap holds under concurrent requests', async () => {
+  const { db } = world({ event: { availableTickets: 100 }, barrier: 2 });
+  const rs = await Promise.all([
+    lambda.handler(req('buyer', { eventID: 'ev1', quantity: 10 })),
+    lambda.handler(req('buyer', { eventID: 'ev1', quantity: 10 })),
+  ]);
+  const held = db.tickets.filter(t => t.userID === 'buyer').reduce((n, t) => n + t.quantity, 0);
+  assert.ok(held <= 10, `buyer holds ${held}`);
+  assert.deepStrictEqual(rs.map(r => b(r).errorCode || 'ok').sort(), ['LIMIT_REACHED', 'ok']);
+  assert.strictEqual(db.event.availableTickets, 90, 'the refused request took no stock');
+});
+
+test('per-user cap: smaller concurrent requests fill the cap exactly', async () => {
+  const { db } = world({ event: { availableTickets: 100 }, barrier: 3 });
+  const rs = await Promise.all([4, 4, 4].map(q => lambda.handler(req('buyer', { eventID: 'ev1', quantity: q }))));
+  const held = db.tickets.reduce((n, t) => n + t.quantity, 0);
+  assert.strictEqual(held, 8);
+  assert.strictEqual(rs.filter(r => b(r).errorCode === 'LIMIT_REACHED').length, 1);
+  assert.strictEqual(db.allowances['ev1_buyer'].issued, 8);
+});
+
+test('allowance is seeded from tickets bought before it existed', async () => {
+  const { db } = world({ event: { availableTickets: 50 }, tickets: [{ userID: 'u', eventID: 'ev1', quantity: 7, _deleted: null }] });
+  assert.strictEqual(b(await lambda.handler(req('u', { eventID: 'ev1', quantity: 3 }))).success, true);
+  assert.strictEqual(db.allowances['ev1_u'].issued, 10);
+  const r = b(await lambda.handler(req('u', { eventID: 'ev1', quantity: 1 })));
+  assert.deepStrictEqual([r.errorCode, r.limit, r.held], ['LIMIT_REACHED', 10, 10]);
+});
+
+test('sold out after reserving releases the allowance', async () => {
+  const { db } = world({ event: { availableTickets: 2 }, interleave: 2 });
+  const r = b(await lambda.handler(req('u', { eventID: 'ev1', quantity: 1 })));
+  assert.strictEqual(r.errorCode, 'SOLD_OUT');
+  assert.strictEqual(db.allowances['ev1_u'].issued, 0);
+});
+
+test('a failed mint releases the allowance as well as the stock', async () => {
+  const { db } = world({ createError: { message: 'boom', errorType: 'Unauthorized' } });
+  await lambda.handler(req('u', { eventID: 'ev1', quantity: 2 }));
+  assert.strictEqual(db.allowances['ev1_u'].issued, 0);
+  assert.strictEqual(db.event.availableTickets, 5);
+});
+
+test('a stale stock write merged by AUTOMERGE is not mistaken for success', async () => {
+  // interleave bumps _version under us; automerge then "succeeds" without
+  // applying our value. The CAS must notice and retry, not oversell.
+  const { db } = world({ event: { availableTickets: 3 }, interleave: 1, automerge: true });
+  const r = b(await lambda.handler(req('u', { eventID: 'ev1', quantity: 1 })));
+  assert.deepStrictEqual([r.success, r.remainingStock, db.event.availableTickets], [true, 1, 1]);
+});
+
 test('ticket write failure restores the stock', async () => {
   const { db } = world({ createError: { message: 'boom', errorType: 'Unauthorized' } });
   const r = await lambda.handler(req('u', { eventID: 'ev1', quantity: 2 }));
@@ -115,7 +210,9 @@ test('CREATE_TICKET survives Ticket @auth moving to ownerField "userID" (implici
 });
 
 test('requiredTally mirrors EventDraftViewModel.requiredTally', () => {
-  const cases = [[100, 0, 40], [100, 20, 40], [100, 40, 20], [100, 100, 20], [300, 30, 55], [300, 60, 28], [600, 25, 80], [600, 200, 40], [200, 10, 40], [201, 0, 55], [501, 0, 80]];
+  const cases = [[100, 0, 40], [100, 20, 40], [100, 40, 20], [100, 100, 20], [300, 30, 55], [300, 60, 28], [600, 25, 80], [600, 200, 40], [200, 10, 40], [201, 0, 55], [501, 0, 80],
+    // F12: negative (corrupt) capacity → smallest tier on both sides.
+    [-1, 0, 40], [-500, 40, 20], [0, 0, 40]];
   for (const [cap, price, want] of cases) assert.strictEqual(lambda._requiredTally(cap, price), want, `${cap}/${price}`);
 });
 
@@ -147,4 +244,32 @@ test('tally gate (TALLY_ENFORCED=true) blocks sales until the lineup tally is me
 test('tally gate is off by default (curated mode)', async () => {
   tallyWorld([]);
   assert.strictEqual(b(await lambda.handler(req('u', { eventID: 'ev1' }))).success, true);
+});
+
+// TicketAllowance's cap guarantee assumes a stale write is REJECTED. That is
+// only true under OPTIMISTIC_CONCURRENCY; the project default AUTOMERGE would
+// merge it. Amplify CLI 13 takes the per-model handler from cli-inputs.json
+// (transform.conf.json alone is ignored — verified with gql-compile).
+test('TicketAllowance is configured for OPTIMISTIC_CONCURRENCY', () => {
+  const fs = require('fs'); const path = require('path');
+  const api = path.join(__dirname, '../amplify/backend/api/n3on');
+  const inputs = JSON.parse(fs.readFileSync(path.join(api, 'cli-inputs.json'), 'utf8'));
+  const per = inputs.serviceConfiguration.conflictResolution.perModelResolutionStrategy || [];
+  assert.deepStrictEqual(per.find(m => m.entityName === 'TicketAllowance'),
+    { resolutionStrategy: { type: 'OPTIMISTIC_CONCURRENCY' }, entityName: 'TicketAllowance' });
+  const stack = path.join(api, 'build/stacks/TicketAllowance.json');
+  if (fs.existsSync(stack)) {
+    const handlers = new Set([...fs.readFileSync(stack, 'utf8').matchAll(/"ConflictHandler":\s*"(\w+)"/g)].map(m => m[1]));
+    assert.deepStrictEqual([...handlers], ['OPTIMISTIC_CONCURRENCY'], 'compiled stack');
+  }
+});
+
+test('allowance mutations select every TicketAllowance scalar', { skip: check.SKIP }, () => {
+  const fs = require('fs'); const path = require('path');
+  const sdl = fs.readFileSync(path.join(__dirname, '../amplify/backend/api/n3on/build/schema.graphql'), 'utf8');
+  const body = sdl.match(/type TicketAllowance [^{]*\{([^}]*)\}/)[1];
+  const scalars = [...body.matchAll(/^\s*(\w+):\s*(ID|String|Int|Float|Boolean|AWS\w+)!?\s*$/gm)].map(m => m[1]);
+  for (const doc of [lambda._documents.CREATE_ALLOWANCE, lambda._documents.SET_ALLOWANCE]) {
+    for (const f of scalars) assert.match(doc, new RegExp(`\\b${f}\\b`), f);
+  }
 });
