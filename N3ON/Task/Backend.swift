@@ -170,15 +170,25 @@ struct AmplifyRESTTransport: RESTTransport {
     func post(_ request: RESTRequest) async throws -> Data {
         do {
             return try await Amplify.API.post(request: request)
-        } catch let error as APIError {
-            // Amplify throws on non-2xx; the body is still the Lambda's answer.
-            if case let .httpStatusError(_, response) = error,
-               let awsResponse = response as? AWSHTTPURLResponse,
-               let data = awsResponse.body {
-                return data
-            }
+        } catch {
+            if let data = Self.lambdaBody(from: error) { return data }
             throw error
         }
+    }
+
+    /// The Lambdas' JSON reply is ~100 bytes; anything this large is not one.
+    static let maxErrorBodyBytes = 64 * 1024
+
+    /// Amplify throws on non-2xx, but the body is still the Lambda's answer
+    /// (its `errorCode`). Only an HTTP status error with a body of plausible
+    /// size counts; network, signing and other errors stay errors.
+    static func lambdaBody(from error: Error) -> Data? {
+        guard let apiError = error as? APIError,
+              case let .httpStatusError(_, response) = apiError,
+              let data = (response as? AWSHTTPURLResponse)?.body,
+              !data.isEmpty, data.count <= maxErrorBodyBytes
+        else { return nil }
+        return data
     }
 }
 

@@ -21,7 +21,7 @@ AmplifyStorageClient.uploadData  # live-AWS adapter: 1:1 forward to Amplify, no 
 AmplifyStorageClient.uploadFile  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
 AmplifyStorageClient.getURL  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
 AmplifyStorageClient.downloadData  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
-AmplifyRESTTransport.post  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
+AmplifyRESTTransport.post  # live-AWS adapter: forwards to Amplify.API.post; its error-body logic is AmplifyRESTTransport.lambdaBody, which carries both tests
 AmplifyGraphQLClient.getUser  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
 AmplifyHubClient.events  # live-AWS adapter: 1:1 forward to Amplify, no logic; exercised by the deploy smoke test, not unit tests
 AudioPicker.makeCoordinator  # UIKit/AVFoundation/MapKit callback: only the OS can call it with real camera/picker/map objects; logic it reaches is tested elsewhere

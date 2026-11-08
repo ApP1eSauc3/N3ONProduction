@@ -837,13 +837,26 @@ final class WorkflowASecPerfTests: BackendTestCase {
 
     func test_DJViewModel_toggleFollow_security() async {
         let vm = DJViewModel(user: Make.user("fan", isDJ: false))
+        await vm.initialLoad?.value   // its queries would otherwise eat failNext below
         await vm.toggleFollow()
         XCTAssertTrue(db.all(UserFollows.self).isEmpty, "only DJs can be followed")
-        db.failNext = FakeError(tag: "x")
         let djVM = DJViewModel(user: Make.user("dj"))
+        await djVM.initialLoad?.value   // or it races the injected failure
+        db.failNext = FakeError(tag: "x")
         let before = djVM.followerCount
         await djVM.toggleFollow()
         XCTAssertEqual(djVM.followerCount, before, "optimistic count rolls back on failure")
+    }
+
+    func test_DJViewModel_loadFollowState_doesNotOverwriteATap() async {
+        db.seed([Make.user("dj")])
+        let vm = DJViewModel(user: Make.user("dj"))
+        await vm.initialLoad?.value
+        let load = Task { await vm.loadFollowState() }   // starts with generation N
+        await vm.toggleFollow()                          // tap → generation N+1, count 1
+        await load.value
+        XCTAssertTrue(vm.isFollowing, "a load that overlapped the tap never undoes it")
+        XCTAssertEqual(vm.followerCount, 1)
     }
 
     func test_DJViewModel_toggleFollow_performance() async {

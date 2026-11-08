@@ -18,10 +18,14 @@ final class DJViewModel: ObservableObject {
     // this VM can actually be released — an unstored `Task { for try await ... }`
     // captures self strongly forever.
     private var observeTask: Task<Void, Never>?
+    /// The load started by init; kept so callers (and tests) can await it.
+    private(set) var initialLoad: Task<Void, Never>?
+    /// Bumped on every follow toggle, so a slower load can't overwrite it.
+    private var followGeneration = 0
 
     init(user: User) {
         self.user = user
-        Task {
+        initialLoad = Task {
             await loadUpcomingEvents()
             await loadFollowState()
         }
@@ -52,7 +56,10 @@ final class DJViewModel: ObservableObject {
         guard user.isDJ else { return }
         guard !isTogglingFollow else { return }
         isTogglingFollow = true
-        defer { isTogglingFollow = false }
+        // Bumped at start AND end: a load that overlaps any part of a toggle
+        // read the store before the toggle's write landed, so it is discarded.
+        followGeneration += 1
+        defer { isTogglingFollow = false; followGeneration += 1 }
 
         let wasFollowing = isFollowing
         // Optimistic update
@@ -74,9 +81,16 @@ final class DJViewModel: ObservableObject {
     }
 
     func loadFollowState() async {
+        let generation = followGeneration
         async let following = (try? await FollowService.isFollowing(djID: user.id)) ?? false
         async let count = await FollowService.followerCount(for: user.id)
-        (isFollowing, followerCount) = await (following, count)
+        let (f, c) = await (following, count)
+        // A tap landed while this was loading: its optimistic state wins.
+        // Rejects every overlap with a toggle: started before it (generation
+        // moved), ended during it (still toggling), or started during it and
+        // ended after (the end-of-toggle bump moved the generation).
+        guard generation == followGeneration, !isTogglingFollow else { return }
+        (isFollowing, followerCount) = (f, c)
     }
 
     // MARK: - Chat

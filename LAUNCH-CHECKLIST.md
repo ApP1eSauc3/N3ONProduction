@@ -119,6 +119,29 @@ Fixes for the findings in `LEAN-RESEARCH.md` (gitignored, local). Each fix has a
 - [ ] 🤖 **F6 — the rank gate is client-only** (Event `@auth` lets any owner create/update). Before relying on it in `.community`, route event creation / going live through a Lambda that re-checks the host's rank (same root as the "owner can set live" residual).
 - [ ] 🤖 Residual: `TicketAllowance` over-counts if an admin deletes a ticket by hand (no refund flow exists). It errs towards refusing, never towards overselling.
 
+## Security + performance test pass (2026-11-09) — gates, deploy, open items
+
+Every function that can run in a unit test has one security test and one performance test (`54a6d6b`, plus the REST-transport follow-up). The fixes the tests found are listed in that commit message. Each fix was red-checked: the test was run against the old code and failed.
+
+### Gates — run before every commit that touches code, and before every push (🤖/👤)
+
+1. `python3 scripts/check-function-tests.py` must report `missing: 0`. A new function needs `test_<Type>_<func>_security` and `…_performance` (Swift), or `test('<fn>/<file>:<func> security…')` and `…performance…` (Lambda). The other option is an entry in `scripts/function-test-exclusions.txt` with a reason (only for OS callbacks, 1:1 live-AWS adapters, or view handlers that forward to tested code).
+2. `cd lambda-tests && npm test`: all green.
+3. Xcode ⌘U: all green. Performance budgets are wall-clock with wide headroom; if one fails on a slow machine, rerun once before changing a budget.
+
+### Deploy (👤) — six Lambda sources changed, none deployed
+
+`joinEvent`, `purchaseTicket`, `rankPromotion`, `n3on3dbadbe4PostConfirmation`, `n3on3dbadbe4CustomMessage`, `S3Triggerba3b2651`. There are no schema or IAM changes, so this rides along with the next `amplify push`, after the LEAN deploy steps above. Smoke test after the push:
+
+- one free purchase;
+- one join;
+- one sign-up, including the confirmation email (the trigger loaders now refuse any `MODULES` value that isn't a plain name; `parameters.json` has `verification-link` / `add-to-group`, which pass).
+
+### Open items
+
+- [ ] 🤖 **Venue self-approval is client-only.** `VenueService.update` keeps the stored `approvalStatus`/`owner`, but Venue `@auth` lets the owner write any field directly through AppSync. This is the same residual as own `djRank` (field-level `@auth` breaks DataStore updates). Fix: an approval Lambda, or move `approvalStatus` to an admin-written model.
+- [ ] 🤖 Event IDs sent to `joinEvent` / `purchaseTicket` must now match `^[A-Za-z0-9-]{1,64}$`. DataStore UUIDs do. If events are ever created with other IDs (an import, the admin console), widen `isValidID`, but never to allow `_`, because link and allowance IDs are `<eventID>_<sub>`.
+
 ## Phase 3 — Business & legal **(parallel — start now)**
 
 - [ ] 👤🤖 **Register the Pty Ltd** — Papillon Lawyers needs the ABN for its costs agreement; Stripe Connect needs the company before Phase 4. Research brief for a fresh session: [`COMPANY-SETUP-BRIEF.md`](COMPANY-SETUP-BRIEF.md).
@@ -154,6 +177,14 @@ Also unchanged — FINANCIAL-FORMAT §15: venue calls (incl. ticketing exclusivi
 
 ## Changelog
 
+- **2026-11-09 (security + performance tests)** — 350 functions, each with one security test and one performance test; 81 exclusions, each with a reason. New seams in `Task/Backend.swift` and an in-memory `FakeBackend`. The tests found and fixed:
+  - authorisation that trusted arguments (admin writes, host-only event and chat operations, owner-only venue writes);
+  - missing input limits;
+  - whole-table DataStore scans;
+  - an avatar downscale bug (1536 px on 3x screens);
+  - in the Lambdas: unbounded request bodies, an `_` link-ID collision, a pagination loop with no exit, an overwritable response envelope, and S3 keys (user IDs) written to logs.
+
+  Verified: Swift 651/651 (run twice), Lambda 203/203. Also fixed: `DJViewModel.loadFollowState` could overwrite a follow tap made while it was loading (it is now discarded if it overlapped a toggle). Found by a flaky test and confirmed with a 20× stress run. Not deployed.
 - **2026-11-08 (LEAN-RESEARCH hardening)** — Fixed the findings from the Lean audit; see "LEAN-RESEARCH hardening" above. Biggest find was not in the research: under the project's AUTOMERGE conflict handler, a stale compare-and-swap can be merged and reported as success, so the per-buyer cap, stock and rank promotion were all only as safe as the test fake. Every CAS now verifies the returned `_version`, and the new `TicketAllowance` model runs on OPTIMISTIC_CONCURRENCY. Fake AppSync now clones responses like a real JSON round-trip (it handed out live references, which hid this). Not deployed.
 - **2026-10-12 (legal)** — Call with Papillon Lawyers (Matthew Hodgkinson). Recommended model: the organiser (venue, promoter, or possibly a DJ — to be confirmed) is principal and merchant of record; N3ON is ticketing agent on Stripe Connect direct charges; the DJ directory has no relationship with talent. This reshapes the DJ-led event flow (host gate, `joinEvent`, tally, payout curve) — **no code changes until Liam adopts it**. Reply to Matt drafted in Gmail, not sent. Company setup is the next step: `COMPANY-SETUP-BRIEF.md`.
 - **2026-10-11 (sign-up fix)** — No new account could be created: the pool has `UsernameAttributes: [email]` and requires `name`, but `AuthService.signUp` sent the handle as the username with only `email`. Now `signUpRequest(handle:email:)` sends the lower-cased email as username plus `email` + `name`; confirm/resend/sign-in/reset all address the email (`AuthFlowState.confirmCode(email:handle:)`, `.confirmReset(email:)`); role-selection recovery reads the handle from the `name` attribute (the Cognito username is the sub). `CustomMessage` replaced the code email with a link to `n3on3dbadbe4verificationbucket-dev`, which is empty with no website config — now sends the code for SignUp/ResendCode, other triggers keep the pool default. Verified: Xcode **48/48** (3 new `AuthServiceSignUpTests`), Lambda **55/55** (3 new trigger tests, which fail against the old trigger); `amplify status` shows only the trigger changing. Existing account unaffected (already signs in by email). Not verified live: the reproduction sign-up call was blocked, so the diagnosis rests on the pool config + code. Residual: `PreventUserExistenceErrors` is unset (legacy) on the app client — login/reset errors reveal whether an email exists; review in Phase 6.
